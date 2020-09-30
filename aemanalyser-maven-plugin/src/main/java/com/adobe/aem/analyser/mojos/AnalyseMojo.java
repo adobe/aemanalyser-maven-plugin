@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 package com.adobe.aem.analyser.mojos;
 
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -28,7 +29,8 @@ import org.eclipse.aether.RepositorySystemSession;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 
 @Mojo(name = "analyse", defaultPhase = LifecyclePhase.VERIFY)
 public class AnalyseMojo extends AbstractMojo {
@@ -61,11 +63,7 @@ public class AnalyseMojo extends AbstractMojo {
                     project.getGroupId() + ":" + project.getArtifactId() + ":" + project.getVersion());
             setParameter(mojo, "isContentPackage", true);
             setParameter(mojo, "installConvertedCP", false);
-
-            ContentPackage cp = new ContentPackage();
-            cp.setGroupId(project.getGroupId());
-            cp.setArtifactId("aem-bosschae6-project.ui.apps"); // TODO
-            setParameter(mojo, "contentPackages", Collections.singletonList(cp));
+            setParameter(mojo, "contentPackages", getContentPackages());
 
             File f = new File(project.getBuild().getDirectory() + "/cp-conversion");
             setParameter(mojo, "convertedCPOutput", f);
@@ -75,6 +73,26 @@ public class AnalyseMojo extends AbstractMojo {
         } catch (ReflectiveOperationException e) {
             throw new MojoExecutionException("Problem configuring mojo: " + mojo.getClass().getName(), e);
         }
+    }
+
+    private List<ContentPackage> getContentPackages() throws MojoExecutionException {
+        List<ContentPackage> l = new ArrayList<>();
+
+        for (Dependency d : project.getDependencies()) {
+            if ("zip".equals(d.getType())) {
+                // If a dependency is of type 'zip' it is assumed to be a content package. TODO find a better way...
+                ContentPackage cp = new ContentPackage();
+                cp.setGroupId(d.getGroupId());
+                cp.setArtifactId(d.getArtifactId());
+                // TODO set the version???
+                l.add(cp);
+            }
+        }
+
+        if (l.isEmpty())
+            throw new MojoExecutionException("No content packages found for project.");
+
+        return l;
     }
 
     private void prepareMojo(ConvertCPMojo mojo) throws ReflectiveOperationException {
