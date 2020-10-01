@@ -31,7 +31,12 @@ import org.apache.sling.feature.maven.mojos.AggregateFeaturesMojo;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -63,6 +68,9 @@ public class AnalyseMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         // First convert content package to feature model
         convertContentPackageToFeatureModel();
+
+        // Hack remove cp2fm-converted: from generated files. Find a better solution for this.
+        stripCp2fmConvertedFromFeatureFiles();
 
         // Then aggregate the features
         aggregateUserAndSDKFeatures();
@@ -117,6 +125,43 @@ public class AnalyseMojo extends AbstractMojo {
             throw new MojoExecutionException("No content packages found for project.");
 
         return l;
+    }
+
+    private void stripCp2fmConvertedFromFeatureFiles() throws MojoExecutionException {
+        // TODO This is a hack, remove this
+
+        try {
+            File dir = getGeneratedFeaturesDir();
+            for (File ff : dir.listFiles(f -> f.getName().endsWith(".json"))) {
+                replaceInFile(ff);
+            }
+        } catch (IOException e) {
+            throw new MojoExecutionException("Cannot replace text in file", e);
+        }
+    }
+
+    private void replaceInFile(File ff) throws IOException {
+        List<String> newFile = new ArrayList<>();
+        boolean changes = false;
+        try (BufferedReader br = new BufferedReader(new FileReader(ff))) {
+            String line;
+            while((line = br.readLine()) != null) {
+                String replaced = line.replace("p2fm-converted:", "");
+                newFile.add(replaced);
+                if (!replaced.equals(line)) {
+                    changes = true;
+                }
+            }
+        }
+
+        if (changes) {
+            try (BufferedWriter wr = new BufferedWriter(new FileWriter(ff))) {
+                for (String line : newFile) {
+                    wr.write(line);
+                    wr.newLine();
+                }
+            }
+        }
     }
 
     private void aggregateUserAndSDKFeatures() throws MojoExecutionException {
