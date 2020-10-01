@@ -30,7 +30,7 @@ governing permissions and limitations under the License.
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.java.version>8</project.java.version>
+    <project.java.version>11</project.java.version>
   </properties>
 
   <build>
@@ -40,8 +40,8 @@ governing permissions and limitations under the License.
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.8.1</version>
         <configuration>
-          <source>1.${project.java.version}</source>
-          <target>1.${project.java.version}</target>
+          <source>${project.java.version}</source>
+          <target>${project.java.version}</target>
         </configuration>
       </plugin>
       <plugin>

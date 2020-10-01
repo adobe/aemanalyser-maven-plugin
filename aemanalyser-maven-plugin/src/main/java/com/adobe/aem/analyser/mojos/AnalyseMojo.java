@@ -1,17 +1,19 @@
 /*
-Copyright 2020 Adobe. All rights reserved.
-This file is licensed to you under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License. You may obtain a copy
-of the License at http://www.apache.org/licenses/LICENSE-2.0
+  Copyright 2020 Adobe. All rights reserved.
+  This file is licensed to you under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License. You may obtain a copy
+  of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software distributed under
-the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
-OF ANY KIND, either express or implied. See the License for the specific language
-governing permissions and limitations under the License.
+  Unless required by applicable law or agreed to in writing, software distributed under
+  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+  OF ANY KIND, either express or implied. See the License for the specific language
+  governing permissions and limitations under the License.
 */
 package com.adobe.aem.analyser.mojos;
 
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
+import org.apache.maven.artifact.resolver.ArtifactResolver;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -24,12 +26,15 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 import org.apache.sling.cpconverter.maven.mojos.ContentPackage;
 import org.apache.sling.cpconverter.maven.mojos.ConvertCPMojo;
+import org.apache.sling.feature.maven.mojos.Aggregate;
+import org.apache.sling.feature.maven.mojos.AggregateFeaturesMojo;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Mojo(name = "analyse", defaultPhase = LifecyclePhase.VERIFY)
@@ -37,11 +42,17 @@ public class AnalyseMojo extends AbstractMojo {
     @Parameter(property = "project", readonly = true, required = true)
     protected MavenProject project;
 
+    @Parameter(property = "session", readonly = true, required = true)
+    protected MavenSession mavenSession;
+
     @Parameter(defaultValue="${repositorySystemSession}")
     private RepositorySystemSession repoSession;
 
     @Component
     protected ArtifactHandlerManager artifactHandlerManager;
+
+    @Component
+    ArtifactResolver artifactResolver;
 
     @Component
     protected MavenProjectHelper projectHelper;
@@ -52,6 +63,9 @@ public class AnalyseMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         // First convert content package to feature model
         convertContentPackageToFeatureModel();
+
+        // Then aggregate the features
+        aggregateUserAndSDKFeatures();
     }
 
     private void convertContentPackageToFeatureModel() throws MojoExecutionException, MojoFailureException {
@@ -59,20 +73,30 @@ public class AnalyseMojo extends AbstractMojo {
         try {
             prepareMojo(mojo);
 
+            setParameter(mojo, "repoSystem", repoSystem);
+            setParameter(mojo, "repoSession", repoSession);
+
             setParameter(mojo, "artifactIdOverride",
                     project.getGroupId() + ":" + project.getArtifactId() + ":" + project.getVersion());
             setParameter(mojo, "isContentPackage", true);
             setParameter(mojo, "installConvertedCP", false);
             setParameter(mojo, "contentPackages", getContentPackages());
 
-            File f = new File(project.getBuild().getDirectory() + "/cp-conversion");
-            setParameter(mojo, "convertedCPOutput", f);
-            setParameter(mojo, "fmOutput", new File(f, "fm.out"));
+            setParameter(mojo, "convertedCPOutput", getCPConversionDir());
+            setParameter(mojo, "fmOutput", getGeneratedFeaturesDir());
 
             mojo.execute();
         } catch (ReflectiveOperationException e) {
             throw new MojoExecutionException("Problem configuring mojo: " + mojo.getClass().getName(), e);
         }
+    }
+
+    private File getCPConversionDir() {
+        return new File(project.getBuild().getDirectory() + "/cp-conversion");
+    }
+
+    private File getGeneratedFeaturesDir() {
+        return new File(getCPConversionDir(), "fm.out");
     }
 
     private List<ContentPackage> getContentPackages() throws MojoExecutionException {
@@ -95,10 +119,48 @@ public class AnalyseMojo extends AbstractMojo {
         return l;
     }
 
-    private void prepareMojo(ConvertCPMojo mojo) throws ReflectiveOperationException {
+    private void aggregateUserAndSDKFeatures() throws MojoExecutionException {
+        AggregateFeaturesMojo mojo = new AggregateFeaturesMojo();
+        try {
+            prepareMojo(mojo);
+
+            setParameter(mojo, "artifactResolver", artifactResolver);
+            setParameter(mojo, "aggregates", getAggregates());
+            setParameter(mojo, "features", new File("src/main/features"));
+            setParameter(mojo, "mavenSession", mavenSession);
+            setParameter(mojo, "generatedFeatures", getGeneratedFeaturesDir());
+            setParameter(mojo, "generatedFeaturesIncludes", "**/*.json");
+
+            mojo.execute();
+        } catch (ReflectiveOperationException e) {
+            throw new MojoExecutionException("Problem configuring mojo: " + mojo.getClass().getName(), e);
+        }
+    }
+
+    private List<Aggregate> getAggregates() {
+        List<Aggregate> l = new ArrayList<>();
+
+        Aggregate a = new Aggregate();
+        a.classifier = "aggregated";
+        Dependency d = new Dependency();
+        d.setGroupId("com.day.cq"); // TODO
+        d.setArtifactId("cq-quickstart"); // TODO
+        d.setVersion("6.6.0-SNAPSHOT"); // TODO
+        d.setType("slingosgifeature");
+        d.setClassifier("aem-sdk");
+        a.setIncludeArtifact(d);
+
+        a.setFilesInclude("**/*.json");
+        a.markAsComplete = true;
+        a.artifactsOverrides = Collections.singletonList("*:*:LATEST");
+        a.configurationOverrides = Collections.singletonList("*=MERGE_LATEST");
+        l.add(a);
+
+        return l;
+    }
+
+    private void prepareMojo(org.apache.maven.plugin.Mojo mojo) throws ReflectiveOperationException {
         setParameter(mojo, "project", project);
-        setParameter(mojo, "repoSystem", repoSystem);
-        setParameter(mojo, "repoSession", repoSession);
         setParameter(mojo, "artifactHandlerManager", artifactHandlerManager);
         setParameter(mojo, "projectHelper", projectHelper);
     }
