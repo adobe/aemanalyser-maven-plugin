@@ -90,6 +90,16 @@ governing permissions and limitations under the License.
     </dependency>
     
     <dependency>
+      <groupId>org.apache.geronimo.specs</groupId>
+      <artifactId>geronimo-json_1.1_spec</artifactId>
+      <version>1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sling</groupId>
+      <artifactId>org.apache.sling.feature</artifactId>
+      <version>1.2.10</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>sling-feature-converter-maven-plugin</artifactId>
       <version>1.0.5-SNAPSHOT</version>

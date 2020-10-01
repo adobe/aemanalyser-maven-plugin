@@ -26,8 +26,11 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 import org.apache.sling.cpconverter.maven.mojos.ContentPackage;
 import org.apache.sling.cpconverter.maven.mojos.ConvertCPMojo;
+import org.apache.sling.feature.maven.mojos.AbstractFeatureMojo;
 import org.apache.sling.feature.maven.mojos.Aggregate;
 import org.apache.sling.feature.maven.mojos.AggregateFeaturesMojo;
+import org.apache.sling.feature.maven.mojos.AnalyseFeaturesMojo;
+import org.apache.sling.feature.maven.mojos.Scan;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 
@@ -74,6 +77,8 @@ public class AnalyseMojo extends AbstractMojo {
 
         // Then aggregate the features
         aggregateUserAndSDKFeatures();
+
+        analyseFeature();
     }
 
     private void convertContentPackageToFeatureModel() throws MojoExecutionException, MojoFailureException {
@@ -146,7 +151,7 @@ public class AnalyseMojo extends AbstractMojo {
         try (BufferedReader br = new BufferedReader(new FileReader(ff))) {
             String line;
             while((line = br.readLine()) != null) {
-                String replaced = line.replace("p2fm-converted:", "");
+                String replaced = line.replace("cp2fm-converted:", "");
                 newFile.add(replaced);
                 if (!replaced.equals(line)) {
                     changes = true;
@@ -167,14 +172,8 @@ public class AnalyseMojo extends AbstractMojo {
     private void aggregateUserAndSDKFeatures() throws MojoExecutionException {
         AggregateFeaturesMojo mojo = new AggregateFeaturesMojo();
         try {
-            prepareMojo(mojo);
-
-            setParameter(mojo, "artifactResolver", artifactResolver);
+            prepareSFMPMojo(mojo);
             setParameter(mojo, "aggregates", getAggregates());
-            setParameter(mojo, "features", new File("src/main/features"));
-            setParameter(mojo, "mavenSession", mavenSession);
-            setParameter(mojo, "generatedFeatures", getGeneratedFeaturesDir());
-            setParameter(mojo, "generatedFeaturesIncludes", "**/*.json");
 
             mojo.execute();
         } catch (ReflectiveOperationException e) {
@@ -204,10 +203,43 @@ public class AnalyseMojo extends AbstractMojo {
         return l;
     }
 
+    private void analyseFeature() throws MojoExecutionException, MojoFailureException {
+        AnalyseFeaturesMojo mojo = new AnalyseFeaturesMojo();
+        try {
+            prepareSFMPMojo(mojo);
+
+            Dependency fwDep = new Dependency();
+            fwDep.setGroupId("org.apache.felix");
+            fwDep.setArtifactId("org.apache.felix.framework");
+            fwDep.setVersion("6.0.1"); // TODO Where do we get this from ? Some property set in the parent pom?
+            setParameter(mojo, "framework", fwDep);
+
+            Scan s = new Scan();
+            s.setIncludeClassifier("aggregated");
+            s.setIncludeTask("requirements-capabilities"); // TODO maybe make this configurable
+            setParameter(mojo, "scans", Collections.singletonList(s));
+
+            mojo.execute();
+        } catch (ReflectiveOperationException e) {
+            throw new MojoExecutionException("Problem configuring mojo: " + mojo.getClass().getName(), e);
+        }
+    }
+
     private void prepareMojo(org.apache.maven.plugin.Mojo mojo) throws ReflectiveOperationException {
         setParameter(mojo, "project", project);
         setParameter(mojo, "artifactHandlerManager", artifactHandlerManager);
         setParameter(mojo, "projectHelper", projectHelper);
+    }
+
+    private void prepareSFMPMojo(AbstractFeatureMojo mojo)
+            throws ReflectiveOperationException, NoSuchFieldException, IllegalAccessException {
+        prepareMojo(mojo);
+
+        setParameter(mojo, "artifactResolver", artifactResolver);
+        setParameter(mojo, "features", new File("src/main/features"));
+        setParameter(mojo, "mavenSession", mavenSession);
+        setParameter(mojo, "generatedFeatures", getGeneratedFeaturesDir());
+        setParameter(mojo, "generatedFeaturesIncludes", "**/*.json");
     }
 
     private void setParameter(Object mojo, String field, Object value)
