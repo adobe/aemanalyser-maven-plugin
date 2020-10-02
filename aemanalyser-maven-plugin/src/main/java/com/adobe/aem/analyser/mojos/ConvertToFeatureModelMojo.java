@@ -27,11 +27,10 @@ import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 
 @Mojo(name = "convert", defaultPhase = LifecyclePhase.GENERATE_RESOURCES)
 public class ConvertToFeatureModelMojo extends ConvertCPMojo {
+    boolean unitTestMode = false;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        System.out.println("******************* execute: " + this);
-
         setParameter(this, "artifactIdOverride",
             project.getGroupId() + ":" + project.getArtifactId() + ":" + project.getVersion());
         setParameter(this, "isContentPackage", false);
@@ -40,6 +39,9 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
 
         setParameter(this, "convertedCPOutput", getCPConversionDir());
         setParameter(this, "fmOutput", getGeneratedFeaturesDir());
+
+        if (unitTestMode)
+            return;
 
         super.execute();
     }
