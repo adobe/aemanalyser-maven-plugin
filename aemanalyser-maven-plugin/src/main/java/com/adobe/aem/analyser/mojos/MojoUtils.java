@@ -18,28 +18,28 @@ import java.lang.reflect.Field;
 public class MojoUtils {
     static void setParameter(Object mojo, String field, Object value)
             throws MojoExecutionException {
-        try {
-            setParameter(mojo, mojo.getClass(), field, value);
-        } catch (ReflectiveOperationException e) {
-            throw new MojoExecutionException("Problem configuring mojo: " + mojo.getClass().getName(), e);
-        }
+        setParameter(mojo, mojo.getClass(), field, value);
     }
 
     static void setParameter(Object mojo, Class<?> cls, String field, Object value)
-            throws NoSuchFieldException, IllegalAccessException {
+            throws MojoExecutionException {
         try {
-            Field f = cls.getDeclaredField(field);
+            try {
+                Field f = cls.getDeclaredField(field);
 
-            f.setAccessible(true);
-            f.set(mojo, value);
-        } catch (NoSuchFieldException e) {
-            Class<?> sc = cls.getSuperclass();
-            if (!sc.equals(Object.class)) {
-                // Try the superclass
-                setParameter(mojo, sc, field, value);
-            } else {
-                throw e;
+                f.setAccessible(true);
+                f.set(mojo, value);
+            } catch (NoSuchFieldException e) {
+                Class<?> sc = cls.getSuperclass();
+                if (!sc.equals(Object.class)) {
+                    // Try the superclass
+                    setParameter(mojo, sc, field, value);
+                } else {
+                    throw e;
+                }
             }
+        } catch (ReflectiveOperationException e) {
+            throw new MojoExecutionException("Problem configuring mojo: " + mojo.getClass().getName(), e);
         }
     }
 }

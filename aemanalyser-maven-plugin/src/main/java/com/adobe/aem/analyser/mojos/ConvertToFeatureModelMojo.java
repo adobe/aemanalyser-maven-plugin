@@ -25,7 +25,7 @@ import java.util.List;
 
 import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 
-@Mojo(name = "convert", requiresProject = true, defaultPhase = LifecyclePhase.GENERATE_RESOURCES)
+@Mojo(name = "convert", defaultPhase = LifecyclePhase.GENERATE_RESOURCES)
 public class ConvertToFeatureModelMojo extends ConvertCPMojo {
 
     @Override
@@ -34,7 +34,7 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
 
         setParameter(this, "artifactIdOverride",
             project.getGroupId() + ":" + project.getArtifactId() + ":" + project.getVersion());
-        setParameter(this, "isContentPackage", true);
+        setParameter(this, "isContentPackage", false);
         setParameter(this, "installConvertedCP", true);
         setParameter(this, "contentPackages", getContentPackages());
 
