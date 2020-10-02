@@ -30,7 +30,7 @@ governing permissions and limitations under the License.
   <description>Maven plugin to analyse AEM components</description>
 
   <properties>
-    <maven.version>3.6.0</maven.version>
+    <maven.version>3.5.2</maven.version>
   </properties>
 
   <build>
@@ -86,6 +86,9 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.maven.plugin-tools</groupId>
       <artifactId>maven-plugin-annotations</artifactId>
+      <!-- 
+      <version>3.5</version>
+      -->
       <version>${maven.version}</version>
     </dependency>
     

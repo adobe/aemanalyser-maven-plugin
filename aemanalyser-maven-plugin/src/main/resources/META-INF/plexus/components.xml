@@ -22,6 +22,7 @@
             <phases>
               <generate-resources>com.adobe.aem:aemanalyser-maven-plugin:convert</generate-resources>
               <generate-test-resources>com.adobe.aem:aemanalyser-maven-plugin:aggregate</generate-test-resources>
+              <test>com.adobe.aem:aemanalyser-maven-plugin:analyse</test>
             </phases>
           </lifecycle>
         </lifecycles>
