@@ -60,6 +60,10 @@ public class LifecycleParticipant extends AbstractMavenLifecycleParticipant {
             }
         }
 
+        preProcess(env);
+    }
+
+    void preProcess(final Environment env) {
         new Preprocessor().process(env);
     }
 }
