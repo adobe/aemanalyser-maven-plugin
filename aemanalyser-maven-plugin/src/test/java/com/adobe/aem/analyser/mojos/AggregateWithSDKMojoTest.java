@@ -15,7 +15,6 @@ import org.apache.sling.feature.maven.mojos.Aggregate;
 import org.apache.sling.feature.maven.mojos.AggregateFeaturesMojo;
 import org.junit.Test;
 
-import java.lang.reflect.Field;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -31,27 +30,12 @@ public class AggregateWithSDKMojoTest {
 
         @SuppressWarnings("unchecked")
         List<Aggregate> aggregates =
-                (List<Aggregate>) getField(mojo, AggregateFeaturesMojo.class, "aggregates");
+                (List<Aggregate>) TestUtil.getField(mojo,
+                        AggregateFeaturesMojo.class, "aggregates");
 
         assertEquals(1, aggregates.size());
         Aggregate agg = aggregates.get(0);
         assertEquals("aggregated", agg.classifier);
         assertTrue(agg.markAsComplete);
-    }
-
-    private Object getField(Object obj, Class<?> cls, String name)
-            throws NoSuchFieldException, IllegalAccessException {
-        try {
-            Field f = cls.getDeclaredField(name);
-
-            f.setAccessible(true);
-            return f.get(obj);
-        } catch (NoSuchFieldException e) {
-            Class<?> sc = cls.getSuperclass();
-            if (!sc.equals(Object.class)) {
-                return getField(obj, sc, name);
-            }
-            throw e;
-        }
     }
 }
