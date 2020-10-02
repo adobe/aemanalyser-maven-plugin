@@ -26,11 +26,10 @@ import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 
 @Mojo(name = "analyse", defaultPhase = LifecyclePhase.TEST)
 public class AnalyseMojo extends AnalyseFeaturesMojo {
+    boolean unitTestMode = false;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        System.out.println("@@@@@@@@@@@@@@@@@@ execute: " + this);
-
         Dependency fwDep = new Dependency();
         fwDep.setGroupId("org.apache.felix");
         fwDep.setArtifactId("org.apache.felix.framework");
@@ -41,6 +40,9 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
         s.setIncludeClassifier("aggregated");
         s.setIncludeTask("requirements-capabilities"); // TODO maybe make this configurable
         setParameter(this, "scans", Collections.singletonList(s));
+
+        if (unitTestMode)
+            return;
 
         super.execute();
     }
