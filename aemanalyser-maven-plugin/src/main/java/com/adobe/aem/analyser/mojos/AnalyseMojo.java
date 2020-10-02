@@ -73,7 +73,7 @@ public class AnalyseMojo extends AbstractMojo {
         convertContentPackageToFeatureModel();
 
         // Hack remove cp2fm-converted: from generated files. Find a better solution for this.
-        stripCp2fmConvertedFromFeatureFiles();
+//        stripCp2fmConvertedFromFeatureFiles();
 
         // Then aggregate the features
         aggregateUserAndSDKFeatures();
@@ -92,7 +92,7 @@ public class AnalyseMojo extends AbstractMojo {
             setParameter(mojo, "artifactIdOverride",
                     project.getGroupId() + ":" + project.getArtifactId() + ":" + project.getVersion());
             setParameter(mojo, "isContentPackage", true);
-            setParameter(mojo, "installConvertedCP", false);
+            setParameter(mojo, "installConvertedCP", true);
             setParameter(mojo, "contentPackages", getContentPackages());
 
             setParameter(mojo, "convertedCPOutput", getCPConversionDir());
