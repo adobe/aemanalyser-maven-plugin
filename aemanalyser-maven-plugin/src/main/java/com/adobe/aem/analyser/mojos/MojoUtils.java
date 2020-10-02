@@ -16,6 +16,8 @@ import org.apache.maven.plugin.MojoExecutionException;
 import java.lang.reflect.Field;
 
 public class MojoUtils {
+    private MojoUtils() {}
+
     static void setParameter(Object mojo, String field, Object value)
             throws MojoExecutionException {
         setParameter(mojo, mojo.getClass(), field, value);

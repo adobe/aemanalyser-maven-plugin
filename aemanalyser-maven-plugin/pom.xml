@@ -86,9 +86,6 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.maven.plugin-tools</groupId>
       <artifactId>maven-plugin-annotations</artifactId>
-      <!-- 
-      <version>3.5</version>
-      -->
       <version>${maven.version}</version>
     </dependency>
     
@@ -111,6 +108,14 @@ governing permissions and limitations under the License.
       <groupId>org.apache.sling</groupId>
       <artifactId>slingfeature-maven-plugin</artifactId>
       <version>1.4.0</version>
+    </dependency>
+    
+    <!-- Test -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
