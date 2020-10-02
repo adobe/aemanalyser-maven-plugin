@@ -27,15 +27,19 @@ import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 
 @Mojo(name = "aggregate", defaultPhase = LifecyclePhase.GENERATE_TEST_RESOURCES)
 public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
+    boolean unitTestMode = false;
+
     // Shadow this field for maven as we don't need to provide it from the pom.xml
     @Parameter(required = false)
     private List<Aggregate> aggregates;
 
     @Override
     public void execute() throws MojoExecutionException {
-        System.out.println("############### execute: " + this);
         setParameter(this, AggregateFeaturesMojo.class,
                 "aggregates", getAggregates());
+
+        if (unitTestMode)
+            return;
 
         super.execute();
     }
