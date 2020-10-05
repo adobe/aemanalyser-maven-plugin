@@ -18,7 +18,6 @@ import org.junit.Test;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class AnalyseMojoTest {
     @Test
@@ -27,9 +26,6 @@ public class AnalyseMojoTest {
         mojo.unitTestMode = true;
 
         mojo.execute();
-
-        assertNotNull(TestUtil.getField(
-                mojo, mojo.getClass(), "framework"));
 
         @SuppressWarnings("unchecked")
         List<Scan> scans = (List<Scan>) TestUtil.getField(

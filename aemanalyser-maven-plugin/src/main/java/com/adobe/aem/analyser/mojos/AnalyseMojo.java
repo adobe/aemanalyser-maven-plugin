@@ -12,7 +12,6 @@
 
 package com.adobe.aem.analyser.mojos;
 
-import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -30,12 +29,6 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        Dependency fwDep = new Dependency();
-        fwDep.setGroupId("org.apache.felix");
-        fwDep.setArtifactId("org.apache.felix.framework");
-        fwDep.setVersion("6.0.1"); // TODO Where do we get this from ? Some property set in the parent pom?
-        setParameter(this, "framework", fwDep);
-
         Scan s = new Scan();
         s.setIncludeClassifier("aggregated");
         s.setIncludeTask("requirements-capabilities"); // TODO maybe make this configurable
