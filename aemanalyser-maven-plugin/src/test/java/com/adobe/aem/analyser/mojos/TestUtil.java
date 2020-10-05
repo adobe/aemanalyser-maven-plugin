@@ -16,6 +16,11 @@ import java.lang.reflect.Field;
 class TestUtil {
     private TestUtil() {}
 
+    static Object getField(Object obj, String name)
+            throws NoSuchFieldException, IllegalAccessException {
+        return getField(obj, obj.getClass(), name);
+    }
+
     static Object getField(Object obj, Class<?> cls, String name)
             throws NoSuchFieldException, IllegalAccessException {
         try {

@@ -27,11 +27,25 @@ import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 
 @Mojo(name = "aggregate", defaultPhase = LifecyclePhase.GENERATE_TEST_RESOURCES)
 public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
+    private static final String SDK_GROUP_ID = "com.adobe.aem";
+    private static final String SDK_ARTIFACT_ID = "aem-sdk-api";
+    private static final String SDK_FEATUREMODEL_CLASSIFIER = "aem-sdk";
+    private static final String SDK_FEATUREMODEL_TYPE = "slingosgifeature";
+
     boolean unitTestMode = false;
 
     // Shadow this field for maven as we don't need to provide it from the pom.xml
     @Parameter(required = false)
     private List<Aggregate> aggregates;
+
+    @Parameter(defaultValue = SDK_GROUP_ID, property = "sdkGroupId")
+    private String sdkGroupId;
+
+    @Parameter(defaultValue = SDK_ARTIFACT_ID, property = "sdkArtifactId")
+    private String sdkArtifactId;
+
+    @Parameter(required = false, property = "sdkVersion")
+    private String sdkVersion;
 
     @Override
     public void execute() throws MojoExecutionException {
@@ -44,25 +58,60 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
         super.execute();
     }
 
-    private List<Aggregate> getAggregates() {
+    private List<Aggregate> getAggregates() throws MojoExecutionException {
         List<Aggregate> l = new ArrayList<>();
 
+        // TODO currently just 1 aggregate. Do we need multiple, e.g. for author/publish?
+        // Maybe also for dev/stage/prod?
         Aggregate a = new Aggregate();
         a.classifier = "aggregated";
-        Dependency d = new Dependency();
-        d.setGroupId("com.day.cq"); // TODO
-        d.setArtifactId("cq-quickstart"); // TODO
-        d.setVersion("6.6.0-SNAPSHOT"); // TODO
-        d.setType("slingosgifeature");
-        d.setClassifier("aem-sdk");
-        a.setIncludeArtifact(d);
-
-        a.setFilesInclude("**/*.json");
+        a.setIncludeArtifact(getSDKFeatureModel());
+        a.setFilesInclude("**/*.json"); // TODO we can split this up in author/publish
         a.markAsComplete = true;
         a.artifactsOverrides = Collections.singletonList("*:*:LATEST");
         a.configurationOverrides = Collections.singletonList("*=MERGE_LATEST");
         l.add(a);
 
         return l;
+    }
+
+    private Dependency getSDKFeatureModel() throws MojoExecutionException {
+        Dependency sdkDep;
+        if (sdkVersion == null) {
+            sdkDep = getSDKFromDependencies();
+        } else {
+            sdkDep = new Dependency();
+            sdkDep.setGroupId(sdkGroupId);
+            sdkDep.setArtifactId(sdkArtifactId);
+            sdkDep.setVersion(sdkVersion);
+        }
+
+        // The SDK Feature Model has the same version as the SDK
+        Dependency sdkFM = new Dependency();
+        sdkFM.setGroupId(sdkDep.getGroupId());
+        sdkFM.setArtifactId(sdkDep.getArtifactId());
+        sdkFM.setVersion(sdkDep.getVersion());
+        sdkFM.setType(SDK_FEATUREMODEL_TYPE);
+        sdkFM.setClassifier(SDK_FEATUREMODEL_CLASSIFIER);
+        return sdkFM;
+    }
+
+    private Dependency getSDKFromDependencies() throws MojoExecutionException {
+        for (Dependency d : project.getDependencies()) {
+            if (SDK_GROUP_ID.equals(d.getGroupId()) &&
+                    SDK_ARTIFACT_ID.equals(d.getArtifactId())) {
+                return d;
+            }
+        }
+
+        for (Dependency d : project.getDependencyManagement().getDependencies()) {
+            if (SDK_GROUP_ID.equals(d.getGroupId()) &&
+                    SDK_ARTIFACT_ID.equals(d.getArtifactId())) {
+                return d;
+            }
+        }
+
+        throw new MojoExecutionException(
+                "Unable to find SDK artifact in dependencies or dependency management");
     }
 }

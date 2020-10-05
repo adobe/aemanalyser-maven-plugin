@@ -34,8 +34,17 @@ public class AnalyseMojoTest {
         Scan scan = scans.get(0);
         assertEquals(1, scan.getSelections().size());
 
-        // The following doesn't work because getSelections() returns a private type
-//        Selection sel = scan.getSelections().get(0);
-//        assertEquals("aggregated", scan.getSelections());
+        // Note getSelections() returns a private type...
+        List<?> sels = scan.getSelections();
+        assertEquals("aggregated", getSelectionInstruction(sels, "CLASSIFIER"));
+    }
+
+    private String getSelectionInstruction(List<?> sels, String type) throws Exception {
+        for (Object s : sels) {
+            if (type.equals(TestUtil.getField(s, "type").toString())) {
+                return TestUtil.getField(s, "instruction").toString();
+            }
+        }
+        return null;
     }
 }
