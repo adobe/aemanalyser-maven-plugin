@@ -21,12 +21,15 @@ import org.apache.sling.cpconverter.maven.mojos.ConvertCPMojo;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 
 @Mojo(name = "convert", defaultPhase = LifecyclePhase.GENERATE_RESOURCES)
 public class ConvertToFeatureModelMojo extends ConvertCPMojo {
+    private static final String AEM_ANALYSE_PACKAGING = "aem-analyse";
+
     boolean unitTestMode = false;
 
     @Override
@@ -47,6 +50,17 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
     }
 
     private List<ContentPackage> getContentPackages() throws MojoExecutionException {
+        if (!AEM_ANALYSE_PACKAGING.equals(project.getPackaging())) {
+            // Take the current project artifact as the content package
+            ContentPackage cp = new ContentPackage();
+            cp.setGroupId(project.getGroupId());
+            cp.setArtifactId(project.getArtifactId());
+
+            getLog().info("Taking current project as content package: " + cp);
+
+            return Collections.singletonList(cp);
+        }
+
         List<ContentPackage> l = new ArrayList<>();
 
         for (Dependency d : project.getDependencies()) {
@@ -55,7 +69,6 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
                 ContentPackage cp = new ContentPackage();
                 cp.setGroupId(d.getGroupId());
                 cp.setArtifactId(d.getArtifactId());
-                // TODO set the version???
                 l.add(cp);
             }
         }
@@ -63,6 +76,7 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
         if (l.isEmpty())
             throw new MojoExecutionException("No content packages found for project.");
 
+        getLog().info("Found content packages from dependencies: " + l);
         return l;
     }
 
