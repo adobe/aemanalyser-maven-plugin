@@ -28,7 +28,7 @@ import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 
 @Mojo(name = "convert", defaultPhase = LifecyclePhase.GENERATE_RESOURCES)
 public class ConvertToFeatureModelMojo extends ConvertCPMojo {
-    private static final String AEM_ANALYSE_PACKAGING = "aem-analyse";
+    static final String AEM_ANALYSE_PACKAGING = "aem-analyse";
 
     boolean unitTestMode = false;
 
