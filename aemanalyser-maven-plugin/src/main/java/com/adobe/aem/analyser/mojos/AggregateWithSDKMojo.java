@@ -39,13 +39,13 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
     private List<Aggregate> aggregates;
 
     @Parameter(defaultValue = SDK_GROUP_ID, property = "sdkGroupId")
-    private String sdkGroupId;
+    String sdkGroupId;
 
     @Parameter(defaultValue = SDK_ARTIFACT_ID, property = "sdkArtifactId")
-    private String sdkArtifactId;
+    String sdkArtifactId;
 
     @Parameter(required = false, property = "sdkVersion")
-    private String sdkVersion;
+    String sdkVersion;
 
     @Override
     public void execute() throws MojoExecutionException {
