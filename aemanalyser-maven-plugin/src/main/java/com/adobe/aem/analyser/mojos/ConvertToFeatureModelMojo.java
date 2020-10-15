@@ -36,7 +36,12 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         setParameter(this, "artifactIdOverride",
             project.getGroupId() + ":" + project.getArtifactId() + ":" + project.getVersion());
-        setParameter(this, "isContentPackage", false);
+
+        // If the packaging is aem-analyse then this is a special analyser project which is not a
+        // content package. Otherwise the analyser should run on the current project which should
+        // be a content package in that case.
+        setParameter(this, "isContentPackage",
+                !AEM_ANALYSE_PACKAGING.equals(project.getPackaging()));
         setParameter(this, "installConvertedCP", true);
         setParameter(this, "contentPackages", getContentPackages());
 
