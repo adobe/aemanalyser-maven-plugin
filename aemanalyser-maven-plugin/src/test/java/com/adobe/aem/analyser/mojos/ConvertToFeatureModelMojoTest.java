@@ -28,7 +28,7 @@ import java.util.List;
 
 import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 public class ConvertToFeatureModelMojoTest {
     private Path tempDir;
@@ -76,7 +76,7 @@ public class ConvertToFeatureModelMojoTest {
 
         mojo.execute();
 
-        assertTrue((Boolean) TestUtil.getField(mojo, "installConvertedCP"));
+        assertFalse((Boolean) TestUtil.getField(mojo, "installConvertedCP"));
         File cpOutputDir = (File) TestUtil.getField(mojo, "convertedCPOutput");
         Path cpP = cpOutputDir.toPath();
         assertEquals(tempDir, cpP.getParent());
@@ -111,7 +111,7 @@ public class ConvertToFeatureModelMojoTest {
 
         mojo.execute();
 
-        assertTrue((Boolean) TestUtil.getField(mojo, "installConvertedCP"));
+        assertFalse((Boolean) TestUtil.getField(mojo, "installConvertedCP"));
         File cpOutputDir = (File) TestUtil.getField(mojo, "convertedCPOutput");
         Path cpP = cpOutputDir.toPath();
         assertEquals(tempDir, cpP.getParent());

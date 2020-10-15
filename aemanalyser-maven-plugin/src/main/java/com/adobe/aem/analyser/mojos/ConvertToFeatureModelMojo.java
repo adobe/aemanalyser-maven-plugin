@@ -42,7 +42,7 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
         // be a content package in that case.
         setParameter(this, "isContentPackage",
                 !AEM_ANALYSE_PACKAGING.equals(project.getPackaging()));
-        setParameter(this, "installConvertedCP", true);
+        setParameter(this, "installConvertedCP", false);
         setParameter(this, "contentPackages", getContentPackages());
 
         setParameter(this, "convertedCPOutput", getCPConversionDir());
