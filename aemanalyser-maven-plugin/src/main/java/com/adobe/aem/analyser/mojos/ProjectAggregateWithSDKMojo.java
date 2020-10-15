@@ -15,7 +15,7 @@ import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.Mojo;
 
 @Mojo(name = "project-aggregate")
-@Execute(lifecycle = "project-analysis", goal = "project-convert")
+@Execute(lifecycle = "project-analysis", goal = "convert")
 public class ProjectAggregateWithSDKMojo extends AggregateWithSDKMojo {
     // Subclassed to add extra annotations to chain additional mojo
 }
