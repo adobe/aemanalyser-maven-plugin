@@ -66,7 +66,7 @@ public class AggregateWithSDKMojoTest {
         // Note getSelections() returns a private type...
         List<?> sels = agg.getSelections();
         String artSelInstr = getSelectionInstruction(sels, "ARTIFACT");
-        assertEquals("com.adobe.aem:aem-sdk-api:slingosgifeature:aem-sdk:9.9.1",
+        assertEquals("com.adobe.aem:aem-sdk-api:slingosgifeature:aem-author-sdk:9.9.1",
                 artSelInstr);
 
         String filesInclInstr = getSelectionInstruction(sels, "FILES_INCLUDE");
@@ -114,7 +114,7 @@ public class AggregateWithSDKMojoTest {
         // Note getSelections() returns a private type...
         List<?> sels = agg.getSelections();
         String artSelInstr = getSelectionInstruction(sels, "ARTIFACT");
-        assertEquals("com.adobe.aem:aem-sdk-api:slingosgifeature:aem-sdk:9.9.1",
+        assertEquals("com.adobe.aem:aem-sdk-api:slingosgifeature:aem-author-sdk:9.9.1",
                 artSelInstr);
 
         String filesInclInstr = getSelectionInstruction(sels, "FILES_INCLUDE");
@@ -147,7 +147,7 @@ public class AggregateWithSDKMojoTest {
         // Note getSelections() returns a private type...
         List<?> sels = agg.getSelections();
         String artSelInstr = getSelectionInstruction(sels, "ARTIFACT");
-        assertEquals("foo:bar:slingosgifeature:aem-sdk:42",
+        assertEquals("foo:bar:slingosgifeature:aem-author-sdk:42",
                 artSelInstr);
     }
 
