@@ -1,6 +1,6 @@
 ## AEM Analyser Maven Plugin Project
 
-This project contains the AEM Analyser Maven Plugin and a parent pom. For more details on the Maven Plugin see aemanalyser-maven-plugin/README.md
+This project contains the AEM Analyser Maven Plugin and a parent pom. For more details on the Maven Plugin see [aemanalyser-maven-plugin/README.md](aemanalyser-maven-plugin/README.md).
 
 
 ### Contributing
