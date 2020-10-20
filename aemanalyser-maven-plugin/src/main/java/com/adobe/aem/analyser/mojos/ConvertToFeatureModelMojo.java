@@ -48,6 +48,8 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
         setParameter(this, "convertedCPOutput", getCPConversionDir());
         setParameter(this, "fmOutput", getGeneratedFeaturesDir());
 
+        setParameter(this, "exportToApiRegion", "global");
+
         if (unitTestMode)
             return;
 

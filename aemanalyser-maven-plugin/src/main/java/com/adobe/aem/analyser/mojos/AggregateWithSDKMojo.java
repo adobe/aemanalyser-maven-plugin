@@ -29,7 +29,7 @@ import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
     private static final String SDK_GROUP_ID = "com.adobe.aem";
     private static final String SDK_ARTIFACT_ID = "aem-sdk-api";
-    private static final String SDK_FEATUREMODEL_CLASSIFIER = "aem-sdk";
+    private static final String SDK_FEATUREMODEL_CLASSIFIER = "aem-author-sdk";
     private static final String SDK_FEATUREMODEL_TYPE = "slingosgifeature";
 
     boolean unitTestMode = false;

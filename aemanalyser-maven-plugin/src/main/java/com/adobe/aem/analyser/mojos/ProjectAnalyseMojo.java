@@ -15,7 +15,7 @@ import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 
-@Mojo(name = "project-analyse", defaultPhase = LifecyclePhase.TEST)
+@Mojo(name = "project-analyse", defaultPhase = LifecyclePhase.VERIFY)
 @Execute(lifecycle = "project-analysis", goal = "project-aggregate")
 public class ProjectAnalyseMojo extends AnalyseMojo {
     // Subclassed to add extra annotations to chain additional mojo
