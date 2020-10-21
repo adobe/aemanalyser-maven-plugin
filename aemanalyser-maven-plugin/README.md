@@ -9,7 +9,7 @@ AEM as a Cloud Service.
 
 Provide an easy way for AEMaaCS users to run analysers with their components during local 
 builds to ensure these components will also pass the analysers at AEMaaCS deploy time and 
-function as expected at runtime.
+function as expected at runtime. Analysers are based on the Sling Feature Model Analyser framework: https://github.com/apache/sling-org-apache-sling-feature-analyser/blob/master/readme.md
 
 ### Installation
 
