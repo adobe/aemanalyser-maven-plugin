@@ -19,6 +19,7 @@ import org.apache.sling.feature.maven.mojos.AggregateFeaturesMojo;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -45,7 +46,7 @@ public class AggregateWithSDKMojoTest {
 
         MavenProject prj = Mockito.mock(MavenProject.class);
         Mockito.when(prj.getDependencies())
-            .thenReturn(List.of(dep1, dep2, sdk));
+            .thenReturn(Arrays.asList(dep1, dep2, sdk));
         Mockito.when(prj.getDependencyManagement())
             .thenReturn(Mockito.mock(DependencyManagement.class));
 
@@ -94,7 +95,7 @@ public class AggregateWithSDKMojoTest {
         MavenProject prj = Mockito.mock(MavenProject.class);
         DependencyManagement dm = Mockito.mock(DependencyManagement.class);
         Mockito.when(dm.getDependencies())
-            .thenReturn(List.of(dep1, dep2, sdk));
+            .thenReturn(Arrays.asList(dep1, dep2, sdk));
         Mockito.when(prj.getDependencyManagement()).thenReturn(dm);
 
         MojoUtils.setParameter(mojo, "project", prj);

@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -69,7 +70,7 @@ public class ConvertToFeatureModelMojoTest {
         prj.setArtifactId("a");
         prj.setVersion("7");
         prj.setBuild(build);
-        prj.setDependencies(List.of(dep, dep2));
+        prj.setDependencies(Arrays.asList(dep, dep2));
         prj.setPackaging(ConvertToFeatureModelMojo.AEM_ANALYSE_PACKAGING);
 
         setParameter(mojo, "project", prj);

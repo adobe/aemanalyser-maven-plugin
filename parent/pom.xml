@@ -30,7 +30,7 @@ governing permissions and limitations under the License.
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.java.version>11</project.java.version>
+    <project.java.version>8</project.java.version>
   </properties>
 
   <build>
