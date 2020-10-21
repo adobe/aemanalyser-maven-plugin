@@ -1,0 +1,16 @@
+<lifecycleMappingMetadata>
+  <pluginExecutions>
+    <pluginExecution>
+      <pluginExecutionFilter>
+        <goals>
+          <goal>convert</goal>
+          <goal>aggregate</goal>
+          <goal>analyse</goal>
+        </goals>
+      </pluginExecutionFilter>
+      <action>
+        <ignore/>
+      </action>
+    </pluginExecution>
+  </pluginExecutions>
+</lifecycleMappingMetadata>

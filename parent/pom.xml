@@ -56,7 +56,7 @@ governing permissions and limitations under the License.
         <version>3.0.0-M3</version>
         <executions>
           <execution>
-            <id>enforce-maven</id>
+            <id>enforce-maven-and-java</id>
             <goals>
               <goal>enforce</goal>
             </goals>
@@ -65,6 +65,9 @@ governing permissions and limitations under the License.
                 <requireMavenVersion>
                   <version>[3.5.0,)</version>
                 </requireMavenVersion>
+                <requireJavaVersion>
+                  <version>${project.java.version}</version>
+                </requireJavaVersion>
               </rules>
             </configuration>
           </execution>
