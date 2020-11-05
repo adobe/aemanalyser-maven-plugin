@@ -23,6 +23,12 @@ governing permissions and limitations under the License.
 
   <name>AEM Parent Plugin Open Source</name>
 
+  <scm>
+    <connection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</developerConnection>
+    <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/parent</url>
+  </scm>
+
   <organization>
     <name>Adobe</name>
     <url>http://www.adobe.com/</url>
