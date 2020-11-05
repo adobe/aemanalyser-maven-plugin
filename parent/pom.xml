@@ -10,15 +10,13 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
  -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.adobe.aem</groupId>
   <artifactId>parent-oss</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.2</version>
   <packaging>pom</packaging>
 
   <name>AEM Parent Plugin Open Source</name>
@@ -27,6 +25,7 @@ governing permissions and limitations under the License.
     <connection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</developerConnection>
     <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/parent</url>
+    <tag>parent-oss-0.0.2</tag>
   </scm>
 
   <organization>
