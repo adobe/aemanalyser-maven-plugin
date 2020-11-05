@@ -98,6 +98,34 @@ governing permissions and limitations under the License.
           <autoReleaseAfterClose>true</autoReleaseAfterClose>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-release-plugin</artifactId>
+        <version>3.0.0-M1</version>
+        <configuration>
+          <goals>deploy</goals>
+          <localCheckout>true</localCheckout>
+          <arguments>-Prelease ${arguments}</arguments>
+          <projectVersionPolicyId>OddEvenVersionPolicy</projectVersionPolicyId>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.scm</groupId>
+            <artifactId>maven-scm-provider-gitexe</artifactId>
+            <version>1.11.2</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.maven.release</groupId>
+            <artifactId>maven-release-oddeven-policy</artifactId>
+            <version>3.0.0-M1</version>
+          </dependency>
+          <!-- Workaround for missing class -->
+          <dependency>
+            <groupId>org.eclipse.aether</groupId>
+            <artifactId>aether-util</artifactId>
+            <version>1.1.0</version>
+          </dependency>
+        </dependencies>
+      </plugin>
     </plugins>
 
     <pluginManagement>
