@@ -5,7 +5,7 @@ A Maven plugin used by developers who develop Java components for AEMaaCS
 builds to ensure that their components work correctly in when deployed to 
 AEM as a Cloud Service.
 
-## Goals
+## Functionality
 
 Provide an easy way for AEMaaCS users to run analysers with their components during local 
 builds to ensure these components will also pass the analysers at AEMaaCS deploy time and 
@@ -67,3 +67,11 @@ The analyser plugin will run the default set of analysers on the content package
     </dependencies>
 </project>
 ```
+
+### Maven Goals
+
+The plugin also contains a number of Maven goals that can be executed directly and integrated into existing projects.
+
+* **convert** - convert the content packages to feature models to prepare them for the analysers. If the packaging type is `aem-analyse` all dependencies of type content package will be converted. Otherwise the current artifact will be converted.
+* **project-aggregate** - aggregate the feature models produced by the conversion with the AEMaaCS SDK. Will also trigger the **convert** project.
+* **project-analyse** - run the analysers on the current project, will also trigger **project-aggregate**.
