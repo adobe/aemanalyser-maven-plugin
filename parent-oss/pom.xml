@@ -113,7 +113,7 @@ governing permissions and limitations under the License.
           <serverId>ossrh</serverId>
           <nexusUrl>https://oss.sonatype.org/</nexusUrl>
           <!-- Closing takes a long time and often times out, which causes the build to fail -->
-          <skipStagingRepositoryClose>false</skipStagingRepositoryClose>
+          <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
           <!--
               <autoReleaseAfterClose>true</autoReleaseAfterClose>
           -->
