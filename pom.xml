@@ -24,7 +24,7 @@ governing permissions and limitations under the License.
   <name>AEM Analyser Maven Plugin Project Reactor</name>
 
   <modules>
-    <module>parent</module>
+    <module>parent-oss</module>
     <module>aemanalyser-maven-plugin</module>
   </modules>
 </project>

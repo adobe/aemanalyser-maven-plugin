@@ -19,7 +19,7 @@ governing permissions and limitations under the License.
     <groupId>com.adobe.aem</groupId>
     <artifactId>parent-oss</artifactId>
     <version>0.0.3-SNAPSHOT</version>
-    <relativePath>../parent/pom.xml</relativePath>
+    <relativePath>../parent-oss/pom.xml</relativePath>
   </parent>
 
   <artifactId>aemanalyser-maven-plugin</artifactId>
