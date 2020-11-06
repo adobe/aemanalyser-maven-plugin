@@ -20,6 +20,23 @@ governing permissions and limitations under the License.
   <packaging>pom</packaging>
 
   <name>AEM Parent Plugin Open Source</name>
+  <description>This is the parent pom for Maven-based open source projects contributed by Adobe.</description>
+
+  <url>https://github.com/adobe/aemanalyser-maven-plugin</url>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <organization>Adobe</organization>
+      <organizationUrl>https://www.adobe.com/</organizationUrl>
+    </developer>
+  </developers>
 
   <scm>
     <connection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</connection>
@@ -95,6 +112,7 @@ governing permissions and limitations under the License.
         <configuration>
           <serverId>ossrh</serverId>
           <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+          <autoReleaseAfterClose>true</autoReleaseAfterClose>
         </configuration>
       </plugin>
       <plugin>
