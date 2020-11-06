@@ -32,6 +32,9 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
         Scan s = new Scan();
         s.setIncludeClassifier("aggregated");
         s.setIncludeTask("requirements-capabilities"); // TODO maybe make this configurable
+        s.setIncludeTask("bundle-packages");
+        s.setIncludeTask("bundle-resources");
+//        s.setIncludeTask("api-regions-exportsimports");
         setParameter(this, "scans", Collections.singletonList(s));
 
         if (unitTestMode)
