@@ -114,9 +114,6 @@ governing permissions and limitations under the License.
           <nexusUrl>https://oss.sonatype.org/</nexusUrl>
           <!-- Closing takes a long time and often times out, which causes the build to fail -->
           <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
-          <!--
-              <autoReleaseAfterClose>true</autoReleaseAfterClose>
-          -->
         </configuration>
       </plugin>
       <plugin>
