@@ -12,7 +12,9 @@
 package com.adobe.aem.analyser.mojos;
 
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.project.MavenProject;
 
+import java.io.File;
 import java.lang.reflect.Field;
 
 public class MojoUtils {
@@ -43,5 +45,13 @@ public class MojoUtils {
         } catch (ReflectiveOperationException e) {
             throw new MojoExecutionException("Problem configuring mojo: " + mojo.getClass().getName(), e);
         }
+    }
+
+    static File getConversionOutputDir(MavenProject project) {
+        return new File(project.getBuild().getDirectory() + "/cp-conversion");
+    }
+
+    static File getGeneratedFeaturesDir(MavenProject project) {
+        return new File(getConversionOutputDir(project), "fm.out");
     }
 }

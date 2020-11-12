@@ -19,7 +19,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.sling.cpconverter.maven.mojos.ContentPackage;
 import org.apache.sling.cpconverter.maven.mojos.ConvertCPMojo;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,8 +44,8 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
         setParameter(this, "installConvertedCP", false);
         setParameter(this, "contentPackages", getContentPackages());
 
-        setParameter(this, "convertedCPOutput", getCPConversionDir());
-        setParameter(this, "fmOutput", getGeneratedFeaturesDir());
+        setParameter(this, "convertedCPOutput", MojoUtils.getConversionOutputDir(project));
+        setParameter(this, "fmOutput", MojoUtils.getGeneratedFeaturesDir(project));
 
         setParameter(this, "exportToApiRegion", "global");
 
@@ -87,11 +86,4 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
         return l;
     }
 
-    private File getCPConversionDir() {
-        return new File(project.getBuild().getDirectory() + "/cp-conversion");
-    }
-
-    private File getGeneratedFeaturesDir() {
-        return new File(getCPConversionDir(), "fm.out");
-    }
 }
