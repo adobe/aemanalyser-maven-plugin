@@ -16,10 +16,12 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.sling.feature.maven.mojos.AnalyseFeaturesMojo;
 import org.apache.sling.feature.maven.mojos.Scan;
 
 import java.util.Collections;
+import java.util.List;
 
 import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 
@@ -27,14 +29,26 @@ import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 public class AnalyseMojo extends AnalyseFeaturesMojo {
     boolean unitTestMode = false;
 
+    @Parameter(defaultValue = "bundle-resources", property = "includeTasks")
+    List<String> includeTasks;
+
+//    @Parameter
+//    Map<String, Properties> taskConfiguration;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         Scan s = new Scan();
         s.setIncludeClassifier("aggregated");
-//        s.setIncludeTask("requirements-capabilities"); // TODO maybe make this configurable
-//        s.setIncludeTask("bundle-packages");
-        s.setIncludeTask("bundle-resources");
-//        s.setIncludeTask("api-regions-exportsimports");
+
+        for (String task : includeTasks) {
+            s.setIncludeTask(task);
+        }
+
+//        Needs update to the Scan class
+//        for (Map.Entry<String, Properties> entry : taskConfiguration.entrySet()) {
+//            s.setTaskConfiguration(entry.getKey(), entry.getValue());
+//        }
+
         setParameter(this, "scans", Collections.singletonList(s));
 
         if (unitTestMode)

@@ -15,6 +15,7 @@ package com.adobe.aem.analyser.mojos;
 import org.apache.sling.feature.maven.mojos.Scan;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -24,6 +25,7 @@ public class AnalyseMojoTest {
     public void testExecute() throws Exception {
         AnalyseMojo mojo = new AnalyseMojo();
         mojo.unitTestMode = true;
+        mojo.includeTasks = Collections.emptyList();
 
         mojo.execute();
 
