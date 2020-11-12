@@ -19,6 +19,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.sling.feature.maven.mojos.Aggregate;
 import org.apache.sling.feature.maven.mojos.AggregateFeaturesMojo;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -49,6 +50,8 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
+        setParameter(this, "generatedFeatures",
+                new File(project.getBuild().getDirectory() + "/cp-conversion/fm.out"));
         setParameter(this, AggregateFeaturesMojo.class,
                 "aggregates", getAggregates());
 

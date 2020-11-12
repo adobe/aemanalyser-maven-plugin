@@ -11,21 +11,44 @@
 */
 package com.adobe.aem.analyser.mojos;
 
+import org.apache.maven.model.Build;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.project.MavenProject;
 import org.apache.sling.feature.maven.mojos.Aggregate;
 import org.apache.sling.feature.maven.mojos.AggregateFeaturesMojo;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class AggregateWithSDKMojoTest {
+    private Path tempDir;
+
+    @Before
+    public void setUp() throws IOException {
+        tempDir = Files.createTempDirectory(getClass().getSimpleName());
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        // Delete the temp dir again
+        Files.walk(tempDir)
+            .sorted(Comparator.reverseOrder())
+            .map(Path::toFile)
+            .forEach(File::delete);
+    }
     @Test
     public void testExecute() throws Exception {
         AggregateWithSDKMojo mojo = new AggregateWithSDKMojo();
@@ -44,11 +67,17 @@ public class AggregateWithSDKMojoTest {
         sdk.setArtifactId("aem-sdk-api");
         sdk.setVersion("9.9.1");
 
+        Build build = Mockito.mock(Build.class);
+        Mockito.when(build.getDirectory())
+            .thenReturn(tempDir + "/target");
+
         MavenProject prj = Mockito.mock(MavenProject.class);
         Mockito.when(prj.getDependencies())
             .thenReturn(Arrays.asList(dep1, dep2, sdk));
         Mockito.when(prj.getDependencyManagement())
             .thenReturn(Mockito.mock(DependencyManagement.class));
+        Mockito.when(prj.getBuild())
+            .thenReturn(build);
 
         MojoUtils.setParameter(mojo, "project", prj);
 
@@ -63,6 +92,10 @@ public class AggregateWithSDKMojoTest {
         Aggregate agg = aggregates.get(0);
         assertEquals("aggregated", agg.classifier);
         assertTrue(agg.markAsComplete);
+
+        File expected = new File(tempDir.toFile(), "/target/cp-conversion/fm.out");
+        File generated = (File) TestUtil.getField(mojo, "generatedFeatures");
+        assertEquals(expected, generated);
 
         // Note getSelections() returns a private type...
         List<?> sels = agg.getSelections();
@@ -97,6 +130,8 @@ public class AggregateWithSDKMojoTest {
         Mockito.when(dm.getDependencies())
             .thenReturn(Arrays.asList(dep1, dep2, sdk));
         Mockito.when(prj.getDependencyManagement()).thenReturn(dm);
+        Mockito.when(prj.getBuild())
+            .thenReturn(Mockito.mock(Build.class));
 
         MojoUtils.setParameter(mojo, "project", prj);
 
@@ -130,10 +165,10 @@ public class AggregateWithSDKMojoTest {
         mojo.sdkArtifactId = "bar";
         mojo.sdkVersion = "42";
 
-        Dependency sdk = new Dependency();
-        sdk.setGroupId("com.adobe.aem");
-        sdk.setArtifactId("aem-sdk-api");
-        sdk.setVersion("9.9.1");
+        MavenProject prj = Mockito.mock(MavenProject.class);
+        Mockito.when(prj.getBuild())
+            .thenReturn(Mockito.mock(Build.class));
+        MojoUtils.setParameter(mojo, "project", prj);
 
         mojo.execute();
 
