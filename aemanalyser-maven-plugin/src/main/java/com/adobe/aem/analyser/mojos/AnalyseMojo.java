@@ -21,7 +21,10 @@ import org.apache.sling.feature.maven.mojos.AnalyseFeaturesMojo;
 import org.apache.sling.feature.maven.mojos.Scan;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 
@@ -29,14 +32,41 @@ import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 public class AnalyseMojo extends AnalyseFeaturesMojo {
     boolean unitTestMode = false;
 
-    @Parameter(defaultValue = "bundle-resources", property = "includeTasks")
+    @Parameter(defaultValue =
+        "bundle-packages,"
+        + "requirements-capabilities,"
+        + "bundle-resources,"
+        + "api-regions,"
+        + "api-regions-check-order,"
+        + "api-regions-dependencies,"
+        + "api-regions-duplicates,"
+        + "api-regions-crossfeature-dups",
+        property = "includeTasks")
     List<String> includeTasks;
 
-//    @Parameter
-//    Map<String, Properties> taskConfiguration;
+    @Parameter
+    Map<String, Properties> taskConfiguration;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        if (taskConfiguration == null) {
+            taskConfiguration = new HashMap<>();
+        }
+
+        // Set default task configuration
+        if (!taskConfiguration.containsKey("api-regions-crossfeature-dups")) {
+            Properties cfd = new Properties();
+            cfd.setProperty("regions", "global,com.adobe.aem.deprecated");
+            cfd.setProperty("warningPackages", "*");
+            taskConfiguration.put("api-regions-crossfeature-dups", cfd);
+        }
+
+        if (!taskConfiguration.containsKey("api-regions-check-order")) {
+            Properties ord = new Properties();
+            ord.setProperty("order", "global,com.adobe.aem.deprecated,com.adobe.aem.internal");
+            taskConfiguration.put("api-regions-check-order", ord);
+        }
+
         Scan s = new Scan();
         s.setIncludeClassifier("aggregated");
 
@@ -44,10 +74,14 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
             s.setIncludeTask(task);
         }
 
-//        Needs update to the Scan class
-//        for (Map.Entry<String, Properties> entry : taskConfiguration.entrySet()) {
-//            s.setTaskConfiguration(entry.getKey(), entry.getValue());
-//        }
+        for (Map.Entry<String, Properties> entry : taskConfiguration.entrySet()) {
+            Properties p = entry.getValue();
+            Map<String, String> m = new HashMap<>();
+
+            p.stringPropertyNames().forEach(n -> m.put(n, p.getProperty(n)));
+
+            s.setTaskConfiguration(entry.getKey(), m);
+        }
 
         setParameter(this, "scans", Collections.singletonList(s));
 

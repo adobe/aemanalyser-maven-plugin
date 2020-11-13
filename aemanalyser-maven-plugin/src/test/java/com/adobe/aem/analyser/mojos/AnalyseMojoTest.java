@@ -16,7 +16,10 @@ import org.apache.sling.feature.maven.mojos.Scan;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 
@@ -36,9 +39,53 @@ public class AnalyseMojoTest {
         Scan scan = scans.get(0);
         assertEquals(1, scan.getSelections().size());
 
+        Map<String,String> expected = new HashMap<>();
+        expected.put("regions", "global,com.adobe.aem.deprecated");
+        expected.put("warningPackages", "*");
+        assertEquals("Default task configuration not as expected",
+                expected, scan.getTaskConfiguration().get("api-regions-crossfeature-dups"));
+
+        assertEquals("Default task configuration not as expected",
+                "global,com.adobe.aem.deprecated,com.adobe.aem.internal",
+                scan.getTaskConfiguration().get("api-regions-check-order").get("order"));
+
         // Note getSelections() returns a private type...
         List<?> sels = scan.getSelections();
         assertEquals("aggregated", getSelectionInstruction(sels, "CLASSIFIER"));
+    }
+
+    @Test
+    public void testAddTaskConfig() throws Exception {
+        AnalyseMojo mojo = new AnalyseMojo();
+        mojo.unitTestMode = true;
+        mojo.includeTasks = Collections.singletonList("mytask");
+
+        Properties myTaskConfig = new Properties();
+        myTaskConfig.put("x", "y");
+        Properties overriddenConfig = new Properties();
+        overriddenConfig.put("traa", "laa");
+
+        mojo.taskConfiguration = new HashMap<>();
+        mojo.taskConfiguration.put("mytask", myTaskConfig);
+        mojo.taskConfiguration.put("api-regions-crossfeature-dups", overriddenConfig);
+
+        mojo.execute();
+
+        @SuppressWarnings("unchecked")
+        List<Scan> scans = (List<Scan>) TestUtil.getField(
+                mojo, mojo.getClass(), "scans");
+        assertEquals(1, scans.size());
+        Scan scan = scans.get(0);
+
+        assertEquals(Collections.singleton("mytask"), scan.getIncludeTasks());
+        assertEquals("y", scan.getTaskConfiguration().get("mytask").get("x"));
+
+        assertEquals("Overridden task configuration not as expected",
+                Collections.singletonMap("traa", "laa"),
+                scan.getTaskConfiguration().get("api-regions-crossfeature-dups"));
+        assertEquals("Default task configuration not as expected",
+                "global,com.adobe.aem.deprecated,com.adobe.aem.internal",
+                scan.getTaskConfiguration().get("api-regions-check-order").get("order"));
     }
 
     private String getSelectionInstruction(List<?> sels, String type) throws Exception {

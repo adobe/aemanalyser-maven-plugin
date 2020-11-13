@@ -88,6 +88,8 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
             sdkDep.setVersion(sdkVersion);
         }
 
+        getLog().info("Using SDK Version for analysis: " + sdkDep);
+
         // The SDK Feature Model has the same version as the SDK
         Dependency sdkFM = new Dependency();
         sdkFM.setGroupId(sdkDep.getGroupId());
