@@ -68,6 +68,34 @@ The analyser plugin will run the default set of analysers on the content package
 </project>
 ```
 
+#### Selecting Tasks
+
+The plugin will execute a number of default analysers. It's possible to select a different set of
+analyser tasks, for example with the following configuration:
+
+    <includeTasks>
+        <includeTask>bundle-packages</includeTask>
+        <includeTask>requirements-capabilities</includeTask>
+    </includeTasks>
+
+#### Configuring Analyser Tasks
+
+Some analyser tasks require configuration. Default configuration is used by the plugin for the
+default set of analysers. Additional or different configuration can be provided like this:
+
+    <includeTasks>
+        <includeTask>bundle-packages</includeTask>
+        <includeTask>requirements-capabilities</includeTask>
+        <includeTask>bundle-resources</includeTask>
+        <includeTask>api-regions-check-order</includeTask>
+    </includeTasks>
+
+    <taskConfiguration>
+        <api-regions-check-order>
+            <order>global,myregion</order>
+        </api-regions-check-order>
+    </taskConfiguration>
+
 ### Maven Goals
 
 The plugin also contains a number of Maven goals that can be executed directly for integration into existing projects.
