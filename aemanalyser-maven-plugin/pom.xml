@@ -107,17 +107,12 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>sling-feature-converter-maven-plugin</artifactId>
-      <version>1.0.6</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sling</groupId>
-      <artifactId>org.apache.sling.feature.cpconverter</artifactId>
-      <version>1.0.18</version>
+      <version>1.0.8</version>
     </dependency>
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>slingfeature-maven-plugin</artifactId>
-      <version>1.4.7-SNAPSHOT</version>
+      <version>1.4.12</version>
     </dependency>
     
     <!-- Test -->
