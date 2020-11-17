@@ -31,7 +31,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 public class AggregateWithSDKMojoTest {
     private Path tempDir;
@@ -91,7 +91,7 @@ public class AggregateWithSDKMojoTest {
         assertEquals(1, aggregates.size());
         Aggregate agg = aggregates.get(0);
         assertEquals("aggregated", agg.classifier);
-        assertTrue(agg.markAsComplete);
+        assertFalse(agg.markAsComplete);
 
         File expected = new File(tempDir.toFile(), "/target/cp-conversion/fm.out");
         File generated = (File) TestUtil.getField(mojo, "generatedFeatures");
@@ -145,7 +145,7 @@ public class AggregateWithSDKMojoTest {
         assertEquals(1, aggregates.size());
         Aggregate agg = aggregates.get(0);
         assertEquals("aggregated", agg.classifier);
-        assertTrue(agg.markAsComplete);
+        assertFalse(agg.markAsComplete);
 
         // Note getSelections() returns a private type...
         List<?> sels = agg.getSelections();
