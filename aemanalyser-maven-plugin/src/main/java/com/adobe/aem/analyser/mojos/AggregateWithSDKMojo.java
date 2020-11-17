@@ -69,7 +69,7 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
         a.classifier = "aggregated";
         a.setIncludeArtifact(getSDKFeatureModel());
         a.setFilesInclude("**/*.json"); // TODO we can split this up in author/publish
-        a.markAsComplete = true;
+        a.markAsComplete = false; // The feature may not be complete as some packages could
         a.artifactsOverrides = Collections.singletonList("*:*:LATEST");
         a.configurationOverrides = Collections.singletonList("*=MERGE_LATEST");
         l.add(a);
