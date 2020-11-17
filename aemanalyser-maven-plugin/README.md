@@ -2,7 +2,7 @@
 
 A Maven plugin used by developers who develop Java components for AEMaaCS 
 (AEM as a Cloud Service) during their local Java 
-builds to ensure that their components work correctly in when deployed to 
+builds to ensure that their components work correctly when deployed to 
 AEM as a Cloud Service.
 
 ## Functionality
