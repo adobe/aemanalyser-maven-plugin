@@ -31,6 +31,9 @@ Example:
         <extensions>true</extensions>
     </plugin>
 
+
+As this plugin is available in Maven Central, no additional configuration is needed to bring it into your Maven project.
+
 ## Usage
 
 The easiest way to use this plugin is in a dedicated module, with packaging-type `aem-analyse`. Enable the plugin by listing it in the `build->plugins` section and specify the content packages to analyse in the `<dependencies>` section. 
