@@ -33,14 +33,14 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
     boolean unitTestMode = false;
 
     @Parameter(defaultValue =
-        "bundle-packages,"
-        + "requirements-capabilities,"
+        "requirements-capabilities,"
         + "bundle-resources,"
         + "api-regions,"
         + "api-regions-check-order,"
         + "api-regions-dependencies,"
         + "api-regions-duplicates,"
-        + "api-regions-crossfeature-dups",
+        + "api-regions-crossfeature-dups,"
+        + "api-regions-exportsimports",
         property = "includeTasks")
     List<String> includeTasks;
 
