@@ -27,7 +27,7 @@ Example:
     <plugin>
         <groupId>com.adobe.aem</groupId>
         <artifactId>aemanalyser-maven-plugin</artifactId>
-        <version>0.0.12</version>
+        <version>0.0.14</version>
         <extensions>true</extensions>
     </plugin>
 
@@ -64,7 +64,7 @@ With that, you project pom.xml needs to look somewhat like this:
             <plugin>
                 <groupId>com.adobe.aem</groupId>
                 <artifactId>aemanalyser-maven-plugin</artifactId>
-                <version>0.0.12</version>
+                <version>0.0.14</version>
                 <extensions>true</extensions>
             </plugin>
         </plugins>
@@ -101,7 +101,7 @@ As an example, consider adding a new module to the wknd project. All that is nee
             <plugin>
                 <groupId>com.adobe.aem</groupId>
                 <artifactId>aemanalyser-maven-plugin</artifactId>
-                <version>0.0.12</version>
+                <version>0.0.14</version>
                 <extensions>true</extensions>
             </plugin>
         </plugins>
