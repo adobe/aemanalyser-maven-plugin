@@ -20,6 +20,7 @@ import org.apache.sling.feature.maven.mojos.Aggregate;
 import org.apache.sling.feature.maven.mojos.AggregateFeaturesMojo;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,9 +31,10 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
     private static final String SDK_GROUP_ID = "com.adobe.aem";
     private static final String SDK_ARTIFACT_ID = "aem-sdk-api";
     private static final String SDK_FEATUREMODEL_CLASSIFIER = "aem-author-sdk";
-    private static final String SDK_FEATUREMODEL_TYPE = "slingosgifeature";
+    private static final String FEATUREMODEL_TYPE = "slingosgifeature";
 
     boolean unitTestMode = false;
+    boolean unitTestEarlyExit = false;
 
     // Shadow this field for maven as we don't need to provide it from the pom.xml
     @Parameter(required = false)
@@ -52,15 +54,42 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
         setParameter(this, "generatedFeatures",
                 MojoUtils.getGeneratedFeaturesDir(project));
         setParameter(this, AggregateFeaturesMojo.class,
-                "aggregates", getAggregates());
+                "aggregates", getUserAggregates());
 
-        if (unitTestMode)
+        // Generate the aggregate of the user features first
+        if (!unitTestMode)
+            super.execute();
+
+        if (unitTestEarlyExit)
             return;
 
-        super.execute();
+        // Aggregate with the AEM SDK API feature
+        setParameter(this, "generatedFeatures", null);
+        setParameter(this, AggregateFeaturesMojo.class,
+                "aggregates", getFinalAggregates());
+
+        // Now generate the final aggregate
+        if (!unitTestMode)
+            super.execute();
     }
 
-    private List<Aggregate> getAggregates() throws MojoExecutionException {
+    private List<Aggregate> getUserAggregates() throws MojoExecutionException {
+        List<Aggregate> l = new ArrayList<>();
+
+        // TODO currently just 1 aggregate. Do we need multiple, e.g. for author/publish?
+        // Maybe also for dev/stage/prod?
+        Aggregate a = new Aggregate();
+        a.classifier = "user-aggregated";
+        a.setFilesInclude("**/*.json"); // TODO we can split this up in author/publish
+        a.markAsComplete = false; // The feature may not be complete as some packages could
+        a.artifactsOverrides = Collections.singletonList("*:*:HIGHEST");
+        a.configurationOverrides = Collections.singletonList("*=MERGE_LATEST");
+        l.add(a);
+
+        return l;
+    }
+
+    private List<Aggregate> getFinalAggregates() throws MojoExecutionException {
         List<Aggregate> l = new ArrayList<>();
 
         // TODO currently just 1 aggregate. Do we need multiple, e.g. for author/publish?
@@ -68,9 +97,15 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
         Aggregate a = new Aggregate();
         a.classifier = "aggregated";
         a.setIncludeArtifact(getSDKFeatureModel());
-        a.setFilesInclude("**/*.json"); // TODO we can split this up in author/publish
+        a.setIncludeClassifier("user-aggregated");
         a.markAsComplete = false; // The feature may not be complete as some packages could
-        a.artifactsOverrides = Collections.singletonList("*:*:LATEST");
+        a.artifactsOverrides = Arrays.asList(
+                "com.adobe.cq:core.wcm.components.core:FIRST",
+                "com.adobe.cq:core.wcm.components.extensions.amp:FIRST",
+                "org.apache.sling:org.apache.sling.models.impl:FIRST",
+                "*:core.wcm.components.content:zip:*:FIRST",
+                "*:core.wcm.components.extensions.amp.content:zip:*:FIRST",
+                "*:*:ALL");
         a.configurationOverrides = Collections.singletonList("*=MERGE_LATEST");
         l.add(a);
 
@@ -95,7 +130,7 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
         sdkFM.setGroupId(sdkDep.getGroupId());
         sdkFM.setArtifactId(sdkDep.getArtifactId());
         sdkFM.setVersion(sdkDep.getVersion());
-        sdkFM.setType(SDK_FEATUREMODEL_TYPE);
+        sdkFM.setType(FEATUREMODEL_TYPE);
         sdkFM.setClassifier(SDK_FEATUREMODEL_CLASSIFIER);
         return sdkFM;
     }
