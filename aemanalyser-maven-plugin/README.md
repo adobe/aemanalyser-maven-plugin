@@ -10,7 +10,7 @@ Provide an easy way for AEMaaCS users to run analysers with their components dur
 builds to ensure these components will also pass the analysers at AEMaaCS deploy time and 
 function as expected at runtime. Analysers are based on the Sling Feature Model Analyser framework: https://github.com/apache/sling-org-apache-sling-feature-analyser/blob/master/readme.md
 
-### Installation
+## Installation
 
 This is a plugin to Apache Maven it can be enabled by referencing its coordinates in 
 a `pom.xml`:
@@ -27,22 +27,36 @@ Example:
     <plugin>
         <groupId>com.adobe.aem</groupId>
         <artifactId>aemanalyser-maven-plugin</artifactId>
-        <version>1.0.0</version>
+        <version>0.0.12</version>
         <extensions>true</extensions>
     </plugin>
 
-### Configuration
+## Usage
 
 The easiest way to use this plugin is in a dedicated module, with packaging-type `aem-analyse`. Enable the plugin by listing it in the `build->plugins` section and specify the content packages to analyse in the `<dependencies>` section. 
-The analyser plugin will run the default set of analysers on the content packages configured.
+
+The analyser plugin will run the default set of analysers on the content packages configured while picking up the aem sdk version from the `<parent>`. Please note that it is important that you have an aem sdk version configured in your parent that is equal or higher to:
+
+```
+        <aem.sdk.api>2020.11.4506.20201112T235200Z-201028</aem.sdk.api>
+```
+
+With that, you project pom.xml needs to look somewhat like this:
 
 ```
 <project>
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.acme</groupId>
-    <artifactId>my-analyse-project</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <parent>
+        <groupId>!!insert.parent.groupId!!</groupId>
+        <artifactId>!!insert.parent.artifactId!!</artifactId>
+        <version>!!insert.parent.version!!</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    
+    <groupId>!!insert.groupId!!</groupId>
+    <artifactId>!!insert.artifactId!!</artifactId>
+    <version>!!insert.version!!</version>
     <packaging>aem-analyse</packaging>
 
     <build>
@@ -50,7 +64,7 @@ The analyser plugin will run the default set of analysers on the content package
             <plugin>
                 <groupId>com.adobe.aem</groupId>
                 <artifactId>aemanalyser-maven-plugin</artifactId>
-                <version>1.0.0</version>
+                <version>0.0.12</version>
                 <extensions>true</extensions>
             </plugin>
         </plugins>
@@ -58,9 +72,45 @@ The analyser plugin will run the default set of analysers on the content package
 
     <dependencies>
         <dependency>
-            <groupId>org.acme</groupId>
-            <artifactId>my-content-package</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <groupId>!!insert.dependency.groupId!!</groupId>
+            <artifactId>!!insert.dependency.artifactId!!</artifactId>
+            <version>!!insert.dependency.version!!</version>
+            <type>zip</type>
+        </dependency>
+    </dependencies>
+</project>
+```
+
+### Example
+
+As an example, consider adding a new module to the wknd project. All that is needed is a new pom in a subfolder looking like this:
+
+```
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.adobe.aem.guides</groupId>
+        <artifactId>aem-guides-wknd</artifactId>
+        <version>0.0.7-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <artifactId>wknd.analyse</artifactId>
+    <packaging>aem-analyse</packaging>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.adobe.aem</groupId>
+                <artifactId>aemanalyser-maven-plugin</artifactId>
+                <version>0.0.12</version>
+                <extensions>true</extensions>
+            </plugin>
+        </plugins>
+    </build>
+    <dependencies>
+        <dependency>
+            <groupId>com.adobe.aem.guides</groupId>
+            <artifactId>aem-guides-wknd.all</artifactId>
+            <version>0.0.7-SNAPSHOT</version>
             <type>zip</type>
         </dependency>
     </dependencies>
