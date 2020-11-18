@@ -34,7 +34,7 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         setParameter(this, "artifactIdOverride",
-            project.getGroupId() + ":" + project.getArtifactId() + ":" + project.getVersion());
+            project.getGroupId() + ":" + project.getArtifactId() + ":slingosgifeature:" + project.getVersion());
 
         // If the packaging is aem-analyse then this is a special analyser project which is not a
         // content package. Otherwise the analyser should run on the current project which should
