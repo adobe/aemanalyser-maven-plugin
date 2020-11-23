@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 
@@ -68,7 +69,10 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
         }
 
         Scan s = new Scan();
-        s.setIncludeClassifier("aggregated");
+        @SuppressWarnings("unchecked")
+        Set<String> aggregates =
+                (Set<String>) project.getContextValue(AggregateWithSDKMojo.class.getName() + "-aggregates");
+        aggregates.forEach(s::setIncludeClassifier);
 
         for (String task : includeTasks) {
             s.setIncludeTask(task);

@@ -12,21 +12,30 @@
 
 package com.adobe.aem.analyser.mojos;
 
+import org.apache.maven.project.MavenProject;
 import org.apache.sling.feature.maven.mojos.Scan;
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
 public class AnalyseMojoTest {
     @Test
     public void testExecute() throws Exception {
-        AnalyseMojo mojo = new AnalyseMojo();
+        MavenProject prj = Mockito.mock(MavenProject.class);
+        Mockito.when(prj.getContextValue(AggregateWithSDKMojo.class.getName() + "-aggregates"))
+            .thenReturn(new HashSet<>(Arrays.asList("agg1", "agg2")));
+
+        AnalyseMojo mojo = new TestAnalyseMojo(prj);
         mojo.unitTestMode = true;
         mojo.includeTasks = Collections.emptyList();
 
@@ -37,7 +46,7 @@ public class AnalyseMojoTest {
                 mojo, mojo.getClass(), "scans");
         assertEquals(1, scans.size());
         Scan scan = scans.get(0);
-        assertEquals(1, scan.getSelections().size());
+        assertEquals(2, scan.getSelections().size());
 
         Map<String,String> expected = new HashMap<>();
         expected.put("regions", "global,com.adobe.aem.deprecated");
@@ -51,12 +60,17 @@ public class AnalyseMojoTest {
 
         // Note getSelections() returns a private type...
         List<?> sels = scan.getSelections();
-        assertEquals("aggregated", getSelectionInstruction(sels, "CLASSIFIER"));
+        assertEquals(new HashSet<>(Arrays.asList("agg1", "agg2")),
+                getSelectionInstructions(sels, "CLASSIFIER"));
     }
 
     @Test
     public void testAddTaskConfig() throws Exception {
-        AnalyseMojo mojo = new AnalyseMojo();
+        MavenProject prj = Mockito.mock(MavenProject.class);
+        Mockito.when(prj.getContextValue(AggregateWithSDKMojo.class.getName() + "-aggregates"))
+            .thenReturn(Collections.singleton("aggregates"));
+
+        AnalyseMojo mojo = new TestAnalyseMojo(prj);
         mojo.unitTestMode = true;
         mojo.includeTasks = Collections.singletonList("mytask");
 
@@ -88,12 +102,19 @@ public class AnalyseMojoTest {
                 scan.getTaskConfiguration().get("api-regions-check-order").get("order"));
     }
 
-    private String getSelectionInstruction(List<?> sels, String type) throws Exception {
+    private Set<String> getSelectionInstructions(List<?> sels, String type) throws Exception {
+        Set<String> l = new HashSet<>();
         for (Object s : sels) {
             if (type.equals(TestUtil.getField(s, "type").toString())) {
-                return TestUtil.getField(s, "instruction").toString();
+                l.add(TestUtil.getField(s, "instruction").toString());
             }
         }
-        return null;
+        return l;
+    }
+
+    private static class TestAnalyseMojo extends AnalyseMojo {
+        private TestAnalyseMojo(MavenProject prj) {
+            project = prj;
+        }
     }
 }

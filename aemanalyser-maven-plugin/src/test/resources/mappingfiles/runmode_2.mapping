@@ -1,0 +1,3 @@
+(default)=test1.all.json
+author=test1.author.json
+author.prod=test1.author-prod.json
