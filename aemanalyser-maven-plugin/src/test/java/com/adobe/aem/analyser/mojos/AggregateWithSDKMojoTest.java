@@ -14,6 +14,7 @@ package com.adobe.aem.analyser.mojos;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.apache.sling.feature.maven.mojos.Aggregate;
 import org.apache.sling.feature.maven.mojos.AggregateFeaturesMojo;
@@ -416,6 +417,43 @@ public class AggregateWithSDKMojoTest {
 
         mojo.pruneModels(allModels);
         assertEquals(expected, allModels);
+    }
+
+    @Test
+    public void testGetSDKFromDependencies() throws Exception {
+        AggregateWithSDKMojo mojo = new AggregateWithSDKMojo();
+
+        MavenProject prj = Mockito.mock(MavenProject.class);
+        MojoUtils.setParameter(mojo, "project", prj);
+
+        try {
+            mojo.getSDKFromDependencies();
+            fail("Should have thrown a MojoExecutionException");
+        } catch (MojoExecutionException e) {
+            // good
+            assertTrue(e.getMessage().contains("Unable to find SDK artifact"));
+        }
+    }
+
+    @Test
+    public void testGetSDKFromDependencies2() throws Exception {
+        AggregateWithSDKMojo mojo = new AggregateWithSDKMojo();
+
+        Dependency dep = new Dependency();
+        Dependency sdkDep = new Dependency();
+        sdkDep.setGroupId("com.adobe.aem");
+        sdkDep.setArtifactId("aem-sdk-api");
+        sdkDep.setVersion("1.3.5");
+
+        DependencyManagement depMgmt = new DependencyManagement();
+        depMgmt.addDependency(dep);
+        depMgmt.addDependency(sdkDep);
+
+        MavenProject prj = Mockito.mock(MavenProject.class);
+        Mockito.when(prj.getDependencyManagement()).thenReturn(depMgmt);
+
+        MojoUtils.setParameter(mojo, "project", prj);
+        assertEquals(sdkDep, mojo.getSDKFromDependencies());
     }
 
     private void copyTestResource(String resource, String file) throws IOException {

@@ -12,6 +12,7 @@
 package com.adobe.aem.analyser.mojos;
 
 import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -249,18 +250,27 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
         return sdkFM;
     }
 
-    private Dependency getSDKFromDependencies() throws MojoExecutionException {
-        for (Dependency d : project.getDependencies()) {
-            if (SDK_GROUP_ID.equals(d.getGroupId()) &&
-                    SDK_ARTIFACT_ID.equals(d.getArtifactId())) {
-                return d;
+    Dependency getSDKFromDependencies() throws MojoExecutionException {
+        List<Dependency> dependencies = project.getDependencies();
+        if (dependencies != null) {
+            for (Dependency d : dependencies) {
+                if (SDK_GROUP_ID.equals(d.getGroupId()) &&
+                        SDK_ARTIFACT_ID.equals(d.getArtifactId())) {
+                    return d;
+                }
             }
         }
 
-        for (Dependency d : project.getDependencyManagement().getDependencies()) {
-            if (SDK_GROUP_ID.equals(d.getGroupId()) &&
-                    SDK_ARTIFACT_ID.equals(d.getArtifactId())) {
-                return d;
+        DependencyManagement depMgmt = project.getDependencyManagement();
+        if (depMgmt != null) {
+            List<Dependency> deps = depMgmt.getDependencies();
+            if (deps != null) {
+                for (Dependency d : deps) {
+                    if (SDK_GROUP_ID.equals(d.getGroupId()) &&
+                            SDK_ARTIFACT_ID.equals(d.getArtifactId())) {
+                        return d;
+                    }
+                }
             }
         }
 
