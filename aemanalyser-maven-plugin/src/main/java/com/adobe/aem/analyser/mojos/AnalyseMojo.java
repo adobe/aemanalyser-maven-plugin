@@ -12,6 +12,10 @@
 
 package com.adobe.aem.analyser.mojos;
 
+import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
+import org.apache.maven.artifact.repository.MavenArtifactRepository;
+import org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -20,6 +24,8 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.sling.feature.maven.mojos.AnalyseFeaturesMojo;
 import org.apache.sling.feature.maven.mojos.Scan;
 
+import java.io.File;
+import java.net.MalformedURLException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +56,17 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        try {
+            List<ArtifactRepository> repos = project.getRemoteArtifactRepositories();
+            File conversionLocalRepo = MojoUtils.getConversionOutputDir(project);
+            ArtifactRepository ar = new MavenArtifactRepository("cp2fm-generated",
+                    conversionLocalRepo.toURI().toURL().toString(), new DefaultRepositoryLayout(),
+                    new ArtifactRepositoryPolicy(), new ArtifactRepositoryPolicy());
+            repos.add(ar);
+        } catch (MalformedURLException e) {
+            throw new MojoExecutionException("Problem configuring output of conversion as local repository", e);
+        }
+
         if (taskConfiguration == null) {
             taskConfiguration = new HashMap<>();
         }

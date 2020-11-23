@@ -12,11 +12,19 @@
 
 package com.adobe.aem.analyser.mojos;
 
+import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.artifact.repository.MavenArtifactRepository;
+import org.apache.maven.model.Build;
 import org.apache.maven.project.MavenProject;
 import org.apache.sling.feature.maven.mojos.Scan;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,9 +37,23 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 
 public class AnalyseMojoTest {
+    private Path tempDir;
+
+    @Before
+    public void setUp() throws IOException {
+        tempDir = Files.createTempDirectory(getClass().getSimpleName());
+    }
+
     @Test
     public void testExecute() throws Exception {
+        Build build = Mockito.mock(Build.class);
+        Mockito.when(build.getDirectory()).thenReturn(tempDir.toString());
+
+        List<ArtifactRepository> repos = new ArrayList<>();
+
         MavenProject prj = Mockito.mock(MavenProject.class);
+        Mockito.when(prj.getBuild()).thenReturn(build);
+        Mockito.when(prj.getRemoteArtifactRepositories()).thenReturn(repos);
         Mockito.when(prj.getContextValue(AggregateWithSDKMojo.class.getName() + "-aggregates"))
             .thenReturn(new HashSet<>(Arrays.asList("agg1", "agg2")));
 
@@ -39,7 +61,11 @@ public class AnalyseMojoTest {
         mojo.unitTestMode = true;
         mojo.includeTasks = Collections.emptyList();
 
+        assertEquals("Precondition", 0, repos.size());
         mojo.execute();
+        assertEquals(1, repos.size());
+        MavenArtifactRepository repo = (MavenArtifactRepository) repos.iterator().next();
+        assertEquals(tempDir.toFile().toURI().toURL() + "cp-conversion", repo.getUrl());
 
         @SuppressWarnings("unchecked")
         List<Scan> scans = (List<Scan>) TestUtil.getField(
@@ -67,6 +93,7 @@ public class AnalyseMojoTest {
     @Test
     public void testAddTaskConfig() throws Exception {
         MavenProject prj = Mockito.mock(MavenProject.class);
+        Mockito.when(prj.getBuild()).thenReturn(Mockito.mock(Build.class));
         Mockito.when(prj.getContextValue(AggregateWithSDKMojo.class.getName() + "-aggregates"))
             .thenReturn(Collections.singleton("aggregates"));
 
