@@ -17,9 +17,15 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.builder.ArtifactProvider;
+import org.apache.sling.feature.io.artifacts.ArtifactManager;
+import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
 import org.apache.sling.feature.maven.mojos.AnalyseFeaturesMojo;
 import org.apache.sling.feature.maven.mojos.Scan;
 
+import java.io.IOException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +38,8 @@ import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 @Mojo(name = "analyse", defaultPhase = LifecyclePhase.TEST)
 public class AnalyseMojo extends AnalyseFeaturesMojo {
     boolean unitTestMode = false;
+
+    ArtifactManager localArtifactManager;
 
     @Parameter(defaultValue =
         "requirements-capabilities,"
@@ -49,7 +57,33 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
     Map<String, Properties> taskConfiguration;
 
     @Override
+    protected ArtifactProvider getArtifactProvider() {
+        ArtifactProvider ap = super.getArtifactProvider();
+
+        return new ArtifactProvider() {
+            @Override
+            public URL provide(ArtifactId id) {
+                if (localArtifactManager != null) {
+                    URL url = localArtifactManager.provide(id);
+                    if (url != null)
+                        return url;
+                }
+
+                return ap.provide(id);
+            }
+        };
+    }
+
+    @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        try {
+            ArtifactManagerConfig amcfg = new ArtifactManagerConfig();
+            amcfg.setRepositoryUrls(new String[] { MojoUtils.getConversionOutputDir(project).toURI().toURL().toString() });
+            localArtifactManager = ArtifactManager.getArtifactManager(amcfg);
+        } catch (IOException e) {
+            throw new MojoExecutionException("Problem configuring Artifact Provider for :" + MojoUtils.getConversionOutputDir(project));
+        }
+
         if (taskConfiguration == null) {
             taskConfiguration = new HashMap<>();
         }
