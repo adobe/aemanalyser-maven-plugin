@@ -87,6 +87,7 @@ public class AnalyseMojoTest {
         Map<String,String> expected = new HashMap<>();
         expected.put("regions", "global,com.adobe.aem.deprecated");
         expected.put("warningPackages", "*");
+        expected.put("definingFeatures", "com.adobe.aem:aem-sdk-api:slingosgifeature:*");
         assertEquals("Default task configuration not as expected",
                 expected, scan.getTaskConfiguration().get("api-regions-crossfeature-dups"));
 

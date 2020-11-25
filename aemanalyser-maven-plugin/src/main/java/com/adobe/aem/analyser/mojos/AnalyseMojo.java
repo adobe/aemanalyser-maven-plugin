@@ -92,6 +92,7 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
         if (!taskConfiguration.containsKey("api-regions-crossfeature-dups")) {
             Properties cfd = new Properties();
             cfd.setProperty("regions", "global,com.adobe.aem.deprecated");
+            cfd.setProperty("definingFeatures", "com.adobe.aem:aem-sdk-api:slingosgifeature:*");
             cfd.setProperty("warningPackages", "*");
             taskConfiguration.put("api-regions-crossfeature-dups", cfd);
         }
