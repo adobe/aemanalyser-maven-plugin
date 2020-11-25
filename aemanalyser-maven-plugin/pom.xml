@@ -112,7 +112,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>slingfeature-maven-plugin</artifactId>
-      <version>1.4.12</version>
+      <version>1.4.17-SNAPSHOT</version>
     </dependency>
     
     <!-- Test -->
