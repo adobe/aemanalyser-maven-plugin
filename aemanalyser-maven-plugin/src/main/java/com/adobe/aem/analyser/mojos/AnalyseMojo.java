@@ -43,7 +43,9 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
 
     @Parameter(defaultValue =
         "requirements-capabilities,"
+        + "bundle-content,"
         + "bundle-resources,"
+        + "bundle-nativecode,"
         + "api-regions,"
         + "api-regions-check-order,"
         + "api-regions-dependencies,"
