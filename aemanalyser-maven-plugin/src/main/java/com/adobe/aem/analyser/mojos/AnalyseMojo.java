@@ -48,8 +48,6 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
         + "bundle-nativecode,"
         + "api-regions,"
         + "api-regions-check-order,"
-        + "api-regions-dependencies,"
-        + "api-regions-duplicates,"
         + "api-regions-crossfeature-dups,"
         + "api-regions-exportsimports",
         property = "includeTasks")
