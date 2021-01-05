@@ -128,7 +128,7 @@ public class AggregateWithSDKMojoTest {
                     "org.apache.sling:org.apache.sling.models.impl:FIRST",
                     "*:core.wcm.components.content:zip:*:FIRST",
                     "*:core.wcm.components.extensions.amp.content:zip:*:FIRST",
-                    "*:*:ALL"),
+                    "*:*:jar:*:ALL"),
                     agg.artifactsOverrides);
             assertEquals(Collections.singletonList("*=MERGE_LATEST"), agg.configurationOverrides);
 
