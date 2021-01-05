@@ -212,7 +212,7 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
                     "org.apache.sling:org.apache.sling.models.impl:FIRST",
                     "*:core.wcm.components.content:zip:*:FIRST",
                     "*:core.wcm.components.extensions.amp.content:zip:*:FIRST",
-                    "*:*:ALL");
+                    "*:*:jar:*:ALL");
             a.configurationOverrides = Collections.singletonList("*=MERGE_LATEST");
 
             aggregates.add(a);
