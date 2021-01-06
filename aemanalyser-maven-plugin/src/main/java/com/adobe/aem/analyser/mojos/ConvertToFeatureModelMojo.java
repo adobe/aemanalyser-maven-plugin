@@ -70,7 +70,7 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
         List<ContentPackage> l = new ArrayList<>();
 
         for (Dependency d : project.getDependencies()) {
-            if ("zip".equals(d.getType())) {
+            if ("zip".equals(d.getType()) || "content-package".equals(d.getType())) {
                 // If a dependency is of type 'zip' it is assumed to be a content package. TODO find a better way...
                 ContentPackage cp = new ContentPackage();
                 cp.setGroupId(d.getGroupId());
