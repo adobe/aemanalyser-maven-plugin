@@ -61,6 +61,10 @@ public class ConvertToFeatureModelMojoTest {
         dep2.setType("pom");
         dep2.setGroupId("dg2");
         dep2.setArtifactId("da2");
+        Dependency dep3 = new Dependency();
+        dep2.setType("content-package");
+        dep2.setGroupId("dg3");
+        dep2.setArtifactId("da3");
 
         Build build = new Build();
         build.setDirectory(tempDir.toString());
@@ -87,10 +91,13 @@ public class ConvertToFeatureModelMojoTest {
         @SuppressWarnings("unchecked")
         List<ContentPackage> cpl = (List<ContentPackage>) TestUtil.getField(
                 mojo, "contentPackages");
-        assertEquals(1, cpl.size());
+        assertEquals(2, cpl.size());
         ContentPackage cp = cpl.get(0);
         assertEquals("dg", TestUtil.getField(cp, "groupId"));
         assertEquals("da", TestUtil.getField(cp, "artifactId"));
+        cp = cpl.get(1);
+        assertEquals("dg3", TestUtil.getField(cp, "groupId"));
+        assertEquals("da3", TestUtil.getField(cp, "artifactId"));
     }
 
     @Test
