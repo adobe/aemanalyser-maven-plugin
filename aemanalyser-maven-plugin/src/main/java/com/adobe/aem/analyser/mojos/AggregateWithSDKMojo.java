@@ -47,6 +47,7 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
 
     boolean unitTestMode = false;
     boolean unitTestEarlyExit = false;
+    boolean unitTestEarlyExit2 = false;
 
     // Shadow this field for maven as we don't need to provide it from the pom.xml
     @Parameter(required = false)
@@ -63,6 +64,7 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
+        // Produce the user aggregates
         Properties runmodes = getRunmodeMappings();
 
         Map<String, Aggregate> userAggregates = getUserAggregates(runmodes);
@@ -77,6 +79,19 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
             super.execute();
 
         if (unitTestEarlyExit)
+            return;
+
+        // Produce the product aggregates
+        Set<Aggregate> productAggregates = getProductAggregates();
+        setParameter(this, "generatedFeatures", null);
+        setParameter(this, AggregateFeaturesMojo.class,
+                "aggregates", new ArrayList<>(productAggregates));
+
+        // Generate the aggregate of the product with addons first
+        if (!unitTestMode)
+            super.execute();
+
+        if (unitTestEarlyExit2)
             return;
 
         // Aggregate with the AEM SDK API feature
@@ -199,11 +214,12 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
     private List<Aggregate> getFinalAggregates(Set<String> userAggregateNames) throws MojoExecutionException {
         List<Aggregate> aggregates = new ArrayList<>();
 
-        boolean first = true;
         for (String name : userAggregateNames) {
+            boolean isAuthor = name.startsWith("author");
+
             Aggregate a = new Aggregate();
             a.classifier = "aggregated-" + name;
-            a.setIncludeArtifact(getSDKFeatureModel(name.startsWith("author"), first));
+            a.setIncludeClassifier(getProductAggregateName(isAuthor));
             a.setIncludeClassifier("user-aggregated-" + name);
             a.markAsComplete = false; // The feature may not be complete as some packages could
             a.artifactsOverrides = Arrays.asList(
@@ -216,8 +232,6 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
             a.configurationOverrides = Collections.singletonList("*=MERGE_LATEST");
 
             aggregates.add(a);
-
-            first = false;
         }
 
         project.setContextValue(getClass().getName() + "-aggregates",
@@ -226,10 +240,37 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
         return aggregates;
     }
 
-    private Dependency getSDKFeatureModel(boolean author, boolean log) throws MojoExecutionException {
+    private Set<Aggregate> getProductAggregates() throws MojoExecutionException {
+        Set<Aggregate> aggregates = new HashSet<>();
+
+        for (boolean isAuthor : new boolean [] {true, false}) {
+            String aggClassifier = getProductAggregateName(isAuthor);
+
+            Aggregate a = new Aggregate();
+            a.classifier = aggClassifier;
+            a.setIncludeArtifact(getSDKFeature(isAuthor, isAuthor));
+
+            Dependency formsAddon = getFormsAddonSDKFeature(isAuthor);
+            if (formsAddon != null) {
+                a.setIncludeArtifact(formsAddon);
+            }
+            a.artifactsOverrides = Collections.singletonList("*:*:HIGHEST");
+            a.configurationOverrides = Collections.singletonList("*=MERGE_LATEST");
+
+            aggregates.add(a);
+        }
+
+        return aggregates;
+    }
+
+    private String getProductAggregateName(boolean author) {
+        return "product-aggregated-" + (author ? "author" : "publish");
+    }
+
+    private Dependency getSDKFeature(boolean author, boolean log) throws MojoExecutionException {
         Dependency sdkDep;
         if (sdkVersion == null) {
-            sdkDep = getSDKFromDependencies();
+            sdkDep = getSDKFromDependencies(SDK_GROUP_ID, SDK_ARTIFACT_ID, true);
         } else {
             sdkDep = new Dependency();
             sdkDep.setGroupId(sdkGroupId);
@@ -250,12 +291,30 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
         return sdkFM;
     }
 
-    Dependency getSDKFromDependencies() throws MojoExecutionException {
+    private Dependency getFormsAddonSDKFeature(boolean log) throws MojoExecutionException {
+        Dependency formsAddon = getSDKFromDependencies("com.adobe.aem", "aem-forms-sdk-api", false);
+        if (formsAddon != null) {
+            if (log)
+                getLog().info("Using Add-On for analysis: " + formsAddon);
+
+            Dependency formsSDKFM = new Dependency();
+            formsSDKFM.setGroupId(formsAddon.getGroupId());
+            formsSDKFM.setArtifactId(formsAddon.getArtifactId());
+            formsSDKFM.setVersion(formsAddon.getVersion());
+            formsSDKFM.setClassifier("aem-forms-sdk");
+            formsSDKFM.setType("slingosgifeature");
+
+            return formsSDKFM;
+        }
+        return null;
+    }
+
+    Dependency getSDKFromDependencies(String groupId, String artifactId, boolean failOnError) throws MojoExecutionException {
         List<Dependency> dependencies = project.getDependencies();
         if (dependencies != null) {
             for (Dependency d : dependencies) {
-                if (SDK_GROUP_ID.equals(d.getGroupId()) &&
-                        SDK_ARTIFACT_ID.equals(d.getArtifactId())) {
+                if (groupId.equals(d.getGroupId()) &&
+                        artifactId.equals(d.getArtifactId())) {
                     return d;
                 }
             }
@@ -266,15 +325,19 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
             List<Dependency> deps = depMgmt.getDependencies();
             if (deps != null) {
                 for (Dependency d : deps) {
-                    if (SDK_GROUP_ID.equals(d.getGroupId()) &&
-                            SDK_ARTIFACT_ID.equals(d.getArtifactId())) {
+                    if (groupId.equals(d.getGroupId()) &&
+                            artifactId.equals(d.getArtifactId())) {
                         return d;
                     }
                 }
             }
         }
 
-        throw new MojoExecutionException(
-                "Unable to find SDK artifact in dependencies or dependency management");
+        if (failOnError) {
+            throw new MojoExecutionException(
+                    "Unable to find SDK artifact in dependencies or dependency management: "
+                    + groupId + ":" + artifactId);
+        }
+        return null;
     }
 }
