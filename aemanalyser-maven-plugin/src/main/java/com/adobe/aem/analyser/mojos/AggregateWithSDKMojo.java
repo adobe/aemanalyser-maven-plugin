@@ -45,6 +45,9 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
     private static final String SDK_FEATUREMODEL_PUBLISH_CLASSIFIER = "aem-publish-sdk";
     private static final String FEATUREMODEL_TYPE = "slingosgifeature";
 
+    private static final List<Addon> DEFAULT_ADDONS =
+            Arrays.asList(new Addon("com.adobe.aem", "aem-forms-sdk-api", "aem-forms-sdk"));
+
     boolean unitTestMode = false;
     boolean unitTestEarlyExit = false;
     boolean unitTestEarlyExit2 = false;
@@ -62,8 +65,14 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
     @Parameter(required = false, property = "sdkVersion")
     String sdkVersion;
 
+    @Parameter
+    List<Addon> addons;
+
     @Override
     public void execute() throws MojoExecutionException {
+        if (addons == null)
+            addons = DEFAULT_ADDONS;
+
         // Produce the user aggregates
         Properties runmodes = getRunmodeMappings();
 
@@ -250,10 +259,11 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
             a.classifier = aggClassifier;
             a.setIncludeArtifact(getSDKFeature(isAuthor, isAuthor));
 
-            Dependency formsAddon = getFormsAddonSDKFeature(isAuthor);
-            if (formsAddon != null) {
-                a.setIncludeArtifact(formsAddon);
+            List<Dependency> addonDeps = discoverAddons(isAuthor);
+            for (Dependency addonDep : addonDeps) {
+                a.setIncludeArtifact(addonDep);
             }
+
             a.artifactsOverrides = Collections.singletonList("*:*:HIGHEST");
             a.configurationOverrides = Collections.singletonList("*=MERGE_LATEST");
 
@@ -291,22 +301,30 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
         return sdkFM;
     }
 
-    private Dependency getFormsAddonSDKFeature(boolean log) throws MojoExecutionException {
-        Dependency formsAddon = getSDKFromDependencies("com.adobe.aem", "aem-forms-sdk-api", false);
-        if (formsAddon != null) {
+    private List<Dependency> discoverAddons(boolean log) throws MojoExecutionException {
+        if (addons == null)
+            return Collections.emptyList();
+
+        List<Dependency> addonFMs = new ArrayList<>();
+        for (Addon addon : addons) {
+            Dependency addonSDK = getSDKFromDependencies(addon.groupId, addon.artifactId, false);
+
+            if (addonSDK == null)
+                continue;
+
             if (log)
-                getLog().info("Using Add-On for analysis: " + formsAddon);
+                getLog().info("Using Add-On for analysis: " + addonSDK);
 
-            Dependency formsSDKFM = new Dependency();
-            formsSDKFM.setGroupId(formsAddon.getGroupId());
-            formsSDKFM.setArtifactId(formsAddon.getArtifactId());
-            formsSDKFM.setVersion(formsAddon.getVersion());
-            formsSDKFM.setClassifier("aem-forms-sdk");
-            formsSDKFM.setType("slingosgifeature");
-
-            return formsSDKFM;
+            Dependency addonFM = new Dependency();
+            addonFM.setGroupId(addonSDK.getGroupId());
+            addonFM.setArtifactId(addonSDK.getArtifactId());
+            addonFM.setVersion(addonSDK.getVersion());
+            addonFM.setClassifier(addon.classifier);
+            addonFM.setType("slingosgifeature");
+            addonFMs.add(addonFM);
         }
-        return null;
+
+        return addonFMs;
     }
 
     Dependency getSDKFromDependencies(String groupId, String artifactId, boolean failOnError) throws MojoExecutionException {
@@ -339,5 +357,19 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
                     + groupId + ":" + artifactId);
         }
         return null;
+    }
+
+    public static class Addon {
+        String groupId;
+        String artifactId;
+        String classifier;
+
+        public Addon() {}
+
+        Addon(String gid, String aid, String clsf) {
+            groupId = gid;
+            artifactId = aid;
+            classifier = clsf;
+        }
     }
 }
