@@ -20,6 +20,7 @@ import org.apache.sling.cpconverter.maven.mojos.ContentPackage;
 import org.apache.sling.cpconverter.maven.mojos.ConvertCPMojo;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -48,6 +49,9 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
         setParameter(this, "fmOutput", MojoUtils.getGeneratedFeaturesDir(project));
 
         setParameter(this, "exportToApiRegion", "global");
+        setParameter(this, "filterPatterns", Arrays.asList(
+                ".*/(apps|libs)/(.*)/install\\.(((author|publish)\\.(dev|stage|prod))|((dev|stage|prod)\\.(author|publish))|(dev|stage|prod))/(.*)(?<=\\.(zip|jar)$)"
+        ));
 
         if (unitTestMode)
             return;
