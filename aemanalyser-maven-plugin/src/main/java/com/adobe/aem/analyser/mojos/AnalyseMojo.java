@@ -50,7 +50,8 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
         + "api-regions-check-order,"
         + "api-regions-crossfeature-dups,"
         + "api-regions-exportsimports,"
-        + "repoinit",
+        + "repoinit,"
+        + "configuration-api",
         property = "includeTasks")
     List<String> includeTasks;
 
