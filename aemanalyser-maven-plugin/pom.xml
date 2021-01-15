@@ -102,17 +102,17 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>sling-feature-converter-maven-plugin</artifactId>
-      <version>1.0.10</version>
+      <version>1.0.12</version>
     </dependency>
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>slingfeature-maven-plugin</artifactId>
-      <version>1.4.18</version>
+      <version>1.4.22</version>
     </dependency>
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>org.apache.sling.feature.analyser</artifactId>
-      <version>1.3.16</version>
+      <version>1.3.18</version>
     </dependency>
     
     <!-- Test -->
