@@ -46,7 +46,9 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
     private static final String FEATUREMODEL_TYPE = "slingosgifeature";
 
     private static final List<Addon> DEFAULT_ADDONS =
-            Arrays.asList(new Addon("com.adobe.aem", "aem-forms-sdk-api", "aem-forms-sdk"));
+            Arrays.asList(
+                    new Addon("com.adobe.aem", "aem-forms-sdk-api", "aem-forms-sdk"),
+                    new Addon("com.adobe.aem", "aem-cif-sdk-api", "aem-cif-sdk"));
 
     boolean unitTestMode = false;
     boolean unitTestEarlyExit = false;

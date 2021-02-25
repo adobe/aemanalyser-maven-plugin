@@ -421,10 +421,14 @@ public class AggregateWithSDKMojoTest {
         mojo.unitTestMode = true;
         mojo.unitTestEarlyExit2 = true;
 
-        Dependency addon = new Dependency();
-        addon.setGroupId("com.adobe.aem");
-        addon.setArtifactId("aem-forms-sdk-api");
-        addon.setVersion("8.7.6.test");
+        Dependency formsAddon = new Dependency();
+        formsAddon.setGroupId("com.adobe.aem");
+        formsAddon.setArtifactId("aem-forms-sdk-api");
+        formsAddon.setVersion("8.7.6.test");
+        Dependency cifAddon = new Dependency();
+        cifAddon.setGroupId("com.adobe.aem");
+        cifAddon.setArtifactId("aem-cif-sdk-api");
+        cifAddon.setVersion("2021.02.24.test");
         Dependency dep1 = new Dependency();
         dep1.setGroupId("lala");
         dep1.setArtifactId("hoho");
@@ -443,7 +447,7 @@ public class AggregateWithSDKMojoTest {
             .thenReturn(tempDir + "/target");
         MavenProject prj = Mockito.mock(MavenProject.class);
         Mockito.when(prj.getDependencies())
-            .thenReturn(Arrays.asList(addon, dep1, sdk, dep2));
+            .thenReturn(Arrays.asList(formsAddon, cifAddon, dep1, sdk, dep2));
         Mockito.when(prj.getBuild())
             .thenReturn(build);
         MojoUtils.setParameter(mojo, "project", prj);
@@ -464,14 +468,18 @@ public class AggregateWithSDKMojoTest {
         // Note getSelections() returns a private type...
         List<?> sels = agg.getSelections();
         Set<String> artSelInstr = getSelectionInstructions(sels, "ARTIFACT");
-        assertEquals(2, artSelInstr.size());
+        assertEquals(3, artSelInstr.size());
 
         boolean foundSDK = false;
-        boolean foundAddon = false;
+        boolean foundFormsAddon = false;
+        boolean foundCifAddon = false;
         for (String id : artSelInstr) {
             switch (id) {
             case "com.adobe.aem:aem-forms-sdk-api:slingosgifeature:aem-forms-sdk:8.7.6.test":
-                foundAddon = true;
+                foundFormsAddon = true;
+                break;
+            case "com.adobe.aem:aem-cif-sdk-api:slingosgifeature:aem-cif-sdk:2021.02.24.test":
+                foundCifAddon = true;
                 break;
             case "com.adobe.aem:aem-sdk-api:slingosgifeature:aem-author-sdk:9.9.1":
             case "com.adobe.aem:aem-sdk-api:slingosgifeature:aem-publish-sdk:9.9.1":
@@ -483,7 +491,8 @@ public class AggregateWithSDKMojoTest {
             }
         }
         assertTrue(foundSDK);
-        assertTrue(foundAddon);
+        assertTrue(foundFormsAddon);
+        assertTrue(foundCifAddon);
     }
 
     @Test
