@@ -12,3 +12,18 @@ buildNumber.properties
 .classpath
 .project
 .settings/
+
+# Ignore IDE files
+.idea/
+*.iml
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.loadpath
+.recommenders
+.vscode
