@@ -39,7 +39,7 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (MojoUtils.skipRun(skipEnvVarName)) {
-            // Skip the run of this mojo
+            getLog().info("Skipping AEM analyser plugin as variable " + skipEnvVarName + " is set.");
             return;
         }
 
