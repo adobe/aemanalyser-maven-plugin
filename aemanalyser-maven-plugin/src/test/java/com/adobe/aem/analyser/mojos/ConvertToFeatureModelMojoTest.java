@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 
 import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
@@ -62,9 +63,9 @@ public class ConvertToFeatureModelMojoTest {
         dep2.setGroupId("dg2");
         dep2.setArtifactId("da2");
         Dependency dep3 = new Dependency();
-        dep2.setType("content-package");
-        dep2.setGroupId("dg3");
-        dep2.setArtifactId("da3");
+        dep3.setType("content-package");
+        dep3.setGroupId("dg3");
+        dep3.setArtifactId("da3");
 
         Build build = new Build();
         build.setDirectory(tempDir.toString());
@@ -74,7 +75,7 @@ public class ConvertToFeatureModelMojoTest {
         prj.setArtifactId("a");
         prj.setVersion("7");
         prj.setBuild(build);
-        prj.setDependencies(Arrays.asList(dep, dep2));
+        prj.setDependencies(Arrays.asList(dep, dep2, dep3));
         prj.setPackaging(ConvertToFeatureModelMojo.AEM_ANALYSE_PACKAGING);
 
         setParameter(mojo, "project", prj);
@@ -133,5 +134,42 @@ public class ConvertToFeatureModelMojoTest {
         ContentPackage cp = cpl.get(0);
         assertEquals("g", TestUtil.getField(cp, "groupId"));
         assertEquals("a", TestUtil.getField(cp, "artifactId"));
+    }
+
+    @Test
+    public void testSkipBasedOnEnvVar() throws Exception {
+        HashMap<String,String> storedEnv = new HashMap<>(MojoUtils.ENV_VARS);
+        try {
+            MojoUtils.ENV_VARS.put(MojoUtils.DEFAULT_SKIP_ENV_VAR, "blah");
+
+            ConvertToFeatureModelMojo mojo = new ConvertToFeatureModelMojo();
+            mojo.unitTestMode = true;
+
+            mojo.execute();
+
+            // Should skip, and as such not throw an exception. If it didn't skip it would throw an exception because the project is not set
+        } finally {
+            MojoUtils.ENV_VARS.clear();
+            MojoUtils.ENV_VARS.putAll(storedEnv);
+        }
+    }
+
+    @Test
+    public void testSkipBasedOnEnvVar2() throws Exception {
+        HashMap<String,String> storedEnv = new HashMap<>(MojoUtils.ENV_VARS);
+        try {
+            MojoUtils.ENV_VARS.put("MYVAR", "some value");
+
+            ConvertToFeatureModelMojo mojo = new ConvertToFeatureModelMojo();
+            mojo.skipEnvVarName = "MYVAR";
+            mojo.unitTestMode = true;
+
+            mojo.execute();
+
+            // Should skip, and as such not throw an exception. If it didn't skip it would throw an exception because the project is not set
+        } finally {
+            MojoUtils.ENV_VARS.clear();
+            MojoUtils.ENV_VARS.putAll(storedEnv);
+        }
     }
 }

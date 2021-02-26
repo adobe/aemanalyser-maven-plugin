@@ -16,8 +16,15 @@ import org.apache.maven.project.MavenProject;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MojoUtils {
+    static final String PROPERTY_SKIP_VAR = "skipVar";
+    static final String DEFAULT_SKIP_ENV_VAR = "CM_PROGRAM_ID";
+
+    static final Map<String, String> ENV_VARS = new HashMap<>(System.getenv()); // wrap in a map to support unit testing
+
     private MojoUtils() {}
 
     static void setParameter(Object mojo, String field, Object value)
@@ -53,5 +60,13 @@ public class MojoUtils {
 
     static File getGeneratedFeaturesDir(MavenProject project) {
         return new File(getConversionOutputDir(project), "fm.out");
+    }
+
+    static boolean skipRun(String skipEnvVarName) {
+        if (skipEnvVarName == null)
+            skipEnvVarName = DEFAULT_SKIP_ENV_VAR;
+
+        String skipVar = ENV_VARS.get(skipEnvVarName);
+        return skipVar != null && skipVar.length() > 0;
     }
 }

@@ -70,8 +70,16 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
     @Parameter
     List<Addon> addons;
 
+    @Parameter(defaultValue = MojoUtils.DEFAULT_SKIP_ENV_VAR, property = MojoUtils.PROPERTY_SKIP_VAR)
+    String skipEnvVarName;
+
     @Override
     public void execute() throws MojoExecutionException {
+        if (MojoUtils.skipRun(skipEnvVarName)) {
+            // Skip the run of this mojo
+            return;
+        }
+
         if (addons == null)
             addons = DEFAULT_ADDONS;
 

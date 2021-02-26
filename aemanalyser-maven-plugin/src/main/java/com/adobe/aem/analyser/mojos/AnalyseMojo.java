@@ -58,6 +58,9 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
     @Parameter
     Map<String, Properties> taskConfiguration;
 
+    @Parameter(defaultValue = MojoUtils.DEFAULT_SKIP_ENV_VAR, property = MojoUtils.PROPERTY_SKIP_VAR)
+    String skipEnvVarName;
+
     @Override
     protected ArtifactProvider getArtifactProvider() {
         ArtifactProvider ap = super.getArtifactProvider();
@@ -78,6 +81,11 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        if (MojoUtils.skipRun(skipEnvVarName)) {
+            // Skip the run of this mojo
+            return;
+        }
+
         try {
             ArtifactManagerConfig amcfg = new ArtifactManagerConfig();
             amcfg.setRepositoryUrls(new String[] { MojoUtils.getConversionOutputDir(project).toURI().toURL().toString() });
