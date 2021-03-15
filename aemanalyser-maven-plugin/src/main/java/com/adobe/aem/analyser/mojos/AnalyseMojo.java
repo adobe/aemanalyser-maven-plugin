@@ -50,7 +50,7 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
         + "api-regions-check-order,"
         + "api-regions-crossfeature-dups,"
         + "api-regions-exportsimports,"
-        + "repoinit,"
+//        + "repoinit," disable until SLING-10215 is fixed
         + "configuration-api",
         property = "includeTasks")
     List<String> includeTasks;
