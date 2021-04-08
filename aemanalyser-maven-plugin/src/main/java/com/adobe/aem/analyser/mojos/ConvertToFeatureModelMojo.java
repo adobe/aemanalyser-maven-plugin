@@ -58,8 +58,9 @@ public class ConvertToFeatureModelMojo extends ConvertCPMojo {
         setParameter(this, "fmOutput", MojoUtils.getGeneratedFeaturesDir(project));
 
         setParameter(this, "exportToApiRegion", "global");
+        // sub packages should only be allowed for either author or publish but not for any other run mode
         setParameter(this, "filterPatterns", Arrays.asList(
-                ".*/(apps|libs)/(.*)/install\\.(((author|publish)\\.(dev|stage|prod))|((dev|stage|prod)\\.(author|publish))|(dev|stage|prod))/(.*)(?<=\\.(zip|jar)$)"
+                ".*/(apps|libs)/(.*)/install\\.(((author|publish)\\.(dev|stage|prod))|((dev|stage|prod)\\.(author|publish))|(dev|stage|prod))/(.*)(?<=\\.zip$)"
         ));
 
         if (unitTestMode)
