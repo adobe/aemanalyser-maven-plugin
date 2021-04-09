@@ -12,31 +12,52 @@
 
 package com.adobe.aem.analyser.mojos;
 
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
+import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.shared.utils.logging.MessageUtils;
 import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.Feature;
+import org.apache.sling.feature.analyser.Analyser;
+import org.apache.sling.feature.analyser.AnalyserResult;
+import org.apache.sling.feature.analyser.AnalyserResult.ArtifactReport;
+import org.apache.sling.feature.analyser.AnalyserResult.ExtensionReport;
+import org.apache.sling.feature.analyser.AnalyserResult.GlobalReport;
+import org.apache.sling.feature.analyser.AnalyserResult.Report;
 import org.apache.sling.feature.builder.ArtifactProvider;
+import org.apache.sling.feature.builder.FeatureProvider;
 import org.apache.sling.feature.io.artifacts.ArtifactManager;
 import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
-import org.apache.sling.feature.maven.mojos.AnalyseFeaturesMojo;
-import org.apache.sling.feature.maven.mojos.Scan;
+import org.apache.sling.feature.maven.ProjectHelper;
+import org.apache.sling.feature.maven.mojos.AbstractIncludingFeatureMojo;
+import org.apache.sling.feature.maven.mojos.FeatureSelectionConfig;
+import org.apache.sling.feature.scanner.Scanner;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
-import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Mojo(name = "analyse", defaultPhase = LifecyclePhase.TEST)
-public class AnalyseMojo extends AnalyseFeaturesMojo {
+public class AnalyseMojo extends AbstractIncludingFeatureMojo {
     boolean unitTestMode = false;
 
     ArtifactManager localArtifactManager;
@@ -61,24 +82,121 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
     @Parameter(defaultValue = MojoUtils.DEFAULT_SKIP_ENV_VAR, property = MojoUtils.PROPERTY_SKIP_VAR)
     String skipEnvVarName;
 
-    @Override
-    protected ArtifactProvider getArtifactProvider() {
-        ArtifactProvider ap = super.getArtifactProvider();
+    @Parameter(defaultValue = "true", property = "failon.analyser.errors")
+    private boolean failOnAnalyserErrors;
 
+    @Component
+    ArtifactHandlerManager artifactHandlerManager;
+
+    @Component
+    ArtifactResolver artifactResolver;
+
+    protected ArtifactProvider getArtifactProvider() {
         return new ArtifactProvider() {
+
             @Override
-            public URL provide(ArtifactId id) {
+            public URL provide(final ArtifactId id) {
                 if (localArtifactManager != null) {
                     URL url = localArtifactManager.provide(id);
                     if (url != null)
                         return url;
                 }
-
-                return ap.provide(id);
+                try {
+                    return ProjectHelper.getOrResolveArtifact(project, mavenSession, artifactHandlerManager, artifactResolver, id).getFile().toURI().toURL();
+                } catch (final MalformedURLException e) {
+                    getLog().debug("Malformed url " + e.getMessage(), e);
+                    // ignore
+                    return null;
+                }
             }
         };
     }
 
+    protected class BaseFeatureProvider implements FeatureProvider {
+        @Override
+        public Feature provide(ArtifactId id) {
+            // Check for the feature in the local context
+            for (final Feature feat : ProjectHelper.getAssembledFeatures(project).values()) {
+                if (feat.getId().equals(id)) {
+                    return feat;
+                }
+            }
+
+            if (ProjectHelper.isLocalProjectArtifact(project, id)) {
+                throw new RuntimeException("Unable to resolve local artifact " + id.toMvnId());
+            }
+
+            // Finally, look the feature up via Maven's dependency mechanism
+            return ProjectHelper.getOrResolveFeature(project, mavenSession, artifactHandlerManager,
+                artifactResolver, id);
+        }
+    }
+
+    protected FeatureProvider getFeatureProvider() {
+        return new BaseFeatureProvider();
+    }
+
+    private static final String FILE_STORAGE_CONFIG_KEY = "fileStorage";
+
+    private static final String ANALYSER_CONFIG_WILDCARD = "all";
+
+    void addTaskConfigurationDefaults(Map<String, Map<String, String>> taskConfiguration) {
+        String featureModelFileStorage = project.getBuild().getDirectory() + "/sling-slingfeature-maven-plugin-fmtmp";
+        Map<String, String> wildCardCfg = taskConfiguration.get(ANALYSER_CONFIG_WILDCARD);
+        if (wildCardCfg == null) {
+            wildCardCfg = new HashMap<String, String>();
+            taskConfiguration.put(ANALYSER_CONFIG_WILDCARD, wildCardCfg);
+        }
+        if (!wildCardCfg.containsKey(FILE_STORAGE_CONFIG_KEY)) {
+            new File(featureModelFileStorage).mkdirs();
+            wildCardCfg.put(FILE_STORAGE_CONFIG_KEY, featureModelFileStorage);
+        }
+    }
+    
+    Map<String, Map<String, String>> getTaskConfiguration() {
+        Map<String, Map<String, String>> config = new HashMap<>();
+        if (this.taskConfiguration != null) {
+            for(final Map.Entry<String, Properties> entry : this.taskConfiguration.entrySet()) {
+                final Map<String, String> m = new HashMap<>();
+
+                entry.getValue().stringPropertyNames().forEach(n -> m.put(n, entry.getValue().getProperty(n)));
+                config.put(entry.getKey(), m);
+            }
+        }
+
+        // Set default task configuration
+        if (!config.containsKey("api-regions-crossfeature-dups")) {
+            final Map<String, String> cfd = new HashMap<>();
+            cfd.put("regions", "global,com.adobe.aem.deprecated");
+            cfd.put("definingFeatures", "com.adobe.aem:aem-sdk-api:slingosgifeature:*");
+            cfd.put("warningPackages", "*");
+            config.put("api-regions-crossfeature-dups", cfd);
+        }
+
+        if (!config.containsKey("api-regions-check-order")) {
+            final Map<String, String> ord = new HashMap<>();
+            ord.put("order", "global,com.adobe.aem.deprecated,com.adobe.aem.internal");
+            config.put("api-regions-check-order", ord);
+        }
+
+        addTaskConfigurationDefaults(config);
+        return config;
+    }
+
+    Set<String> getIncludedTasks() {
+        return new LinkedHashSet<>(this.includeTasks);
+    }
+
+    FeatureSelectionConfig getFeatureSelection() {
+        FeatureSelectionConfig s = new FeatureSelectionConfig();
+        @SuppressWarnings("unchecked")
+        Set<String> aggregates =
+                (Set<String>) project.getContextValue(AggregateWithSDKMojo.class.getName() + "-aggregates");
+        aggregates.forEach(s::setIncludeClassifier);
+ 
+       return s;
+    }
+    
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (MojoUtils.skipRun(skipEnvVarName)) {
@@ -93,50 +211,126 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
         } catch (IOException e) {
             throw new MojoExecutionException("Problem configuring Artifact Provider for :" + MojoUtils.getConversionOutputDir(project));
         }
-
-        if (taskConfiguration == null) {
-            taskConfiguration = new HashMap<>();
-        }
-
-        // Set default task configuration
-        if (!taskConfiguration.containsKey("api-regions-crossfeature-dups")) {
-            Properties cfd = new Properties();
-            cfd.setProperty("regions", "global,com.adobe.aem.deprecated");
-            cfd.setProperty("definingFeatures", "com.adobe.aem:aem-sdk-api:slingosgifeature:*");
-            cfd.setProperty("warningPackages", "*");
-            taskConfiguration.put("api-regions-crossfeature-dups", cfd);
-        }
-
-        if (!taskConfiguration.containsKey("api-regions-check-order")) {
-            Properties ord = new Properties();
-            ord.setProperty("order", "global,com.adobe.aem.deprecated,com.adobe.aem.internal");
-            taskConfiguration.put("api-regions-check-order", ord);
-        }
-
-        Scan s = new Scan();
-        @SuppressWarnings("unchecked")
-        Set<String> aggregates =
-                (Set<String>) project.getContextValue(AggregateWithSDKMojo.class.getName() + "-aggregates");
-        aggregates.forEach(s::setIncludeClassifier);
-
-        for (String task : includeTasks) {
-            s.setIncludeTask(task);
-        }
-
-        for (Map.Entry<String, Properties> entry : taskConfiguration.entrySet()) {
-            Properties p = entry.getValue();
-            Map<String, String> m = new HashMap<>();
-
-            p.stringPropertyNames().forEach(n -> m.put(n, p.getProperty(n)));
-
-            s.setTaskConfiguration(entry.getKey(), m);
-        }
-
-        setParameter(this, "scans", Collections.singletonList(s));
-
-        if (unitTestMode)
+ 
+        if ( unitTestMode ) {
             return;
+        }
 
-        super.execute();
+        checkPreconditions();
+ 
+        getLog().debug(MessageUtils.buffer().a("Setting up the ").strong("Scanner").a("...").toString());
+        Scanner scanner;
+        try {
+            scanner = new Scanner(getArtifactProvider());
+        } catch (final IOException e) {
+            throw new MojoExecutionException("A fatal error occurred while setting up the Scanner, see error cause:",
+                    e);
+        }
+        getLog().debug(MessageUtils.buffer().strong("Scanner").a(" successfully set up").toString());
+
+        FeatureProvider featureProvider = getFeatureProvider();
+
+        boolean hasErrors = false;
+        try {
+            final Map<String, Map<String, String>> taskConfiguration = this.getTaskConfiguration();
+            final Set<String> includedTasks = this.getIncludedTasks();
+
+            getLog().debug(MessageUtils.buffer().a("Setting up the ").strong("analyser")
+                    .a(" with following configuration:").toString());
+            getLog().debug(" * Task Configuration = " + taskConfiguration);
+            getLog().debug(" * Include Tasks = " + includedTasks);
+            final Analyser analyser = new Analyser(scanner, taskConfiguration, includedTasks, null);
+            getLog().debug(MessageUtils.buffer().strong("Analyser").a(" successfully set up").toString());
+
+            getLog().debug("Retrieving Feature files...");
+            final Collection<Feature> features = this.getSelectedFeatures(getFeatureSelection()).values();
+
+            final Map<ArtifactId, AnalyserResult> results = new LinkedHashMap<>();
+            for (final Feature f : features) {
+                try {
+                    getLog().debug(MessageUtils.buffer().a("Analyzing feature ").strong(f.getId().toMvnId())
+                            .a(" ...").toString());
+                    final AnalyserResult result = analyser.analyse(f, null, featureProvider);
+                    results.put(f.getId(), result);
+
+                    hasErrors |= !result.getErrors().isEmpty();
+                } catch (Exception t) {
+                    throw new MojoFailureException(
+                            "Exception during analysing feature " + f.getId().toMvnId() + " : " + t.getMessage(),
+                            t);
+                }
+            }
+
+            logOutput(results);
+
+        } catch (IOException e) {
+            throw new MojoExecutionException(
+                    "A fatal error occurred while setting up the analyzer, see error cause:", e);
+        }
+        if (hasErrors) {
+            if ( failOnAnalyserErrors ) {
+                throw new MojoFailureException(
+                    "One or more feature analyser(s) detected feature error(s), please read the plugin log for more details");
+            }
+            getLog().warn("Errors found during analyser run, but this plugin is configured to ignore errors and continue the build!");
+        }
+    }
+
+    private static final ArtifactId COMMON_ID = ArtifactId.parse("__:__:1");
+
+    private Map<ArtifactId, List<String>> compactErrors(final Map<ArtifactId, AnalyserResult> results) {
+        final Map<ArtifactId, List<String>> errors = new LinkedHashMap<>();
+
+        List<String> commonMessages = null;
+        for(final Map.Entry<ArtifactId, AnalyserResult> entry : results.entrySet()) {
+            final List<String> msgs = new ArrayList<>(entry.getValue().getErrors());
+            if ( commonMessages == null ) {
+                commonMessages = msgs;
+                errors.put(COMMON_ID, commonMessages);
+            } else {
+                commonMessages.retainAll(msgs);
+                errors.put(entry.getKey(), msgs);
+            }
+        }
+        for(final List<String> msgs : errors.values()) {
+            if ( msgs != commonMessages) {
+                msgs.removeAll(commonMessages);
+            }
+        }
+
+        return errors;
+    }
+
+    private void logOutput(final Map<ArtifactId, AnalyserResult> results) {
+        final Map<ArtifactId, List<String>> errors = compactErrors(results);
+        
+        for(final Map.Entry<ArtifactId, List<String>> entry : errors.entrySet()) {
+            if ( !entry.getValue().isEmpty()) {
+                if ( entry.getKey() == COMMON_ID ) {
+                    getLog().error("Analyser detected global errors.");
+                    for(final String msg : entry.getValue() ) {
+                        getLog().error(msg);
+                    }
+                } else {
+                    getLog().error("Analyser detected errors on feature '" + entry.getKey().toMvnId() + "'.");
+                    for(final String msg : entry.getValue() ) {
+                        getLog().error(msg);
+                    }
+                }
+            }
+        }        
+
+        for(final Map.Entry<ArtifactId, AnalyserResult> entry2 : results.entrySet()) {
+            if (!entry2.getValue().getArtifactErrors().isEmpty() || !entry2.getValue().getExtensionErrors().isEmpty()) {
+                getLog().error("Analyser detected errors on feature '" + entry2.getKey().toMvnId()
+                        + "'. See log output for error messages.");
+                for (final ArtifactReport g : entry2.getValue().getArtifactErrors()) {
+                    getLog().error("ARTIFACT: " + g.getKey() + "----" + g.getValue());
+                }
+                for (final ExtensionReport g : entry2.getValue().getExtensionErrors()) {
+                    getLog().error("EXTENSION: " + g.getKey() + "----" + g.getValue());
+                }
+            }
+        }      
     }
 }

@@ -19,7 +19,6 @@ import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.builder.ArtifactProvider;
 import org.apache.sling.feature.io.artifacts.ArtifactManager;
 import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
-import org.apache.sling.feature.maven.mojos.Scan;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -77,26 +76,21 @@ public class AnalyseMojoTest {
 
         mojo.execute();
 
-        @SuppressWarnings("unchecked")
-        List<Scan> scans = (List<Scan>) TestUtil.getField(
-                mojo, mojo.getClass(), "scans");
-        assertEquals(1, scans.size());
-        Scan scan = scans.get(0);
-        assertEquals(2, scan.getSelections().size());
+        assertEquals(2, mojo.getFeatureSelection().getSelections().size());
 
         Map<String,String> expected = new HashMap<>();
         expected.put("regions", "global,com.adobe.aem.deprecated");
         expected.put("warningPackages", "*");
         expected.put("definingFeatures", "com.adobe.aem:aem-sdk-api:slingosgifeature:*");
         assertEquals("Default task configuration not as expected",
-                expected, scan.getTaskConfiguration().get("api-regions-crossfeature-dups"));
+                expected, mojo.getTaskConfiguration().get("api-regions-crossfeature-dups"));
 
         assertEquals("Default task configuration not as expected",
                 "global,com.adobe.aem.deprecated,com.adobe.aem.internal",
-                scan.getTaskConfiguration().get("api-regions-check-order").get("order"));
+                mojo.getTaskConfiguration().get("api-regions-check-order").get("order"));
 
         // Note getSelections() returns a private type...
-        List<?> sels = scan.getSelections();
+        List<?> sels = mojo.getFeatureSelection().getSelections();
         assertEquals(new HashSet<>(Arrays.asList("agg1", "agg2")),
                 getSelectionInstructions(sels, "CLASSIFIER"));
     }
@@ -121,23 +115,15 @@ public class AnalyseMojoTest {
         mojo.taskConfiguration.put("mytask", myTaskConfig);
         mojo.taskConfiguration.put("api-regions-crossfeature-dups", overriddenConfig);
 
-        mojo.execute();
-
-        @SuppressWarnings("unchecked")
-        List<Scan> scans = (List<Scan>) TestUtil.getField(
-                mojo, mojo.getClass(), "scans");
-        assertEquals(1, scans.size());
-        Scan scan = scans.get(0);
-
-        assertEquals(Collections.singleton("mytask"), scan.getIncludeTasks());
-        assertEquals("y", scan.getTaskConfiguration().get("mytask").get("x"));
+        assertEquals(Collections.singleton("mytask"), mojo.getIncludedTasks());
+        assertEquals("y", mojo.getTaskConfiguration().get("mytask").get("x"));
 
         assertEquals("Overridden task configuration not as expected",
                 Collections.singletonMap("traa", "laa"),
-                scan.getTaskConfiguration().get("api-regions-crossfeature-dups"));
+                mojo.getTaskConfiguration().get("api-regions-crossfeature-dups"));
         assertEquals("Default task configuration not as expected",
                 "global,com.adobe.aem.deprecated,com.adobe.aem.internal",
-                scan.getTaskConfiguration().get("api-regions-check-order").get("order"));
+                mojo.getTaskConfiguration().get("api-regions-check-order").get("order"));
     }
 
     @Test
