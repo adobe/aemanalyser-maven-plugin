@@ -9,8 +9,21 @@
   OF ANY KIND, either express or implied. See the License for the specific language
   governing permissions and limitations under the License.
 */
-
 package com.adobe.aem.analyser.mojos;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
@@ -27,8 +40,6 @@ import org.apache.sling.feature.analyser.Analyser;
 import org.apache.sling.feature.analyser.AnalyserResult;
 import org.apache.sling.feature.analyser.AnalyserResult.ArtifactReport;
 import org.apache.sling.feature.analyser.AnalyserResult.ExtensionReport;
-import org.apache.sling.feature.analyser.AnalyserResult.GlobalReport;
-import org.apache.sling.feature.analyser.AnalyserResult.Report;
 import org.apache.sling.feature.builder.ArtifactProvider;
 import org.apache.sling.feature.builder.FeatureProvider;
 import org.apache.sling.feature.io.artifacts.ArtifactManager;
@@ -38,29 +49,9 @@ import org.apache.sling.feature.maven.mojos.AbstractIncludingFeatureMojo;
 import org.apache.sling.feature.maven.mojos.FeatureSelectionConfig;
 import org.apache.sling.feature.scanner.Scanner;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 @Mojo(name = "analyse", defaultPhase = LifecyclePhase.TEST)
 public class AnalyseMojo extends AbstractIncludingFeatureMojo {
     boolean unitTestMode = false;
-
-    ArtifactManager localArtifactManager;
 
     @Parameter(defaultValue =
         "requirements-capabilities,"
@@ -91,15 +82,14 @@ public class AnalyseMojo extends AbstractIncludingFeatureMojo {
     @Component
     ArtifactResolver artifactResolver;
 
-    protected ArtifactProvider getArtifactProvider() {
+    ArtifactProvider getArtifactProvider(final ArtifactProvider localProvider) {
         return new ArtifactProvider() {
 
             @Override
             public URL provide(final ArtifactId id) {
-                if (localArtifactManager != null) {
-                    URL url = localArtifactManager.provide(id);
-                    if (url != null)
-                        return url;
+                URL url = localProvider != null ? localProvider.provide(id) : null;
+                if (url != null) {
+                    return url;
                 }
                 try {
                     return ProjectHelper.getOrResolveArtifact(project, mavenSession, artifactHandlerManager, artifactResolver, id).getFile().toURI().toURL();
@@ -197,6 +187,13 @@ public class AnalyseMojo extends AbstractIncludingFeatureMojo {
        return s;
     }
     
+    ArtifactProvider getLocalArtifactProvider() throws IOException {
+        ArtifactManagerConfig amcfg = new ArtifactManagerConfig();
+        amcfg.setRepositoryUrls(new String[] { MojoUtils.getConversionOutputDir(project).toURI().toURL().toString() });
+
+        return ArtifactManager.getArtifactManager(amcfg);
+    }
+    
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (MojoUtils.skipRun(skipEnvVarName)) {
@@ -204,14 +201,6 @@ public class AnalyseMojo extends AbstractIncludingFeatureMojo {
             return;
         }
 
-        try {
-            ArtifactManagerConfig amcfg = new ArtifactManagerConfig();
-            amcfg.setRepositoryUrls(new String[] { MojoUtils.getConversionOutputDir(project).toURI().toURL().toString() });
-            localArtifactManager = ArtifactManager.getArtifactManager(amcfg);
-        } catch (IOException e) {
-            throw new MojoExecutionException("Problem configuring Artifact Provider for :" + MojoUtils.getConversionOutputDir(project));
-        }
- 
         if ( unitTestMode ) {
             return;
         }
@@ -221,7 +210,7 @@ public class AnalyseMojo extends AbstractIncludingFeatureMojo {
         getLog().debug(MessageUtils.buffer().a("Setting up the ").strong("Scanner").a("...").toString());
         Scanner scanner;
         try {
-            scanner = new Scanner(getArtifactProvider());
+            scanner = new Scanner(getArtifactProvider(getLocalArtifactProvider()));
         } catch (final IOException e) {
             throw new MojoExecutionException("A fatal error occurred while setting up the Scanner, see error cause:",
                     e);
@@ -318,19 +307,6 @@ public class AnalyseMojo extends AbstractIncludingFeatureMojo {
                     }
                 }
             }
-        }        
-
-        for(final Map.Entry<ArtifactId, AnalyserResult> entry2 : results.entrySet()) {
-            if (!entry2.getValue().getArtifactErrors().isEmpty() || !entry2.getValue().getExtensionErrors().isEmpty()) {
-                getLog().error("Analyser detected errors on feature '" + entry2.getKey().toMvnId()
-                        + "'. See log output for error messages.");
-                for (final ArtifactReport g : entry2.getValue().getArtifactErrors()) {
-                    getLog().error("ARTIFACT: " + g.getKey() + "----" + g.getValue());
-                }
-                for (final ExtensionReport g : entry2.getValue().getExtensionErrors()) {
-                    getLog().error("EXTENSION: " + g.getKey() + "----" + g.getValue());
-                }
-            }
-        }      
+        }
     }
 }

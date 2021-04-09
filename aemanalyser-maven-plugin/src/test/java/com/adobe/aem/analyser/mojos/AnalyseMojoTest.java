@@ -157,9 +157,7 @@ public class AnalyseMojoTest {
         mojo.unitTestMode = true;
         mojo.includeTasks = Collections.singletonList("mytask");
 
-        mojo.execute();
-
-        ArtifactProvider ap = mojo.getArtifactProvider();
+        ArtifactProvider ap = mojo.getArtifactProvider(mojo.getLocalArtifactProvider());
         URL url = ap.provide(ArtifactId.fromMvnId("a:b:123"));
         assertEquals(ab123.toURI().toURL(), url);
 
@@ -193,9 +191,8 @@ public class AnalyseMojoTest {
         ArtifactManager lam = ArtifactManager.getArtifactManager(amc);
 
         AnalyseMojo mojo = new TestAnalyseMojo(prj);
-        mojo.localArtifactManager = lam;
 
-        ArtifactProvider ap = mojo.getArtifactProvider();
+        ArtifactProvider ap = mojo.getArtifactProvider(lam);
         URL url = ap.provide(ArtifactId.fromMvnId("a:b:123"));
         assertEquals(ab123.toURI().toURL(), url);
 
@@ -220,7 +217,7 @@ public class AnalyseMojoTest {
         Mockito.when(prj.getAttachedArtifacts()).thenReturn(attached);
 
         AnalyseMojo mojo = new TestAnalyseMojo(prj);
-        ArtifactProvider ap = mojo.getArtifactProvider();
+        ArtifactProvider ap = mojo.getArtifactProvider(null);
         URL url = ap.provide(ArtifactId.fromMvnId("a:b:slingosgifeature:123"));
         assertEquals(ab123.toURI().toURL(), url);
 
