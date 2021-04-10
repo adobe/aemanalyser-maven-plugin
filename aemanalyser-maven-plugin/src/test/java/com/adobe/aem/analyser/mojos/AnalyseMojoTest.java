@@ -12,6 +12,21 @@
 
 package com.adobe.aem.analyser.mojos;
 
+import static org.junit.Assert.assertEquals;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Build;
 import org.apache.maven.project.MavenProject;
@@ -23,24 +38,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
 
 public class AnalyseMojoTest {
 
@@ -78,53 +75,13 @@ public class AnalyseMojoTest {
 
         assertEquals(2, mojo.getFeatureSelection().getSelections().size());
 
-        Map<String,String> expected = new HashMap<>();
-        expected.put("regions", "global,com.adobe.aem.deprecated");
-        expected.put("warningPackages", "*");
-        expected.put("definingFeatures", "com.adobe.aem:aem-sdk-api:slingosgifeature:*");
-        assertEquals("Default task configuration not as expected",
-                expected, mojo.getTaskConfiguration().get("api-regions-crossfeature-dups"));
-
-        assertEquals("Default task configuration not as expected",
-                "global,com.adobe.aem.deprecated,com.adobe.aem.internal",
-                mojo.getTaskConfiguration().get("api-regions-check-order").get("order"));
-
         // Note getSelections() returns a private type...
         List<?> sels = mojo.getFeatureSelection().getSelections();
         assertEquals(new HashSet<>(Arrays.asList("agg1", "agg2")),
                 getSelectionInstructions(sels, "CLASSIFIER"));
     }
 
-    @Test
-    public void testAddTaskConfig() throws Exception {
-        MavenProject prj = Mockito.mock(MavenProject.class);
-        Mockito.when(prj.getBuild()).thenReturn(Mockito.mock(Build.class));
-        Mockito.when(prj.getContextValue(AggregateWithSDKMojo.class.getName() + "-aggregates"))
-            .thenReturn(Collections.singleton("aggregates"));
 
-        AnalyseMojo mojo = new TestAnalyseMojo(prj);
-        mojo.unitTestMode = true;
-        mojo.includeTasks = Collections.singletonList("mytask");
-
-        Properties myTaskConfig = new Properties();
-        myTaskConfig.put("x", "y");
-        Properties overriddenConfig = new Properties();
-        overriddenConfig.put("traa", "laa");
-
-        mojo.taskConfiguration = new HashMap<>();
-        mojo.taskConfiguration.put("mytask", myTaskConfig);
-        mojo.taskConfiguration.put("api-regions-crossfeature-dups", overriddenConfig);
-
-        assertEquals(Collections.singleton("mytask"), mojo.getIncludedTasks());
-        assertEquals("y", mojo.getTaskConfiguration().get("mytask").get("x"));
-
-        assertEquals("Overridden task configuration not as expected",
-                Collections.singletonMap("traa", "laa"),
-                mojo.getTaskConfiguration().get("api-regions-crossfeature-dups"));
-        assertEquals("Default task configuration not as expected",
-                "global,com.adobe.aem.deprecated,com.adobe.aem.internal",
-                mojo.getTaskConfiguration().get("api-regions-check-order").get("order"));
-    }
 
     @Test
     public void testLocalArtifactManager() throws Exception {
