@@ -128,11 +128,5 @@ governing permissions and limitations under the License.
       <version>1.10.19</version>
       <scope>test</scope>
     </dependency>
-  
-    <dependency>
-      <groupId>org.apache.sling</groupId>
-      <artifactId>slingfeature-maven-plugin</artifactId>
-      <version>1.5.0</version>
-    </dependency>
   </dependencies>
 </project>
