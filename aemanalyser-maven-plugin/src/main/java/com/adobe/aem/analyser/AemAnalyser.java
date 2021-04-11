@@ -22,11 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.analyser.Analyser;
 import org.apache.sling.feature.analyser.AnalyserResult;
 import org.apache.sling.feature.builder.ArtifactProvider;
+import org.apache.sling.feature.builder.FeatureProvider;
 import org.apache.sling.feature.scanner.Scanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +48,8 @@ public class AemAnalyser {
 
     private ArtifactProvider artifactProvider;
 
+    private FeatureProvider featureProvider;
+    
     private Set<String> includedTasks;
 
     private Map<String, Map<String, String>> taskConfigurations;
@@ -119,6 +121,20 @@ public class AemAnalyser {
         this.artifactProvider = artifactProvider;
     }
 
+    /**
+     * @return the featureProvider
+     */
+    public FeatureProvider getFeatureProvider() {
+        return featureProvider;
+    }
+
+    /**
+     * @param featureProvider the featureProvider to set
+     */
+    public void setFeatureProvider(FeatureProvider featureProvider) {
+        this.featureProvider = featureProvider;
+    }
+    
     private Scanner createScanner() throws IOException {
         logger.debug("Setting up scanner");
         final Scanner scanner = new Scanner(this.getArtifactProvider());
@@ -143,75 +159,64 @@ public class AemAnalyser {
 
         final Analyser analyser = this.createAnalyser();
 
-        final Map<ArtifactId, AnalyserResult> featureResults = new LinkedHashMap<>();
+        final Map<String, List<String>> featureErrors = new LinkedHashMap<>();
+        final Map<String, List<String>> featureWarnings = new LinkedHashMap<>();
+        for(final String k : KEYS) {
+            featureErrors.put(k, new ArrayList<>());
+            featureWarnings.put(k, new ArrayList<>());
+        }
         for (final Feature f : features) {
-            featureResults.put(f.getId(), analyser.analyse(f, null, null));
+            final AnalyserResult r = analyser.analyse(f, null, this.featureProvider);
+            featureErrors.get(f.getId().getClassifier()).addAll(r.getErrors());
+            featureWarnings.get(f.getId().getClassifier()).addAll(r.getWarnings());
         }
 
-        logOutput(result, featureResults);
+        logOutput(result.getErrors(), featureErrors, "errors");
+        logOutput(result.getWarnings(), featureWarnings, "warnings");
 
         return result;
     }
 
-    private static final ArtifactId COMMON_ID = ArtifactId.parse("__:__:1");
+    private static final String KEY_AUTHOR_AND_PUBLISH = "author and publish";
+    private static final String KEY_AUTHOR = "aggregated-author";
+    private static final String KEY_AUTHOR_DEV = "aggregated-author.dev";
+    private static final String KEY_AUTHOR_STAGE = "aggregated-author.stage";
+    private static final String KEY_AUTHOR_PROD = "aggregated-author.prod";
+    private static final String KEY_PUBLISH = "aggregated-publish";
+    private static final String KEY_PUBLISH_DEV = "aggregated-publish.dev";
+    private static final String KEY_PUBLISH_STAGE = "aggregated-publish.stage";
+    private static final String KEY_PUBLISH_PROD = "aggregated-publish.prod";
+    private static final String PREFIX = "aggregated-";
 
-    private Map<ArtifactId, List<String>> compactErrors(final Map<ArtifactId, AnalyserResult> results, final boolean compactErrors) {
-        final Map<ArtifactId, List<String>> errors = new LinkedHashMap<>();
+    private static final List<String> KEYS = Arrays.asList(KEY_AUTHOR_AND_PUBLISH, KEY_AUTHOR, KEY_PUBLISH,
+        KEY_AUTHOR_DEV, KEY_AUTHOR_STAGE, KEY_AUTHOR_PROD, KEY_PUBLISH_DEV, KEY_PUBLISH_STAGE, KEY_PUBLISH_PROD);
 
-        List<String> commonMessages = null;
-        for(final Map.Entry<ArtifactId, AnalyserResult> entry : results.entrySet()) {
-            final List<String> msgs = new ArrayList<>(compactErrors ? entry.getValue().getErrors() : entry.getValue().getWarnings());
-            if ( commonMessages == null ) {
-                commonMessages = msgs;
-                errors.put(COMMON_ID, commonMessages);
-            } else {
-                commonMessages.retainAll(msgs);
-                errors.put(entry.getKey(), msgs);
-            }
-        }
-        for(final List<String> msgs : errors.values()) {
-            if ( msgs != commonMessages) {
-                msgs.removeAll(commonMessages);
-            }
-        }
+    private void logOutput(final List<String> output, final Map<String, List<String>> messages, final String type) {
+        // clean up environment specific messages
+        messages.get(KEY_AUTHOR_DEV).removeAll(messages.get(KEY_AUTHOR));
+        messages.get(KEY_AUTHOR_STAGE).removeAll(messages.get(KEY_AUTHOR));
+        messages.get(KEY_AUTHOR_PROD).removeAll(messages.get(KEY_AUTHOR));
+        messages.get(KEY_PUBLISH_DEV).removeAll(messages.get(KEY_PUBLISH));
+        messages.get(KEY_PUBLISH_STAGE).removeAll(messages.get(KEY_PUBLISH));
+        messages.get(KEY_PUBLISH_PROD).removeAll(messages.get(KEY_PUBLISH));
 
-        return errors;
-    }
-
-    private void logOutput(final AemAnalyserResult result, final Map<ArtifactId, AnalyserResult> featureResults) {
-        final Map<ArtifactId, List<String>> warnings = compactErrors(featureResults, false);
-        
-        for(final Map.Entry<ArtifactId, List<String>> entry : warnings.entrySet()) {
-            if ( !entry.getValue().isEmpty()) {
-                if ( entry.getKey() == COMMON_ID ) {
-                    result.getErrors().add("Analyser detected the following warnings:");
-                    for(final String msg : entry.getValue() ) {
-                        result.getWarnings().add(msg);
-                    }
-                } else {
-                    result.getErrors().add("Analyser detected the following warnings in feature '" + entry.getKey().toMvnId() + "'.");
-                    for(final String msg : entry.getValue() ) {
-                        result.getWarnings().add(msg);
-                    }
-                }
-            }
+        // author and publish
+        final List<String> list = new ArrayList<>();
+        list.addAll(messages.get(KEY_AUTHOR));
+        list.retainAll(messages.get(KEY_PUBLISH));
+        if ( !list.isEmpty() ) {
+             messages.put(KEY_AUTHOR_AND_PUBLISH, list);
+             messages.get(KEY_AUTHOR).removeAll(list);
+             messages.get(KEY_PUBLISH).removeAll(list);
         }
 
-        final Map<ArtifactId, List<String>> errors = compactErrors(featureResults, true);
-        
-        for(final Map.Entry<ArtifactId, List<String>> entry : errors.entrySet()) {
-            if ( !entry.getValue().isEmpty()) {
-                if ( entry.getKey() == COMMON_ID ) {
-                    result.getErrors().add("Analyser detected the following errors:");
-                    for(final String msg : entry.getValue() ) {
-                        result.getErrors().add(msg);
-                    }
-                } else {
-                    result.getErrors().add("Analyser detected the following errors in feature '" + entry.getKey().toMvnId() + "'.");
-                    for(final String msg : entry.getValue() ) {
-                        result.getErrors().add(msg);
-                    }
-                }
+        // log
+        for(final String k : KEYS) {
+            final List<String> m = messages.get(k);
+            if ( !m.isEmpty() ) {
+                final String id = k.startsWith(PREFIX) ? k.substring(PREFIX.length()) : k;
+                output.add("The analyser found the following ".concat(type).concat(" for ").concat(id).concat(" : "));
+                m.stream().forEach(t -> output.add(t));
             }
         }
     }

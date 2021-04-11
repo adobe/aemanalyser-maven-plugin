@@ -140,7 +140,7 @@ public class AnalyseMojo extends AbstractIncludingFeatureMojo {
             analyser.setArtifactProvider(getArtifactProvider(getLocalArtifactProvider()));
             analyser.setIncludedTasks(this.getIncludedTasks());
             analyser.setTaskConfigurations(this.getTaskConfigurations());
-    
+
             getLog().debug("Retrieving Feature files...");
             final Collection<Feature> features = this.getSelectedFeatures(getFeatureSelection()).values();
 
