@@ -54,6 +54,8 @@ public class AemAnalyser {
 
     private Map<String, Map<String, String>> taskConfigurations;
 
+    private boolean outputAllClassifiers = true;
+    
     public AemAnalyser() {
         this.setIncludedTasks(new LinkedHashSet<>(Arrays.asList(DEFAULT_TASKS.split(","))));
         this.setTaskConfigurations(new HashMap<>());
@@ -88,6 +90,20 @@ public class AemAnalyser {
         this.applyDefaultTaskConfigurations();
     }
 
+    /**
+     * @return the outputAllClassifiers
+     */
+    public boolean isOutputAllClassifiers() {
+        return outputAllClassifiers;
+    }
+
+    /**
+     * @param outputAllClassifiers the outputAllClassifiers to set
+     */
+    public void setOutputAllClassifiers(boolean outputAllClassifiers) {
+        this.outputAllClassifiers = outputAllClassifiers;
+    }
+    
     private void applyDefaultTaskConfigurations() {
         Map<String, Map<String, String>> config = this.getTaskConfigurations();
     
@@ -161,14 +177,11 @@ public class AemAnalyser {
 
         final Map<String, List<String>> featureErrors = new LinkedHashMap<>();
         final Map<String, List<String>> featureWarnings = new LinkedHashMap<>();
-        for(final String k : KEYS) {
-            featureErrors.put(k, new ArrayList<>());
-            featureWarnings.put(k, new ArrayList<>());
-        }
+
         for (final Feature f : features) {
             final AnalyserResult r = analyser.analyse(f, null, this.featureProvider);
-            featureErrors.get(f.getId().getClassifier()).addAll(r.getErrors());
-            featureWarnings.get(f.getId().getClassifier()).addAll(r.getWarnings());
+            featureErrors.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).addAll(r.getErrors());
+            featureWarnings.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).addAll(r.getWarnings());
         }
 
         logOutput(result.getErrors(), featureErrors, "errors");
@@ -187,36 +200,53 @@ public class AemAnalyser {
     private static final String KEY_PUBLISH_STAGE = "aggregated-publish.stage";
     private static final String KEY_PUBLISH_PROD = "aggregated-publish.prod";
     private static final String PREFIX = "aggregated-";
+    private static final String PREFIX_AUTHOR = "aggregated-author.";
+    private static final String PREFIX_PUBLISH = "aggregated-publish.";
 
     private static final List<String> KEYS = Arrays.asList(KEY_AUTHOR_AND_PUBLISH, KEY_AUTHOR, KEY_PUBLISH,
         KEY_AUTHOR_DEV, KEY_AUTHOR_STAGE, KEY_AUTHOR_PROD, KEY_PUBLISH_DEV, KEY_PUBLISH_STAGE, KEY_PUBLISH_PROD);
 
     private void logOutput(final List<String> output, final Map<String, List<String>> messages, final String type) {
         // clean up environment specific messages
-        messages.get(KEY_AUTHOR_DEV).removeAll(messages.get(KEY_AUTHOR));
-        messages.get(KEY_AUTHOR_STAGE).removeAll(messages.get(KEY_AUTHOR));
-        messages.get(KEY_AUTHOR_PROD).removeAll(messages.get(KEY_AUTHOR));
-        messages.get(KEY_PUBLISH_DEV).removeAll(messages.get(KEY_PUBLISH));
-        messages.get(KEY_PUBLISH_STAGE).removeAll(messages.get(KEY_PUBLISH));
-        messages.get(KEY_PUBLISH_PROD).removeAll(messages.get(KEY_PUBLISH));
+        final List<String> authorMsgs = messages.get(KEY_AUTHOR);
+        final List<String> publishMsgs = messages.get(KEY_PUBLISH);
+
+        for(final Map.Entry<String, List<String>> entry : messages.entrySet()) {
+            if ( entry.getKey().startsWith(PREFIX_AUTHOR) ) {
+                entry.getValue().removeAll(authorMsgs);
+            }
+            if ( entry.getKey().startsWith(PREFIX_PUBLISH) ) {
+                entry.getValue().removeAll(publishMsgs);
+            }
+        }
 
         // author and publish
         final List<String> list = new ArrayList<>();
-        list.addAll(messages.get(KEY_AUTHOR));
-        list.retainAll(messages.get(KEY_PUBLISH));
+        list.addAll(authorMsgs);
+        list.retainAll(publishMsgs);
         if ( !list.isEmpty() ) {
-             messages.put(KEY_AUTHOR_AND_PUBLISH, list);
-             messages.get(KEY_AUTHOR).removeAll(list);
-             messages.get(KEY_PUBLISH).removeAll(list);
+            messages.put(KEY_AUTHOR_AND_PUBLISH, list);
+            authorMsgs.removeAll(list);
+            publishMsgs.removeAll(list);
         }
 
-        // log
+        // log default classifiers
         for(final String k : KEYS) {
             final List<String> m = messages.get(k);
-            if ( !m.isEmpty() ) {
+            if ( m!= null && !m.isEmpty() ) {
                 final String id = k.startsWith(PREFIX) ? k.substring(PREFIX.length()) : k;
                 output.add("The analyser found the following ".concat(type).concat(" for ").concat(id).concat(" : "));
                 m.stream().forEach(t -> output.add(t));
+            }
+        }
+        if ( this.isOutputAllClassifiers() ) {
+            // log additional classifiers
+            for(final Map.Entry<String, List<String>> entry : messages.entrySet()) {
+                if ( !KEYS.contains(entry.getKey()) && !entry.getValue().isEmpty() ) {
+                    final String id = entry.getKey().startsWith(PREFIX) ? entry.getKey().substring(PREFIX.length()) : entry.getKey();
+                    output.add("The analyser found the following ".concat(type).concat(" for ").concat(id).concat(" : "));
+                    entry.getValue().stream().forEach(t -> output.add(t));
+                }
             }
         }
     }
