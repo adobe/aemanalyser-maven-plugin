@@ -12,18 +12,7 @@
 
 package com.adobe.aem.analyser.mojos;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.model.Build;
-import org.apache.maven.project.MavenProject;
-import org.apache.sling.feature.ArtifactId;
-import org.apache.sling.feature.builder.ArtifactProvider;
-import org.apache.sling.feature.io.artifacts.ArtifactManager;
-import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
-import org.apache.sling.feature.maven.mojos.Scan;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,14 +23,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Build;
+import org.apache.maven.project.MavenProject;
+import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.builder.ArtifactProvider;
+import org.apache.sling.feature.io.artifacts.ArtifactManager;
+import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 public class AnalyseMojoTest {
 
@@ -77,68 +73,15 @@ public class AnalyseMojoTest {
 
         mojo.execute();
 
-        @SuppressWarnings("unchecked")
-        List<Scan> scans = (List<Scan>) TestUtil.getField(
-                mojo, mojo.getClass(), "scans");
-        assertEquals(1, scans.size());
-        Scan scan = scans.get(0);
-        assertEquals(2, scan.getSelections().size());
-
-        Map<String,String> expected = new HashMap<>();
-        expected.put("regions", "global,com.adobe.aem.deprecated");
-        expected.put("warningPackages", "*");
-        expected.put("definingFeatures", "com.adobe.aem:aem-sdk-api:slingosgifeature:*");
-        assertEquals("Default task configuration not as expected",
-                expected, scan.getTaskConfiguration().get("api-regions-crossfeature-dups"));
-
-        assertEquals("Default task configuration not as expected",
-                "global,com.adobe.aem.deprecated,com.adobe.aem.internal",
-                scan.getTaskConfiguration().get("api-regions-check-order").get("order"));
+        assertEquals(2, mojo.getFeatureSelection().getSelections().size());
 
         // Note getSelections() returns a private type...
-        List<?> sels = scan.getSelections();
+        List<?> sels = mojo.getFeatureSelection().getSelections();
         assertEquals(new HashSet<>(Arrays.asList("agg1", "agg2")),
                 getSelectionInstructions(sels, "CLASSIFIER"));
     }
 
-    @Test
-    public void testAddTaskConfig() throws Exception {
-        MavenProject prj = Mockito.mock(MavenProject.class);
-        Mockito.when(prj.getBuild()).thenReturn(Mockito.mock(Build.class));
-        Mockito.when(prj.getContextValue(AggregateWithSDKMojo.class.getName() + "-aggregates"))
-            .thenReturn(Collections.singleton("aggregates"));
 
-        AnalyseMojo mojo = new TestAnalyseMojo(prj);
-        mojo.unitTestMode = true;
-        mojo.includeTasks = Collections.singletonList("mytask");
-
-        Properties myTaskConfig = new Properties();
-        myTaskConfig.put("x", "y");
-        Properties overriddenConfig = new Properties();
-        overriddenConfig.put("traa", "laa");
-
-        mojo.taskConfiguration = new HashMap<>();
-        mojo.taskConfiguration.put("mytask", myTaskConfig);
-        mojo.taskConfiguration.put("api-regions-crossfeature-dups", overriddenConfig);
-
-        mojo.execute();
-
-        @SuppressWarnings("unchecked")
-        List<Scan> scans = (List<Scan>) TestUtil.getField(
-                mojo, mojo.getClass(), "scans");
-        assertEquals(1, scans.size());
-        Scan scan = scans.get(0);
-
-        assertEquals(Collections.singleton("mytask"), scan.getIncludeTasks());
-        assertEquals("y", scan.getTaskConfiguration().get("mytask").get("x"));
-
-        assertEquals("Overridden task configuration not as expected",
-                Collections.singletonMap("traa", "laa"),
-                scan.getTaskConfiguration().get("api-regions-crossfeature-dups"));
-        assertEquals("Default task configuration not as expected",
-                "global,com.adobe.aem.deprecated,com.adobe.aem.internal",
-                scan.getTaskConfiguration().get("api-regions-check-order").get("order"));
-    }
 
     @Test
     public void testLocalArtifactManager() throws Exception {
@@ -171,9 +114,7 @@ public class AnalyseMojoTest {
         mojo.unitTestMode = true;
         mojo.includeTasks = Collections.singletonList("mytask");
 
-        mojo.execute();
-
-        ArtifactProvider ap = mojo.getArtifactProvider();
+        ArtifactProvider ap = mojo.getArtifactProvider(mojo.getLocalArtifactProvider());
         URL url = ap.provide(ArtifactId.fromMvnId("a:b:123"));
         assertEquals(ab123.toURI().toURL(), url);
 
@@ -207,9 +148,8 @@ public class AnalyseMojoTest {
         ArtifactManager lam = ArtifactManager.getArtifactManager(amc);
 
         AnalyseMojo mojo = new TestAnalyseMojo(prj);
-        mojo.localArtifactManager = lam;
 
-        ArtifactProvider ap = mojo.getArtifactProvider();
+        ArtifactProvider ap = mojo.getArtifactProvider(lam);
         URL url = ap.provide(ArtifactId.fromMvnId("a:b:123"));
         assertEquals(ab123.toURI().toURL(), url);
 
@@ -234,7 +174,7 @@ public class AnalyseMojoTest {
         Mockito.when(prj.getAttachedArtifacts()).thenReturn(attached);
 
         AnalyseMojo mojo = new TestAnalyseMojo(prj);
-        ArtifactProvider ap = mojo.getArtifactProvider();
+        ArtifactProvider ap = mojo.getArtifactProvider(null);
         URL url = ap.provide(ArtifactId.fromMvnId("a:b:slingosgifeature:123"));
         assertEquals(ab123.toURI().toURL(), url);
 

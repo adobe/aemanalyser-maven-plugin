@@ -1,14 +1,12 @@
 ## AEM Analyser Maven Plugin
 
-A Maven plugin used by developers who develop Java components for AEMaaCS 
-(AEM as a Cloud Service) during their local Java 
-builds to ensure that their components work correctly when deployed.
+A Maven plugin used by developers who develop applications for AEM as a Cloud Service (AEMaaCS).
+The plugin runs the same checks locally as in the Cloud Service pipeline and ensures that the application works correctly when deployed in the cloud. 
 
 ## Functionality
 
-Provide an easy way for AEMaaCS users to run analysers with their components during local 
-builds to ensure these components will also pass the analysers at AEMaaCS deploy time and 
-function as expected at runtime. Analysers are based on the Sling Feature Model Analyser framework: https://github.com/apache/sling-org-apache-sling-feature-analyser/blob/master/readme.md
+Provide an easy way for AEMaaCS developers to run analysers with their application during local builds to ensure the application code will also pass the analysers at AEMaaCS deploy time and 
+function as expected at runtime. Analysers are based on the Apache Sling Feature Model Analyser framework: https://github.com/apache/sling-org-apache-sling-feature-analyser/blob/master/readme.md
 
 ## Installation
 
@@ -44,7 +42,7 @@ The analyser plugin will run the default set of analysers on the content package
         <aem.sdk.api>2020.11.4506.20201112T235200Z-201028</aem.sdk.api>
 ```
 
-With that, you project pom.xml needs to look somewhat like this:
+With that, your project pom.xml needs to look somewhat like this:
 
 ```
 <project>
@@ -122,13 +120,15 @@ As an example, consider adding a new module to the wknd project. All that is nee
 
 #### Selecting Tasks
 
-The plugin will execute a number of default analysers. It's possible to select a different set of
+The plugin will execute a number of default analysers. It is possible to select a different set of
 analyser tasks, for example with the following configuration:
 
     <includeTasks>
         <includeTask>bundle-packages</includeTask>
         <includeTask>requirements-capabilities</includeTask>
     </includeTasks>
+
+Please note that if you remove tasks which are run by default, the plugin might not report any errors in your project, while the analysers run as part of the AEM as a Cloud Service pipeline might report errors. 
 
 #### Configuring Analyser Tasks
 
@@ -147,6 +147,8 @@ default set of analysers. Additional or different configuration can be provided 
             <order>global,myregion</order>
         </api-regions-check-order>
     </taskConfiguration>
+
+Please note, that overriding the default configuration for the analysers might hide errors locally that will be catched in the Cloud Service pipeline.
 
 ### Maven Goals
 

@@ -9,49 +9,44 @@
   OF ANY KIND, either express or implied. See the License for the specific language
   governing permissions and limitations under the License.
 */
-
 package com.adobe.aem.analyser.mojos;
 
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.sling.feature.ArtifactId;
-import org.apache.sling.feature.builder.ArtifactProvider;
-import org.apache.sling.feature.io.artifacts.ArtifactManager;
-import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
-import org.apache.sling.feature.maven.mojos.AnalyseFeaturesMojo;
-import org.apache.sling.feature.maven.mojos.Scan;
-
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
+import com.adobe.aem.analyser.AemAnalyser;
+import com.adobe.aem.analyser.AemAnalyserResult;
+
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
+import org.apache.maven.artifact.resolver.ArtifactResolver;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.Feature;
+import org.apache.sling.feature.builder.ArtifactProvider;
+import org.apache.sling.feature.io.artifacts.ArtifactManager;
+import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
+import org.apache.sling.feature.maven.ProjectHelper;
+import org.apache.sling.feature.maven.mojos.AbstractIncludingFeatureMojo;
+import org.apache.sling.feature.maven.mojos.FeatureSelectionConfig;
 
 @Mojo(name = "analyse", defaultPhase = LifecyclePhase.TEST)
-public class AnalyseMojo extends AnalyseFeaturesMojo {
+public class AnalyseMojo extends AbstractIncludingFeatureMojo {
     boolean unitTestMode = false;
 
-    ArtifactManager localArtifactManager;
-
-    @Parameter(defaultValue =
-        "requirements-capabilities,"
-        + "bundle-content,"
-        + "bundle-resources,"
-        + "bundle-nativecode,"
-        + "api-regions,"
-        + "api-regions-check-order,"
-        + "api-regions-crossfeature-dups,"
-        + "api-regions-exportsimports,"
-//        + "repoinit," disable until SLING-10215 is fixed
-        + "configuration-api",
+    @Parameter(defaultValue = AemAnalyser.DEFAULT_TASKS,
         property = "includeTasks")
     List<String> includeTasks;
 
@@ -61,24 +56,70 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
     @Parameter(defaultValue = MojoUtils.DEFAULT_SKIP_ENV_VAR, property = MojoUtils.PROPERTY_SKIP_VAR)
     String skipEnvVarName;
 
-    @Override
-    protected ArtifactProvider getArtifactProvider() {
-        ArtifactProvider ap = super.getArtifactProvider();
+    @Parameter(defaultValue = "true", property = "failon.analyser.errors")
+    private boolean failOnAnalyserErrors;
 
+    @Component
+    ArtifactHandlerManager artifactHandlerManager;
+
+    @Component
+    ArtifactResolver artifactResolver;
+
+    ArtifactProvider getArtifactProvider(final ArtifactProvider localProvider) {
         return new ArtifactProvider() {
-            @Override
-            public URL provide(ArtifactId id) {
-                if (localArtifactManager != null) {
-                    URL url = localArtifactManager.provide(id);
-                    if (url != null)
-                        return url;
-                }
 
-                return ap.provide(id);
+            @Override
+            public URL provide(final ArtifactId id) {
+                URL url = localProvider != null ? localProvider.provide(id) : null;
+                if (url != null) {
+                    return url;
+                }
+                try {
+                    return ProjectHelper.getOrResolveArtifact(project, mavenSession, artifactHandlerManager, artifactResolver, id).getFile().toURI().toURL();
+                } catch (final MalformedURLException e) {
+                    getLog().debug("Malformed url " + e.getMessage(), e);
+                    // ignore
+                    return null;
+                }
             }
         };
     }
 
+    Map<String, Map<String, String>> getTaskConfigurations() {
+        Map<String, Map<String, String>> config = new HashMap<>();
+        if (this.taskConfiguration != null) {
+            for(final Map.Entry<String, Properties> entry : this.taskConfiguration.entrySet()) {
+                final Map<String, String> m = new HashMap<>();
+
+                entry.getValue().stringPropertyNames().forEach(n -> m.put(n, entry.getValue().getProperty(n)));
+                config.put(entry.getKey(), m);
+            }
+        }
+
+        return config;
+    }
+
+    Set<String> getIncludedTasks() {
+        return new LinkedHashSet<>(this.includeTasks);
+    }
+
+    FeatureSelectionConfig getFeatureSelection() {
+        FeatureSelectionConfig s = new FeatureSelectionConfig();
+        @SuppressWarnings("unchecked")
+        Set<String> aggregates =
+                (Set<String>) project.getContextValue(AggregateWithSDKMojo.class.getName() + "-aggregates");
+        aggregates.forEach(s::setIncludeClassifier);
+ 
+       return s;
+    }
+    
+    ArtifactProvider getLocalArtifactProvider() throws IOException {
+        ArtifactManagerConfig amcfg = new ArtifactManagerConfig();
+        amcfg.setRepositoryUrls(new String[] { MojoUtils.getConversionOutputDir(project).toURI().toURL().toString() });
+
+        return ArtifactManager.getArtifactManager(amcfg);
+    }
+    
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (MojoUtils.skipRun(skipEnvVarName)) {
@@ -86,57 +127,44 @@ public class AnalyseMojo extends AnalyseFeaturesMojo {
             return;
         }
 
-        try {
-            ArtifactManagerConfig amcfg = new ArtifactManagerConfig();
-            amcfg.setRepositoryUrls(new String[] { MojoUtils.getConversionOutputDir(project).toURI().toURL().toString() });
-            localArtifactManager = ArtifactManager.getArtifactManager(amcfg);
-        } catch (IOException e) {
-            throw new MojoExecutionException("Problem configuring Artifact Provider for :" + MojoUtils.getConversionOutputDir(project));
-        }
-
-        if (taskConfiguration == null) {
-            taskConfiguration = new HashMap<>();
-        }
-
-        // Set default task configuration
-        if (!taskConfiguration.containsKey("api-regions-crossfeature-dups")) {
-            Properties cfd = new Properties();
-            cfd.setProperty("regions", "global,com.adobe.aem.deprecated");
-            cfd.setProperty("definingFeatures", "com.adobe.aem:aem-sdk-api:slingosgifeature:*");
-            cfd.setProperty("warningPackages", "*");
-            taskConfiguration.put("api-regions-crossfeature-dups", cfd);
-        }
-
-        if (!taskConfiguration.containsKey("api-regions-check-order")) {
-            Properties ord = new Properties();
-            ord.setProperty("order", "global,com.adobe.aem.deprecated,com.adobe.aem.internal");
-            taskConfiguration.put("api-regions-check-order", ord);
-        }
-
-        Scan s = new Scan();
-        @SuppressWarnings("unchecked")
-        Set<String> aggregates =
-                (Set<String>) project.getContextValue(AggregateWithSDKMojo.class.getName() + "-aggregates");
-        aggregates.forEach(s::setIncludeClassifier);
-
-        for (String task : includeTasks) {
-            s.setIncludeTask(task);
-        }
-
-        for (Map.Entry<String, Properties> entry : taskConfiguration.entrySet()) {
-            Properties p = entry.getValue();
-            Map<String, String> m = new HashMap<>();
-
-            p.stringPropertyNames().forEach(n -> m.put(n, p.getProperty(n)));
-
-            s.setTaskConfiguration(entry.getKey(), m);
-        }
-
-        setParameter(this, "scans", Collections.singletonList(s));
-
-        if (unitTestMode)
+        if ( unitTestMode ) {
             return;
+        }
 
-        super.execute();
+        checkPreconditions();
+ 
+ 
+        boolean hasErrors = false;
+        try {
+            final AemAnalyser analyser = new AemAnalyser();
+            analyser.setArtifactProvider(getArtifactProvider(getLocalArtifactProvider()));
+            analyser.setIncludedTasks(this.getIncludedTasks());
+            analyser.setTaskConfigurations(this.getTaskConfigurations());
+
+            getLog().debug("Retrieving Feature files...");
+            final Collection<Feature> features = this.getSelectedFeatures(getFeatureSelection()).values();
+
+            final AemAnalyserResult result = analyser.analyse(features);
+            
+            for(final String msg : result.getWarnings()) {
+                getLog().warn(msg);
+            }
+            for(final String msg : result.getErrors()) {
+                getLog().error(msg);
+            }
+            hasErrors = result.hasErrors();
+
+        } catch ( final Exception e) {
+            throw new MojoExecutionException("A fatal error occurred while analysing the features, see error cause:",
+                    e);
+        }
+
+        if (hasErrors) {
+            if ( failOnAnalyserErrors ) {
+                throw new MojoFailureException(
+                    "One or more feature analyser(s) detected feature error(s), please read the plugin log for more details");
+            }
+            getLog().warn("Errors found during analyser run, but this plugin is configured to ignore errors and continue the build!");
+        }
     }
 }
