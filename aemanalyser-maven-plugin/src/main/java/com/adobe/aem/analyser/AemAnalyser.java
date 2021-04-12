@@ -54,8 +54,6 @@ public class AemAnalyser {
 
     private Map<String, Map<String, String>> taskConfigurations;
 
-    private boolean outputAllClassifiers = true;
-    
     public AemAnalyser() {
         this.setIncludedTasks(new LinkedHashSet<>(Arrays.asList(DEFAULT_TASKS.split(","))));
         this.setTaskConfigurations(new HashMap<>());
@@ -90,20 +88,6 @@ public class AemAnalyser {
         this.applyDefaultTaskConfigurations();
     }
 
-    /**
-     * @return the outputAllClassifiers
-     */
-    public boolean isOutputAllClassifiers() {
-        return outputAllClassifiers;
-    }
-
-    /**
-     * @param outputAllClassifiers the outputAllClassifiers to set
-     */
-    public void setOutputAllClassifiers(boolean outputAllClassifiers) {
-        this.outputAllClassifiers = outputAllClassifiers;
-    }
-    
     private void applyDefaultTaskConfigurations() {
         Map<String, Map<String, String>> config = this.getTaskConfigurations();
     
@@ -170,6 +154,13 @@ public class AemAnalyser {
         return analyser;
     }
 
+    private boolean checkClassifier(final String classifier) {
+        if ( classifier == null || !classifier.startsWith("aggregated-")) {
+            return false;
+        } 
+        return KEYS.contains(classifier);
+    }
+
     public AemAnalyserResult analyse(final Collection<Feature> features) throws Exception {
         final AemAnalyserResult result = new AemAnalyserResult();
 
@@ -179,6 +170,10 @@ public class AemAnalyser {
         final Map<String, List<String>> featureWarnings = new LinkedHashMap<>();
 
         for (final Feature f : features) {
+            if ( !checkClassifier(f.getId().getClassifier())) {
+                this.logger.info("Skipping unused feature {}", f.getId());
+                continue;
+            }
             final AnalyserResult r = analyser.analyse(f, null, this.featureProvider);
             featureErrors.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).addAll(r.getErrors());
             featureWarnings.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).addAll(r.getWarnings());
@@ -192,24 +187,40 @@ public class AemAnalyser {
 
     private static final String KEY_AUTHOR_AND_PUBLISH = "author and publish";
     private static final String KEY_AUTHOR = "aggregated-author";
-    private static final String KEY_AUTHOR_DEV = "aggregated-author.dev";
-    private static final String KEY_AUTHOR_STAGE = "aggregated-author.stage";
-    private static final String KEY_AUTHOR_PROD = "aggregated-author.prod";
     private static final String KEY_PUBLISH = "aggregated-publish";
-    private static final String KEY_PUBLISH_DEV = "aggregated-publish.dev";
-    private static final String KEY_PUBLISH_STAGE = "aggregated-publish.stage";
-    private static final String KEY_PUBLISH_PROD = "aggregated-publish.prod";
     private static final String PREFIX = "aggregated-";
     private static final String PREFIX_AUTHOR = "aggregated-author.";
     private static final String PREFIX_PUBLISH = "aggregated-publish.";
 
-    private static final List<String> KEYS = Arrays.asList(KEY_AUTHOR_AND_PUBLISH, KEY_AUTHOR, KEY_PUBLISH,
-        KEY_AUTHOR_DEV, KEY_AUTHOR_STAGE, KEY_AUTHOR_PROD, KEY_PUBLISH_DEV, KEY_PUBLISH_STAGE, KEY_PUBLISH_PROD);
+    private static final List<String> KEYS = new ArrayList<>();
+    static {
+        KEYS.add(KEY_AUTHOR_AND_PUBLISH);
+        for(final String k : AemAnalyserUtil.USED_MODES) {
+            KEYS.add(PREFIX.concat(k));
+        }
+    }
+
+    /**
+     * Either directly return the messages for the tier, like author - or if that doesn't exist,
+     * then dev/prod/stage exists. Return the common set of messages from those instead.
+     * @return
+     */
+    private List<String> getTierMessages(final Map<String, List<String>> messages, final String tier) {
+        List<String> msgs = messages.get(tier);
+        if ( msgs == null ) {
+            msgs = new ArrayList<>();
+            msgs.addAll(messages.get(tier.concat(".dev")));
+            msgs.retainAll(messages.get(tier.concat(".stage")));
+            msgs.retainAll(messages.get(tier.concat(".prod")));
+            messages.put(tier, msgs);
+        }
+        return msgs;
+    }
 
     private void logOutput(final List<String> output, final Map<String, List<String>> messages, final String type) {
         // clean up environment specific messages
-        final List<String> authorMsgs = messages.get(KEY_AUTHOR);
-        final List<String> publishMsgs = messages.get(KEY_PUBLISH);
+        final List<String> authorMsgs = getTierMessages(messages, KEY_AUTHOR);
+        final List<String> publishMsgs = getTierMessages(messages, KEY_PUBLISH);
 
         for(final Map.Entry<String, List<String>> entry : messages.entrySet()) {
             if ( entry.getKey().startsWith(PREFIX_AUTHOR) ) {
@@ -237,16 +248,6 @@ public class AemAnalyser {
                 final String id = k.startsWith(PREFIX) ? k.substring(PREFIX.length()) : k;
                 output.add("The analyser found the following ".concat(type).concat(" for ").concat(id).concat(" : "));
                 m.stream().forEach(t -> output.add(t));
-            }
-        }
-        if ( this.isOutputAllClassifiers() ) {
-            // log additional classifiers
-            for(final Map.Entry<String, List<String>> entry : messages.entrySet()) {
-                if ( !KEYS.contains(entry.getKey()) && !entry.getValue().isEmpty() ) {
-                    final String id = entry.getKey().startsWith(PREFIX) ? entry.getKey().substring(PREFIX.length()) : entry.getKey();
-                    output.add("The analyser found the following ".concat(type).concat(" for ").concat(id).concat(" : "));
-                    entry.getValue().stream().forEach(t -> output.add(t));
-                }
             }
         }
     }

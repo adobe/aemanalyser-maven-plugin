@@ -35,6 +35,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.adobe.aem.analyser.AemAnalyserUtil;
+
 import static com.adobe.aem.analyser.mojos.MojoUtils.setParameter;
 
 @Mojo(name = "aggregate", defaultPhase = LifecyclePhase.GENERATE_TEST_RESOURCES)
@@ -158,76 +160,12 @@ public class AggregateWithSDKMojo extends AggregateFeaturesMojo {
         return aggregates;
     }
 
-    Map<String, Set<String>> getUserAggregatesToCreate(Properties runmodes) throws MojoExecutionException {
-        Map<String, Set<String>> allModels = new HashMap<>();
-
-        allModels.put("author", new HashSet<>());
-        allModels.put("author.dev", new HashSet<>());
-        allModels.put("author.stage", new HashSet<>());
-        allModels.put("author.prod", new HashSet<>());
-        allModels.put("publish", new HashSet<>());
-        allModels.put("publish.dev", new HashSet<>());
-        allModels.put("publish.stage", new HashSet<>());
-        allModels.put("publish.prod", new HashSet<>());
-
-        Object defaultFm = runmodes.remove("(default)");
-        if (defaultFm instanceof String) {
-            for (Set<String> l : allModels.values()) {
-                l.add((String) defaultFm);
-            }
+    Map<String, Set<String>> getUserAggregatesToCreate(final Properties runmodes) throws MojoExecutionException {
+        try {
+            return AemAnalyserUtil.getAggregates(runmodes);            
+        } catch ( final IllegalArgumentException iae) {
+            throw new MojoExecutionException(iae.getMessage());
         }
-
-        for (String mode : runmodes.stringPropertyNames()) {
-            String apPrefix = getAuthorPublishPrefix(mode);
-
-            if (apPrefix != null) {
-                for (Map.Entry<String, Set<String>> entry : allModels.entrySet()) {
-                    if (entry.getKey().startsWith(apPrefix)) {
-                        entry.getValue().add(runmodes.getProperty(mode));
-                    }
-                }
-            } else {
-                for (String ap : new String [] {"author.", "publish."}) {
-                    Set<String> l = allModels.computeIfAbsent(ap + mode, x -> new HashSet<>());
-                    l.add(runmodes.getProperty(mode));
-                }
-            }
-        }
-
-        pruneModels(allModels);
-        return allModels;
-    }
-
-    void pruneModels(Map<String, Set<String>> allModels) {
-        // Remove specialised models that don't add anything
-        for (String ap : new String [] {"author", "publish"}) {
-            for (String env : new String [] {".dev", ".stage", ".prod"}) {
-                String mode = ap + env;
-                if (allModels.get(ap).equals(allModels.get(mode))) {
-                    allModels.remove(mode);
-                }
-            }
-        }
-
-        // If specialised models exist for all environments, remove the generic model, as
-        // a specialised model is then always used
-        publish:
-        for (String ap : new String [] {"author", "publish"}) {
-            for (String env : new String [] {".dev", ".stage", ".prod"}) {
-                if (!allModels.containsKey(ap + env)) {
-                    continue publish;
-                }
-            }
-
-            // Found specialised models for all, remove the generic one
-            allModels.remove(ap);
-        }
-    }
-
-    private String getAuthorPublishPrefix(String mode) {
-        if (mode.startsWith("author") || mode.startsWith("publish"))
-            return mode;
-        return null;
     }
 
     private List<Aggregate> getFinalAggregates(Set<String> userAggregateNames) throws MojoExecutionException {
