@@ -150,3 +150,7 @@ The plugin also contains a number of Maven goals that can be executed directly f
 * **project-analyse** - run the analysers on the current project, will also trigger **project-aggregate**.
 
 A typical use would be to just configure the **project-analyse** goal if the plugin should be integrated into an existing project.
+
+## See Also
+
+AEM Documentation: https://experienceleague.adobe.com/docs/experience-manager-core-components/using/developing/archetype/build-analyzer-maven-plugin.html
