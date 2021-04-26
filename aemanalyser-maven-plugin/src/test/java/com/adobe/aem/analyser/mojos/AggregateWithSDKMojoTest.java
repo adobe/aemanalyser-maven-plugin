@@ -11,38 +11,24 @@
 */
 package com.adobe.aem.analyser.mojos;
 
-import org.apache.maven.model.Build;
+import static org.junit.Assert.assertEquals;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.List;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
-import org.apache.sling.feature.maven.mojos.Aggregate;
-import org.apache.sling.feature.maven.mojos.AggregateFeaturesMojo;
+import org.apache.sling.feature.ArtifactId;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class AggregateWithSDKMojoTest {
     private Path tempDir;
@@ -61,454 +47,14 @@ public class AggregateWithSDKMojoTest {
             .forEach(File::delete);
     }
 
-    @Test
-    public void testExecute() throws Exception {
-        AggregateWithSDKMojo mojo = new AggregateWithSDKMojo();
-        mojo.unitTestMode = true;
-
-        Dependency dep1 = new Dependency();
-        dep1.setGroupId("lala");
-        dep1.setArtifactId("hoho");
-        dep1.setVersion("0.0.1");
-        Dependency dep2 = new Dependency();
-        dep2.setGroupId("com.adobe.aem");
-        dep2.setArtifactId("hihi");
-        dep2.setVersion("1.2.3");
-        Dependency sdk = new Dependency();
-        sdk.setGroupId("com.adobe.aem");
-        sdk.setArtifactId("aem-sdk-api");
-        sdk.setVersion("9.9.1");
-
-        Build build = Mockito.mock(Build.class);
-        Mockito.when(build.getDirectory())
-            .thenReturn(tempDir + "/target");
-        MavenProject prj = Mockito.mock(MavenProject.class);
-        Mockito.when(prj.getDependencies())
-            .thenReturn(Arrays.asList(dep1, dep2, sdk));
-        Mockito.when(prj.getDependencyManagement())
-            .thenReturn(Mockito.mock(DependencyManagement.class));
-        Mockito.when(prj.getBuild())
-            .thenReturn(build);
-        MojoUtils.setParameter(mojo, "project", prj);
-
-        copyTestResource("mappingfiles/runmode_1.mapping",
-                "target/cp-conversion/fm.out/runmode.mapping");
-
-        mojo.execute();
-
-        @SuppressWarnings("unchecked")
-        List<Aggregate> aggregates =
-                (List<Aggregate>) TestUtil.getField(mojo,
-                        AggregateFeaturesMojo.class, "aggregates");
-
-        assertEquals(2, aggregates.size());
-
-        boolean authorFound = false;
-        boolean publishFound = false;
-        for (Aggregate agg : aggregates) {
-            String apInfix = "";
-
-            switch (agg.classifier) {
-            case "aggregated-author":
-                authorFound = true;
-                apInfix = "-author";
-                break;
-            case "aggregated-publish":
-                publishFound = true;
-                apInfix = "-publish";
-                break;
-            default:
-                fail("Unexpected classifier: " + agg.classifier);
-            }
-
-            assertFalse(agg.markAsComplete);
-            assertEquals(Arrays.asList(
-                    "com.adobe.cq:core.wcm.components.core:FIRST",
-                    "com.adobe.cq:core.wcm.components.extensions.amp:FIRST",
-                    "org.apache.sling:org.apache.sling.models.impl:FIRST",
-                    "*:core.wcm.components.content:zip:*:FIRST",
-                    "*:core.wcm.components.extensions.amp.content:zip:*:FIRST",
-                    "*:*:jar:*:ALL"),
-                    agg.artifactsOverrides);
-            assertEquals(Collections.singletonList("*=MERGE_LATEST"), agg.configurationOverrides);
-
-            // Note getSelections() returns a private type...
-            List<?> sels = agg.getSelections();
-            Set<String> selInstrs = getSelectionInstructions(sels, "CLASSIFIER");
-            assertTrue(selInstrs.contains("product-aggregated" + apInfix));
-            assertTrue(selInstrs.contains("user-aggregated" + apInfix));
-        }
-
-        assertTrue(authorFound);
-        assertTrue(publishFound);
-
-        File generated = (File) TestUtil.getField(mojo, "generatedFeatures");
-        assertEquals(null, generated);
-    }
-
-    @Test
-    public void testExecute0() throws Exception {
-        AggregateWithSDKMojo mojo = new AggregateWithSDKMojo();
-        mojo.unitTestMode = true;
-        mojo.unitTestEarlyExit2 = true;
-
-        Dependency dep1 = new Dependency();
-        dep1.setGroupId("lala");
-        dep1.setArtifactId("hoho");
-        dep1.setVersion("0.0.1");
-        Dependency dep2 = new Dependency();
-        dep2.setGroupId("com.adobe.aem");
-        dep2.setArtifactId("hihi");
-        dep2.setVersion("1.2.3");
-        Dependency sdk = new Dependency();
-        sdk.setGroupId("com.adobe.aem");
-        sdk.setArtifactId("aem-sdk-api");
-        sdk.setVersion("9.9.1");
-
-        Build build = Mockito.mock(Build.class);
-        Mockito.when(build.getDirectory())
-            .thenReturn(tempDir + "/target");
-        MavenProject prj = Mockito.mock(MavenProject.class);
-        Mockito.when(prj.getDependencies())
-            .thenReturn(Arrays.asList(dep1, dep2, sdk));
-        Mockito.when(prj.getDependencyManagement())
-            .thenReturn(Mockito.mock(DependencyManagement.class));
-        Mockito.when(prj.getBuild())
-            .thenReturn(build);
-        MojoUtils.setParameter(mojo, "project", prj);
-
-        copyTestResource("mappingfiles/runmode_1.mapping",
-                "target/cp-conversion/fm.out/runmode.mapping");
-
-        mojo.execute();
-
-        @SuppressWarnings("unchecked")
-        List<Aggregate> aggregates = (List<Aggregate>) TestUtil.getField(mojo,
-                AggregateFeaturesMojo.class, "aggregates");
-
-        assertEquals(2, aggregates.size());
-
-        boolean authorFound = false;
-        boolean publishFound = false;
-        for (Aggregate agg : aggregates) {
-            String apInfix = "";
-
-            switch (agg.classifier) {
-            case "product-aggregated-author":
-                authorFound = true;
-                apInfix = "-author";
-                break;
-            case "product-aggregated-publish":
-                publishFound = true;
-                apInfix = "-publish";
-                break;
-            default:
-                fail("Unexpected classifier: " + agg.classifier);
-            }
-
-            assertEquals(Collections.singletonList("*:*:HIGHEST"),
-                    agg.artifactsOverrides);
-            assertEquals(Collections.singletonList("*=MERGE_LATEST"),
-                    agg.configurationOverrides);
-
-            List<?> sels = agg.getSelections();
-            assertEquals(1, sels.size());
-            String sel = getSelectionInstruction(sels, "ARTIFACT");
-            assertEquals("com.adobe.aem:aem-sdk-api:slingosgifeature:aem"
-                    + apInfix + "-sdk:9.9.1", sel);
-        }
-
-        assertTrue(authorFound);
-        assertTrue(publishFound);
-    }
-
-    @Test
-    public void testExecute1() throws Exception {
-        AggregateWithSDKMojo mojo = new AggregateWithSDKMojo();
-        mojo.unitTestMode = true;
-        mojo.unitTestEarlyExit = true;
-
-        Dependency dep1 = new Dependency();
-        dep1.setGroupId("lala");
-        dep1.setArtifactId("hoho");
-        dep1.setVersion("0.0.1");
-        Dependency dep2 = new Dependency();
-        dep2.setGroupId("com.adobe.aem");
-        dep2.setArtifactId("hihi");
-        dep2.setVersion("1.2.3");
-        Dependency sdk = new Dependency();
-        sdk.setGroupId("com.adobe.aem");
-        sdk.setArtifactId("aem-sdk-api");
-        sdk.setVersion("9.9.1");
-
-        Build build = Mockito.mock(Build.class);
-        Mockito.when(build.getDirectory())
-            .thenReturn(tempDir + "/target");
-        MavenProject prj = Mockito.mock(MavenProject.class);
-        Mockito.when(prj.getDependencies())
-            .thenReturn(Arrays.asList(dep1, dep2, sdk));
-        Mockito.when(prj.getDependencyManagement())
-            .thenReturn(Mockito.mock(DependencyManagement.class));
-        Mockito.when(prj.getBuild())
-            .thenReturn(build);
-        MojoUtils.setParameter(mojo, "project", prj);
-
-        copyTestResource("mappingfiles/runmode_1.mapping",
-                "target/cp-conversion/fm.out/runmode.mapping");
-
-        mojo.execute();
-
-        @SuppressWarnings("unchecked")
-        List<Aggregate> aggregates =
-                (List<Aggregate>) TestUtil.getField(mojo,
-                        AggregateFeaturesMojo.class, "aggregates");
-
-        assertEquals(2, aggregates.size());
-
-        boolean authorFound = false;
-        boolean publishFound = false;
-        for (Aggregate agg : aggregates) {
-            switch (agg.classifier) {
-            case "user-aggregated-author":
-                authorFound = true;
-                break;
-            case "user-aggregated-publish":
-                publishFound = true;
-                break;
-            default:
-                fail("Unexpected classifier");
-            }
-            assertFalse(agg.markAsComplete);
-            assertEquals(Collections.singletonList("*:*:HIGHEST"), agg.artifactsOverrides);
-            assertEquals(Collections.singletonList("*=MERGE_LATEST"), agg.configurationOverrides);
-
-            // Note getSelections() returns a private type...
-            List<?> sels = agg.getSelections();
-            String filesInclInstr = getSelectionInstruction(sels, "FILES_INCLUDE");
-            assertEquals("**/test1.all.json", filesInclInstr);
-        }
-        assertTrue(authorFound);
-        assertTrue(publishFound);
-
-        File expected = new File(tempDir.toFile(), "/target/cp-conversion/fm.out");
-        File generated = (File) TestUtil.getField(mojo, "generatedFeatures");
-        assertEquals(expected, generated);
-
-    }
-
-    @Test
-    public void testExecute2() throws Exception {
-        AggregateWithSDKMojo mojo = new AggregateWithSDKMojo();
-        mojo.unitTestMode = true;
-
-        Dependency dep1 = new Dependency();
-        dep1.setGroupId("lala");
-        dep1.setArtifactId("hoho");
-        dep1.setVersion("0.0.1");
-        Dependency dep2 = new Dependency();
-        dep2.setGroupId("com.adobe.aem");
-        dep2.setArtifactId("hihi");
-        dep2.setVersion("1.2.3");
-        Dependency sdk = new Dependency();
-        sdk.setGroupId("com.adobe.aem");
-        sdk.setArtifactId("aem-sdk-api");
-        sdk.setVersion("9.9.1");
-
-        Build build = Mockito.mock(Build.class);
-        Mockito.when(build.getDirectory())
-            .thenReturn(tempDir + "/target");
-        MavenProject prj = Mockito.mock(MavenProject.class);
-        Mockito.when(prj.getDependencies())
-            .thenReturn(Arrays.asList(dep1, dep2, sdk));
-        Mockito.when(prj.getDependencyManagement())
-            .thenReturn(Mockito.mock(DependencyManagement.class));
-        Mockito.when(prj.getBuild())
-            .thenReturn(build);
-        MojoUtils.setParameter(mojo, "project", prj);
-
-        copyTestResource("mappingfiles/runmode_2.mapping",
-                "target/cp-conversion/fm.out/runmode.mapping");
-
-        mojo.execute();
-
-        @SuppressWarnings("unchecked")
-        List<Aggregate> aggregates =
-                (List<Aggregate>) TestUtil.getField(mojo,
-                        AggregateFeaturesMojo.class, "aggregates");
-
-        assertEquals(3, aggregates.size());
-
-        boolean authorFound = false;
-        boolean authorProdFound = false;
-        boolean publishFound = false;
-        for (Aggregate agg : aggregates) {
-            String apInfix = "";
-
-            switch (agg.classifier) {
-            case "aggregated-author":
-                authorFound = true;
-                apInfix = "-author";
-                break;
-            case "aggregated-author.prod":
-                authorProdFound = true;
-                apInfix = "-author";
-                break;
-            case "aggregated-publish":
-                publishFound = true;
-                apInfix = "-publish";
-                break;
-            default:
-                fail("Unexpected classifier");
-            }
-
-            // Note getSelections() returns a private type...
-            List<?> sels = agg.getSelections();
-
-            Set<String> selInstrs = getSelectionInstructions(sels, "CLASSIFIER");
-            assertTrue(selInstrs.contains("product-aggregated" + apInfix));
-            assertTrue(selInstrs.contains("user-" + agg.classifier));
-        }
-        assertTrue(authorFound);
-        assertTrue(authorProdFound);
-        assertTrue(publishFound);
-
-        Mockito.verify(prj).setContextValue("com.adobe.aem.analyser.mojos.AggregateWithSDKMojo-aggregates",
-                new HashSet<>(Arrays.asList("aggregated-author", "aggregated-author.prod", "aggregated-publish")));
-    }
-
-    @Test
-    public void testSDKIDOverrides() throws Exception {
-        AggregateWithSDKMojo mojo = new AggregateWithSDKMojo();
-        mojo.unitTestMode = true;
-        mojo.unitTestEarlyExit2 = true;
-        mojo.sdkGroupId = "foo";
-        mojo.sdkArtifactId = "bar";
-        mojo.sdkVersion = "42";
-
-        Build build = Mockito.mock(Build.class);
-        Mockito.when(build.getDirectory())
-            .thenReturn(tempDir + "/target");
-        MavenProject prj = Mockito.mock(MavenProject.class);
-        Mockito.when(prj.getDependencyManagement())
-            .thenReturn(Mockito.mock(DependencyManagement.class));
-        Mockito.when(prj.getBuild())
-            .thenReturn(build);
-        MojoUtils.setParameter(mojo, "project", prj);
-
-        copyTestResource("mappingfiles/runmode_1.mapping",
-                "target/cp-conversion/fm.out/runmode.mapping");
-
-        mojo.execute();
-
-        @SuppressWarnings("unchecked")
-        List<Aggregate> aggregates =
-                (List<Aggregate>) TestUtil.getField(mojo,
-                        AggregateFeaturesMojo.class, "aggregates");
-
-        assertEquals(2, aggregates.size());
-        Aggregate agg = aggregates.get(0);
-
-        // Note getSelections() returns a private type...
-        List<?> sels = agg.getSelections();
-        String artSelInstr = getSelectionInstruction(sels, "ARTIFACT");
-        assertTrue("foo:bar:slingosgifeature:aem-author-sdk:42".equals(artSelInstr)
-                || "foo:bar:slingosgifeature:aem-publish-sdk:42".equals(artSelInstr));
-    }
-
-    @Test
-    public void testExectuteWithAddon() throws Exception {
-        AggregateWithSDKMojo mojo = new AggregateWithSDKMojo();
-        mojo.unitTestMode = true;
-        mojo.unitTestEarlyExit2 = true;
-
-        Dependency formsAddon = new Dependency();
-        formsAddon.setGroupId("com.adobe.aem");
-        formsAddon.setArtifactId("aem-forms-sdk-api");
-        formsAddon.setVersion("8.7.6.test");
-        Dependency cifAddon = new Dependency();
-        cifAddon.setGroupId("com.adobe.aem");
-        cifAddon.setArtifactId("aem-cif-sdk-api");
-        cifAddon.setVersion("2021.02.24.test");
-        Dependency dep1 = new Dependency();
-        dep1.setGroupId("lala");
-        dep1.setArtifactId("hoho");
-        dep1.setVersion("0.0.1");
-        Dependency dep2 = new Dependency();
-        dep2.setGroupId("com.adobe.aem");
-        dep2.setArtifactId("hihi");
-        dep2.setVersion("1.2.3");
-        Dependency sdk = new Dependency();
-        sdk.setGroupId("com.adobe.aem");
-        sdk.setArtifactId("aem-sdk-api");
-        sdk.setVersion("9.9.1");
-
-        Build build = Mockito.mock(Build.class);
-        Mockito.when(build.getDirectory())
-            .thenReturn(tempDir + "/target");
-        MavenProject prj = Mockito.mock(MavenProject.class);
-        Mockito.when(prj.getDependencies())
-            .thenReturn(Arrays.asList(formsAddon, cifAddon, dep1, sdk, dep2));
-        Mockito.when(prj.getBuild())
-            .thenReturn(build);
-        MojoUtils.setParameter(mojo, "project", prj);
-
-        copyTestResource("mappingfiles/runmode_1.mapping",
-                "target/cp-conversion/fm.out/runmode.mapping");
-
-        mojo.execute();
-
-        @SuppressWarnings("unchecked")
-        List<Aggregate> aggregates =
-                (List<Aggregate>) TestUtil.getField(mojo,
-                        AggregateFeaturesMojo.class, "aggregates");
-
-        assertEquals(2, aggregates.size());
-        Aggregate agg = aggregates.get(0);
-
-        // Note getSelections() returns a private type...
-        List<?> sels = agg.getSelections();
-        Set<String> artSelInstr = getSelectionInstructions(sels, "ARTIFACT");
-        assertEquals(3, artSelInstr.size());
-
-        boolean foundSDK = false;
-        boolean foundFormsAddon = false;
-        boolean foundCifAddon = false;
-        for (String id : artSelInstr) {
-            switch (id) {
-            case "com.adobe.aem:aem-forms-sdk-api:slingosgifeature:aem-forms-sdk:8.7.6.test":
-                foundFormsAddon = true;
-                break;
-            case "com.adobe.aem:aem-cif-sdk-api:slingosgifeature:aem-cif-sdk:2021.02.24.test":
-                foundCifAddon = true;
-                break;
-            case "com.adobe.aem:aem-sdk-api:slingosgifeature:aem-author-sdk:9.9.1":
-            case "com.adobe.aem:aem-sdk-api:slingosgifeature:aem-publish-sdk:9.9.1":
-                // Either author or publish
-                foundSDK = true;
-                break;
-            default:
-                fail("Unexpected ID found in selection:" + id);
-            }
-        }
-        assertTrue(foundSDK);
-        assertTrue(foundFormsAddon);
-        assertTrue(foundCifAddon);
-    }
-
-    @Test
+    @Test(expected = MojoExecutionException.class)
     public void testGetSDKFromDependencies() throws Exception {
         AggregateWithSDKMojo mojo = new AggregateWithSDKMojo();
 
         MavenProject prj = Mockito.mock(MavenProject.class);
         MojoUtils.setParameter(mojo, "project", prj);
 
-        try {
-            mojo.getSDKFromDependencies("com.adobe.aem", "aem-sdk-api", true);
-            fail("Should have thrown a MojoExecutionException");
-        } catch (MojoExecutionException e) {
-            // good
-            assertTrue(e.getMessage().contains("Unable to find SDK artifact"));
-        }
+        mojo.getSDKFromDependencies("com.adobe.aem", "aem-sdk-api", true);
     }
 
     @Test
@@ -529,35 +75,32 @@ public class AggregateWithSDKMojoTest {
         Mockito.when(prj.getDependencyManagement()).thenReturn(depMgmt);
 
         MojoUtils.setParameter(mojo, "project", prj);
-        assertEquals(sdkDep, mojo.getSDKFromDependencies("com.adobe.aem", "aem-sdk-api", true));
+        assertEquals(new ArtifactId(sdkDep.getGroupId(), sdkDep.getArtifactId(), sdkDep.getVersion(), sdkDep.getClassifier(), sdkDep.getType()), 
+                mojo.getSDKFromDependencies("com.adobe.aem", "aem-sdk-api", true));
     }
 
-    private void copyTestResource(String resource, String file) throws IOException {
-        URL runmodesFile = getClass().getResource("/" + resource);
-        try (InputStream is = runmodesFile.openStream()) {
-            Path targetPath = tempDir.resolve(file);
-            Files.createDirectories(targetPath.getParent());
-            Files.copy(is, targetPath);
-        }
-    }
+    @Test
+    public void testGetSDKFromDedpendencies2() throws Exception {
+        AggregateWithSDKMojo mojo = new AggregateWithSDKMojo();
 
-    private String getSelectionInstruction(List<?> sels, String type) throws Exception {
-        for (Object s : sels) {
-            if (type.equals(TestUtil.getField(s, "type").toString())) {
-                return TestUtil.getField(s, "instruction").toString();
-            }
-        }
-        return null;
-    }
+        Dependency dep = new Dependency();
+        Dependency sdkDep = new Dependency();
+        sdkDep.setGroupId("com.adobe.aem");
+        sdkDep.setArtifactId("aem-cif-sdk-api");
+        sdkDep.setClassifier("aem-cif-sdk");
+        sdkDep.setVersion("1.3.2");
 
-    private Set<String> getSelectionInstructions(List<?> sels, String type) throws Exception {
-        Set<String> result = new HashSet<>();
+        DependencyManagement depMgmt = new DependencyManagement();
+        depMgmt.addDependency(dep);
+        depMgmt.addDependency(sdkDep);
 
-        for (Object s : sels) {
-            if (type.equals(TestUtil.getField(s, "type").toString())) {
-                result.add(TestUtil.getField(s, "instruction").toString());
-            }
-        }
-        return result;
+        MavenProject prj = Mockito.mock(MavenProject.class);
+        Mockito.when(prj.getDependencyManagement()).thenReturn(depMgmt);
+
+        MojoUtils.setParameter(mojo, "project", prj);
+        final List<ArtifactId> addons = mojo.discoverAddons(null);
+        assertEquals(1, addons.size());
+        assertEquals(new ArtifactId(sdkDep.getGroupId(), sdkDep.getArtifactId(), sdkDep.getVersion(), sdkDep.getClassifier(), sdkDep.getType()), 
+                addons.get(0));
     }
 }
