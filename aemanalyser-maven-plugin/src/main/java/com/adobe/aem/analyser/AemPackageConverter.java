@@ -1,0 +1,129 @@
+/*
+  Copyright 2020 Adobe. All rights reserved.
+  This file is licensed to you under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License. You may obtain a copy
+  of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software distributed under
+  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+  OF ANY KIND, either express or implied. See the License for the specific language
+  governing permissions and limitations under the License.
+*/
+package com.adobe.aem.analyser;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter;
+import org.apache.sling.feature.cpconverter.accesscontrol.DefaultAclManager;
+import org.apache.sling.feature.cpconverter.artifacts.DefaultArtifactsDeployer;
+import org.apache.sling.feature.cpconverter.features.DefaultFeaturesManager;
+import org.apache.sling.feature.cpconverter.filtering.RegexBasedResourceFilter;
+import org.apache.sling.feature.cpconverter.filtering.ResourceFilter;
+import org.apache.sling.feature.cpconverter.handlers.DefaultEntryHandlersManager;
+import org.apache.sling.feature.cpconverter.vltpkg.DefaultPackagesEventsEmitter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class AemPackageConverter {
+
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    private static final String FILTER = ".*/(apps|libs)/(.*)/install\\.(((author|publish)\\.(dev|stage|prod))|((dev|stage|prod)\\.(author|publish))|(dev|stage|prod))/(.*)(?<=\\.(zip|jar)$)";
+    
+    private File featureOutputDirectory;
+
+    private File converterOutputDirectory;
+
+    private String artifactIdOverride;
+
+    /**
+     * @return the featureOutputDirectory
+     */
+    public File getFeatureOutputDirectory() {
+        return featureOutputDirectory;
+    }
+
+    /**
+     * @param featureOutputDirectory the featureOutputDirectory to set
+     */
+    public void setFeatureOutputDirectory(File featureOutputDirectory) {
+        this.featureOutputDirectory = featureOutputDirectory;
+    }
+
+    /**
+     * @return the converterOutputDirectory
+     */
+    public File getConverterOutputDirectory() {
+        return converterOutputDirectory;
+    }
+
+    /**
+     * @param converterOutputDirectory the converterOutputDirectory to set
+     */
+    public void setConverterOutputDirectory(File converterOutputDirectory) {
+        this.converterOutputDirectory = converterOutputDirectory;
+    }
+
+    /**
+     * @return the artifactIdOverride
+     */
+    public String getArtifactIdOverride() {
+        return artifactIdOverride;
+    }
+
+    /**
+     * @param artifactIdOverride the artifactIdOverride to set
+     */
+    public void setArtifactIdOverride(String artifactIdOverride) {
+        this.artifactIdOverride = artifactIdOverride;
+    }
+
+    public void convert(final Map<String, File> contentPackages) throws IOException {
+        final Map<String, String> properties = new HashMap<>();
+        DefaultFeaturesManager featuresManager = new DefaultFeaturesManager(
+            false,
+            20,
+            featureOutputDirectory,
+            artifactIdOverride,
+            null,
+            properties
+        );
+
+        featuresManager.setExportToAPIRegion("global");
+
+        ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(false)
+                .setFeaturesManager(featuresManager)
+                .setBundlesDeployer(
+                        new DefaultArtifactsDeployer(
+                            this.converterOutputDirectory
+                        )
+                    )
+                    .setEntryHandlersManager(
+                        new DefaultEntryHandlersManager()
+                        )
+                        .setAclManager(
+                            new DefaultAclManager()
+                            )
+                            .setEmitter(DefaultPackagesEventsEmitter.open(this.featureOutputDirectory))
+                            .setResourceFilter(getResourceFilter());
+
+        for(Map.Entry<String, File> entry : contentPackages.entrySet()) {
+            logger.info("Converting package {}", entry.getKey());
+            try {
+                converter.convert(entry.getValue());
+            } catch (final Throwable t) {
+                throw new IOException("Content Package Converter Exception " + t.getMessage(), t);        
+            }
+        }
+    }
+
+    private ResourceFilter getResourceFilter() {
+        RegexBasedResourceFilter filter = new RegexBasedResourceFilter();
+        filter.addFilteringPattern(FILTER);
+
+        return filter;
+    }
+}
