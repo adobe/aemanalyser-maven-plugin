@@ -20,12 +20,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Build;
@@ -58,32 +55,6 @@ public class AnalyseMojoTest {
     }
 
     @Test
-    public void testExecute() throws Exception {
-        Build build = Mockito.mock(Build.class);
-        Mockito.when(build.getDirectory()).thenReturn(tempDir.toString());
-
-        MavenProject prj = Mockito.mock(MavenProject.class);
-        Mockito.when(prj.getBuild()).thenReturn(build);
-        Mockito.when(prj.getContextValue(AggregateWithSDKMojo.class.getName() + "-aggregates"))
-            .thenReturn(new HashSet<>(Arrays.asList("agg1", "agg2")));
-
-        AnalyseMojo mojo = new TestAnalyseMojo(prj);
-        mojo.unitTestMode = true;
-        mojo.includeTasks = Collections.emptyList();
-
-        mojo.execute();
-
-        assertEquals(2, mojo.getFeatureSelection().getSelections().size());
-
-        // Note getSelections() returns a private type...
-        List<?> sels = mojo.getFeatureSelection().getSelections();
-        assertEquals(new HashSet<>(Arrays.asList("agg1", "agg2")),
-                getSelectionInstructions(sels, "CLASSIFIER"));
-    }
-
-
-
-    @Test
     public void testLocalArtifactManager() throws Exception {
         File ab123 = Files.createTempFile(tempDir, "test", ".tmp").toFile();
 
@@ -111,7 +82,6 @@ public class AnalyseMojoTest {
             .thenReturn(Collections.singleton("aggregates"));
 
         AnalyseMojo mojo = new TestAnalyseMojo(prj);
-        mojo.unitTestMode = true;
         mojo.includeTasks = Collections.singletonList("mytask");
 
         ArtifactProvider ap = mojo.getArtifactProvider(mojo.getLocalArtifactProvider());
@@ -178,16 +148,6 @@ public class AnalyseMojoTest {
         URL url = ap.provide(ArtifactId.fromMvnId("a:b:slingosgifeature:123"));
         assertEquals(ab123.toURI().toURL(), url);
 
-    }
-
-    private Set<String> getSelectionInstructions(List<?> sels, String type) throws Exception {
-        Set<String> l = new HashSet<>();
-        for (Object s : sels) {
-            if (type.equals(TestUtil.getField(s, "type").toString())) {
-                l.add(TestUtil.getField(s, "instruction").toString());
-            }
-        }
-        return l;
     }
 
     private static class TestAnalyseMojo extends AnalyseMojo {

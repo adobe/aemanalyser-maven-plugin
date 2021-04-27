@@ -27,24 +27,23 @@ import com.adobe.aem.analyser.AemAnalyserResult;
 
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.ArtifactProvider;
 import org.apache.sling.feature.io.artifacts.ArtifactManager;
 import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
-import org.apache.sling.feature.maven.ProjectHelper;
-import org.apache.sling.feature.maven.mojos.AbstractIncludingFeatureMojo;
-import org.apache.sling.feature.maven.mojos.FeatureSelectionConfig;
 
 @Mojo(name = "analyse", defaultPhase = LifecyclePhase.TEST)
-public class AnalyseMojo extends AbstractIncludingFeatureMojo {
-    boolean unitTestMode = false;
+public class AnalyseMojo extends AbstractMojo {
 
     @Parameter(defaultValue = AemAnalyser.DEFAULT_TASKS,
         property = "includeTasks")
@@ -59,11 +58,18 @@ public class AnalyseMojo extends AbstractIncludingFeatureMojo {
     @Parameter(defaultValue = "true", property = "failon.analyser.errors")
     private boolean failOnAnalyserErrors;
 
-    @Component
-    ArtifactHandlerManager artifactHandlerManager;
+    @Parameter(property = "project", readonly = true, required = true)
+    protected MavenProject project;
 
     @Component
-    ArtifactResolver artifactResolver;
+    protected ArtifactHandlerManager artifactHandlerManager;
+
+    @Component
+    protected ArtifactResolver artifactResolver;
+
+    @Parameter(property = "session", readonly = true, required = true)
+    protected MavenSession mavenSession;
+
 
     ArtifactProvider getArtifactProvider(final ArtifactProvider localProvider) {
         return new ArtifactProvider() {
@@ -75,7 +81,7 @@ public class AnalyseMojo extends AbstractIncludingFeatureMojo {
                     return url;
                 }
                 try {
-                    return ProjectHelper.getOrResolveArtifact(project, mavenSession, artifactHandlerManager, artifactResolver, id).getFile().toURI().toURL();
+                    return MojoUtils.getOrResolveArtifact(project, mavenSession, artifactHandlerManager, artifactResolver, id).getFile().toURI().toURL();
                 } catch (final MalformedURLException e) {
                     getLog().debug("Malformed url " + e.getMessage(), e);
                     // ignore
@@ -103,16 +109,6 @@ public class AnalyseMojo extends AbstractIncludingFeatureMojo {
         return new LinkedHashSet<>(this.includeTasks);
     }
 
-    FeatureSelectionConfig getFeatureSelection() {
-        FeatureSelectionConfig s = new FeatureSelectionConfig();
-        @SuppressWarnings("unchecked")
-        Set<String> aggregates =
-                (Set<String>) project.getContextValue(AggregateWithSDKMojo.class.getName() + "-aggregates");
-        aggregates.forEach(s::setIncludeClassifier);
- 
-       return s;
-    }
-    
     ArtifactProvider getLocalArtifactProvider() throws IOException {
         ArtifactManagerConfig amcfg = new ArtifactManagerConfig();
         amcfg.setRepositoryUrls(new String[] { MojoUtils.getConversionOutputDir(project).toURI().toURL().toString() });
@@ -127,13 +123,6 @@ public class AnalyseMojo extends AbstractIncludingFeatureMojo {
             return;
         }
 
-        if ( unitTestMode ) {
-            return;
-        }
-
-        checkPreconditions();
- 
- 
         boolean hasErrors = false;
         try {
             final AemAnalyser analyser = new AemAnalyser();
@@ -142,7 +131,7 @@ public class AnalyseMojo extends AbstractIncludingFeatureMojo {
             analyser.setTaskConfigurations(this.getTaskConfigurations());
 
             getLog().debug("Retrieving Feature files...");
-            final Collection<Feature> features = this.getSelectedFeatures(getFeatureSelection()).values();
+            final Collection<Feature> features = MojoUtils.getAggregates(project);
 
             final AemAnalyserResult result = analyser.analyse(features);
             
