@@ -11,12 +11,13 @@
 */
 package com.adobe.aem.analyser.mojos;
 
-import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
-@Mojo(name = "project-analyse", defaultPhase = LifecyclePhase.VERIFY)
-@Execute(lifecycle = "project-analysis", goal = "project-aggregate")
-public class ProjectAnalyseMojo extends AnalyseMojo {
-    // Subclassed to add extra annotations to chain additional mojo
+@Mojo(name = "project-analyse", 
+    defaultPhase = LifecyclePhase.VERIFY, 
+    requiresDependencyResolution = ResolutionScope.COMPILE)
+public class ProjectAnalyseMojo extends AemAnalyseMojo {
+    // Subclassed to be used inside a content package project
 }

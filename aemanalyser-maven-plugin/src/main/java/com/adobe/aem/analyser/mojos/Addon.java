@@ -11,11 +11,17 @@
 */
 package com.adobe.aem.analyser.mojos;
 
-import org.apache.maven.plugins.annotations.Execute;
-import org.apache.maven.plugins.annotations.Mojo;
+public class Addon {
 
-@Mojo(name = "project-aggregate")
-@Execute(lifecycle = "project-analysis", goal = "convert")
-public class ProjectAggregateWithSDKMojo extends AggregateWithSDKMojo {
-    // Subclassed to add extra annotations to chain additional mojo
+    String groupId;
+    String artifactId;
+    String classifier;
+
+    public Addon() {}
+
+    Addon(String gid, String aid, String clsf) {
+        groupId = gid;
+        artifactId = aid;
+        classifier = clsf;
+    }
 }
