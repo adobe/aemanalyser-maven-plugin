@@ -117,6 +117,10 @@ And then you need to add this module to the parent project by adding this line t
 
 Make sure to add it as the last module.
 
+## AEM as a Cloud Service
+
+During the build in a Cloud Manager pipeline, the plugin as part of the Maven project build is automatically disabled. Instead the Cloud Manager pipeline performs the required validation. Please also consult the [AEM Documentation](https://experienceleague.adobe.com/docs/experience-manager-core-components/using/developing/archetype/build-analyzer-maven-plugin.html).
+
 ## Maven Goals
 
 While the best way to use this plugin is to create a separate module as outlined above, the plugin can also be added to existing projects, for example a content-package project. It provides the following goals:
@@ -167,6 +171,4 @@ Some analyser tasks require configuration. Default configuration is used by the 
 
 Please note, that overriding the default configuration for the analysers might hide errors locally that will be catched in the Cloud Manager pipeline.
 
-## See Also
 
-Please also consult the [AEM Documentation](https://experienceleague.adobe.com/docs/experience-manager-core-components/using/developing/archetype/build-analyzer-maven-plugin.html).
