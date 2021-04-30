@@ -126,6 +126,13 @@ While the best way to use this plugin is to create a separate module as outlined
 
 A typical use would be to just configure the **project-analyse** goal if the plugin should be integrated into an existing project.
 
+### Configuration
+
+The plugin can be configured with the following configuration properties:
+
+* **skip** : If this is set to `true` the plugin execution will be skipped. The plugin can also be skipped by setting the propert `aem.analyser.skip` to `true`.
+* **failOnAnalyserErrors** : This is by default enabled and causes the build to fail if any analyser reports an error. This can be set to `false` to continue the build.
+
 ## Advanced Configurations
 
 The following configuration options can be provided to the plugin. However they alter the behaviour of the plugin. Therefore using these configurations might result in your project build succeeding locally - but it might fail in the Cloud Manager pipeline as a different configuration is running there. Therefore it is generally not recommended to change the configuration of the plugin.

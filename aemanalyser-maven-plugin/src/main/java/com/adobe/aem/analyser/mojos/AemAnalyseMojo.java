@@ -96,6 +96,12 @@ public class AemAnalyseMojo extends AbstractMojo {
     Map<String, Properties> analyserTaskConfigurations;
 
     /**
+     * Skip the execution
+     */
+    @Parameter(defaultValue = "false", property = "aem.analyser.skip")
+    boolean skip;
+
+    /**
      * Fail on analyser errors?
      */
     @Parameter(defaultValue = "true", property = "failon.analyser.errors")
@@ -153,12 +159,15 @@ public class AemAnalyseMojo extends AbstractMojo {
     boolean skipRun() {
         // check env var
         final String skipVar = System.getenv(Constants.SKIP_ENV_VAR);
-        boolean skip = skipVar != null && skipVar.length() > 0;
-        if ( skip ) {
+        boolean skipExecution = skipVar != null && skipVar.length() > 0;
+        if ( skipExecution ) {
             getLog().info("Skipping AEM analyser plugin as variable " + Constants.SKIP_ENV_VAR + " is set.");
+        } else if ( this.skip ) {
+            skipExecution = true;
+            getLog().info("Skipping AEM analyser plugin as configured.");
         }
 
-        return skip;
+        return skipExecution;
     }
 
     @Override
