@@ -6,7 +6,7 @@ The plugin provides an easy way to run the same checks locally as in the Cloud M
 
 ## Functionality
 
-The plugin performs similar tasks as the Cloud Manager pipeline after the application is built and before it is deployed. It inspects the generated content packages and runs a set of checks on the contents of the packages.
+The plugin performs similar tasks as the Cloud Manager pipeline after the application is built and before it is deployed. It inspects the generated content packages and runs a set of checks (analysers) on the contents of the packages.
 
 Most of the analysers are based on the [Apache Sling Feature Model Analyser framework](https://github.com/apache/sling-org-apache-sling-feature-analyser/blob/master/readme.md).
 
@@ -25,7 +25,7 @@ Example:
     <plugin>
         <groupId>com.adobe.aem</groupId>
         <artifactId>aemanalyser-maven-plugin</artifactId>
-        <version>0.9.0</version>
+        <version>0.9.2</version> <!-- Make sure to use the latest release -->
         <extensions>true</extensions>
     </plugin>
 
@@ -61,7 +61,7 @@ With that, your project `pom.xml` needs to look somewhat like this:
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>0.9.2</version>
+                    <version>0.9.2</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
@@ -96,7 +96,7 @@ As an example, consider adding a new module to the [AEM WKND Sites project](http
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>0.9.2</version>
+                    <version>0.9.2</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
@@ -111,46 +111,55 @@ As an example, consider adding a new module to the [AEM WKND Sites project](http
         </dependencies>
     </project>
 
-## Selecting Tasks
+And then you need to add this module to the parent project by adding this line to the parent `pom.xml` in the modules section:
 
-The plugin will execute a number of default analysers. It is possible to select a different set of analyser tasks, for example with the following configuration:
+    <module>analyse</module>   <!-- This is the name of the subfolder -->
 
-    <includeTasks>
-        <includeTask>bundle-packages</includeTask>
-        <includeTask>requirements-capabilities</includeTask>
-    </includeTasks>
-
-Please note that if you remove tasks which are run by default, the plugin might not report any errors in your project, while the analysers that run as part of the Cloud Manager pipeline might report errors.
-
-## Configuring Analyser Tasks
-
-Some analyser tasks require configuration. Default configuration is used by the plugin for the default set of analysers. Additional or different configuration can be provided like this:
-
-    <includeTasks>
-        <includeTask>bundle-packages</includeTask>
-        <includeTask>requirements-capabilities</includeTask>
-        <includeTask>bundle-resources</includeTask>
-        <includeTask>api-regions-check-order</includeTask>
-    </includeTasks>
-
-    <taskConfiguration>
-        <api-regions-check-order>
-            <order>global,myregion</order>
-        </api-regions-check-order>
-    </taskConfiguration>
-
-Please note, that overriding the default configuration for the analysers might hide errors locally that will be catched in the Cloud Manager pipeline.
+Make sure to add it as the last module.
 
 ## Maven Goals
 
-The plugin also contains a number of Maven goals that can be executed directly for integration into existing projects.
+While the best way to use this plugin is to create a separate module as outlined above, the plugin can also be added to existing projects, for example a content-package project. It provides the following goals:
 
-* **convert** - convert the content packages to feature models to prepare them for the analysers. If the packaging type is `aem-analyse` all dependencies of type content package will be converted. Otherwise the current artifact will be converted.
-* **project-aggregate** - aggregate the feature models produced by the conversion with the AEM SDK. Will also trigger the **convert** project.
-* **project-analyse** - run the analysers on the current project, will also trigger **project-aggregate**.
+* **analyse** : This is the default goal used by a 'aem-analyse' Maven project. If the packaging type is `aem-analyse` all dependencies of type content package will be converted. Otherwise the current artifact will be converted.
+* **project-analyse** : This goal can be used in existing projects. By default in runs during the `verify` phase and will analyse the artifact of the current project.
 
 A typical use would be to just configure the **project-analyse** goal if the plugin should be integrated into an existing project.
 
+## Advanced Configurations
+
+The following configuration options can be provided to the plugin. However they alter the behaviour of the plugin. Therefore using these configurations might result in your project build succeeding locally - but it might fail in the Cloud Manager pipeline as a different configuration is running there. Therefore it is generally not recommended to change the configuration of the plugin.
+
+### Selecting Tasks
+
+The plugin will execute a number of default analysers. It is possible to select a different set of analyser tasks, for example with the following configuration:
+
+    <analyserTasks>
+        <analyserTask>bundle-packages</analyserTask>
+        <analyserTask>requirements-capabilities</analyserTask>
+    </analyserTasks>
+
+Please note that if you remove tasks which are run by default, the plugin might not report any errors in your project, while the analysers that run as part of the Cloud Manager pipeline might report errors.
+
+### Configuring Analyser Tasks
+
+Some analyser tasks require configuration. Default configuration is used by the plugin for the default set of analysers. Additional or different configuration can be provided like this:
+
+    <analyserTasks>
+        <analyserTask>bundle-packages</analyserTask>
+        <analyserTask>requirements-capabilities</analyserTask>
+        <analyserTask>bundle-resources</analyserTask>
+        <analyserTask>api-regions-check-order</analyserTask>
+    </analyserTasks>
+
+    <analyserTaskConfigurations>
+        <api-regions-check-order>
+            <order>global,myregion</order>
+        </api-regions-check-order>
+    </analyserTaskConfigurations>
+
+Please note, that overriding the default configuration for the analysers might hide errors locally that will be catched in the Cloud Manager pipeline.
+
 ## See Also
 
-AEM Documentation: https://experienceleague.adobe.com/docs/experience-manager-core-components/using/developing/archetype/build-analyzer-maven-plugin.html
+Please also consult the [AEM Documentation](https://experienceleague.adobe.com/docs/experience-manager-core-components/using/developing/archetype/build-analyzer-maven-plugin.html).
