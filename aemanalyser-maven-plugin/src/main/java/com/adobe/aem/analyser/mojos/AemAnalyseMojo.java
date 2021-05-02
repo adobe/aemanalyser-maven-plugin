@@ -69,17 +69,25 @@ import org.codehaus.mojo.versions.api.VersionsHelper;
 public class AemAnalyseMojo extends AbstractMojo {
 
     /**
-     * The artifact id of the sdk api jar
+     * The artifact id of the sdk api jar. The artifact id is automatically detected by this plugin,
+     * but using this configuration the auto detection can be disabled
      */
     @Parameter(defaultValue = Constants.SDK_ARTIFACT_ID, property = "sdkArtifactId")
     String sdkArtifactId;
     
     /**
-     * The version of the sdk api. Can be used to specify the exact version to be used. Otherwise the latest
-     * available SDK version is used.
+     * The version of the sdk api. Can be used to specify the exact version to be used. Otherwise the
+     * plugin detects the version to use.
      */
     @Parameter(required = false, property = "sdkVersion")
     String sdkVersion;
+
+    /**
+     * Use dependency versions. If this is enabled, the version for the SDK and the Add-ons is taken
+     * from the project dependencies. By default, the latest version is used.
+     */
+    @Parameter(required = false, defaultValue = "false")
+    boolean useDependencyVersions;
 
     /**
      * The list of add ons.
@@ -298,7 +306,7 @@ public class AemAnalyseMojo extends AbstractMojo {
             dep.setGroupId(Constants.SDK_GROUP_ID);
             dep.setArtifactId(this.sdkArtifactId);
             dep.setVersion(sdkDep == null ? "1.0" : sdkDep.getVersion());
-            final String foundVersion = this.getLatestVersion(dep);
+            final String foundVersion = this.useDependencyVersions ? null : this.getLatestVersion(dep);
             if ( foundVersion == null && sdkDep == null ) {
                 throw new MojoExecutionException("Unable to find SDK artifact in dependencies or dependency management: "
                                     + Constants.SDK_GROUP_ID + ":" + this.sdkArtifactId);
@@ -338,7 +346,7 @@ public class AemAnalyseMojo extends AbstractMojo {
                 dep.setGroupId(addonSDK.getGroupId());
                 dep.setArtifactId(addonSDK.getArtifactId());
                 dep.setVersion(addonSDK.getVersion());
-                final String foundVersion = this.getLatestVersion(dep);
+                final String foundVersion = this.useDependencyVersions ? null : this.getLatestVersion(dep);
                 String useVersion = dep.getVersion();
                 if ( foundVersion != null && isNewer(useVersion, foundVersion)) {
                     getLog().warn("Project is configured with outdated Add-On version : " + dep);
