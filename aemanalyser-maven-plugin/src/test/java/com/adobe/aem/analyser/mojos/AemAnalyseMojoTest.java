@@ -20,8 +20,11 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Build;
@@ -101,16 +104,8 @@ public class AemAnalyseMojoTest {
         assertEquals(def456.toUri().toURL(), url2);
     }
 
-    @Test(expected = MojoExecutionException.class)
-    public void testGetSDKFromDependencies() throws Exception {
-        MavenProject prj = Mockito.mock(MavenProject.class);
-        AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
-
-        mojo.getSDKFromDependencies("com.adobe.aem", "aem-sdk-api", true);
-    }
-
     @Test
-    public void testGetSDKFromDependencies2() throws Exception {
+    public void testGetArtifactIdFromDependencies2() throws Exception {
         Dependency dep = new Dependency();
         Dependency sdkDep = new Dependency();
         sdkDep.setGroupId("com.adobe.aem");
@@ -127,11 +122,11 @@ public class AemAnalyseMojoTest {
         AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
 
         assertEquals(new ArtifactId(sdkDep.getGroupId(), sdkDep.getArtifactId(), sdkDep.getVersion(), sdkDep.getClassifier(), sdkDep.getType()), 
-                mojo.getSDKFromDependencies("com.adobe.aem", "aem-sdk-api", true));
+                mojo.getArtifactIdFromDependencies("com.adobe.aem", "aem-sdk-api"));
     }
 
     @Test
-    public void testGetSDKFromDedpendencies2() throws Exception {
+    public void testDiscoverAddons() throws Exception {
         Dependency dep = new Dependency();
         Dependency sdkDep = new Dependency();
         sdkDep.setGroupId("com.adobe.aem");
@@ -153,9 +148,35 @@ public class AemAnalyseMojoTest {
                 addons.get(0));
     }
     
+    @Test
+    public void testGetSDKArtifactIdWithConfiguredVersionAndArtifactId() throws Exception {
+        final MavenProject prj = Mockito.mock(MavenProject.class);
+        final AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
+        mojo.sdkArtifactId = "my-artifact";
+        mojo.sdkVersion = "5.0";
+
+        final ArtifactId id = mojo.getSDKArtifactId();
+        assertEquals(Constants.SDK_GROUP_ID, id.getGroupId());
+        assertEquals("my-artifact", id.getArtifactId());
+        assertEquals("5.0", id.getVersion());
+    }
+
+    @Test(expected = MojoExecutionException.class)
+    public void testGetSDKArtifactIdWithoutDependency() throws Exception {
+        final MavenProject prj = Mockito.mock(MavenProject.class);
+        final AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
+        mojo.sdkArtifactId = Constants.SDK_ARTIFACT_ID;
+
+        mojo.getSDKArtifactId();
+    }
+
     private static class TestAnalyseMojo extends AemAnalyseMojo {
-        private TestAnalyseMojo(MavenProject prj) {
-            project = prj;
+        private TestAnalyseMojo(final MavenProject prj) {
+            this.project = prj;
+        }
+
+        String getLatestVersion(final Dependency dependencies) throws MojoExecutionException {
+            return null;
         }
     }
 }
