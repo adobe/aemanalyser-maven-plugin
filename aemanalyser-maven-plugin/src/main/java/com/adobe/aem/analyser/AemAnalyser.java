@@ -42,7 +42,8 @@ public class AemAnalyser {
     + "api-regions-crossfeature-dups,"
     + "api-regions-exportsimports,"
 //        + "repoinit," disable until SLING-10215 is fixed
-    + "configuration-api";
+    + "configuration-api,"
+    + "region-deprecated-api";
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
