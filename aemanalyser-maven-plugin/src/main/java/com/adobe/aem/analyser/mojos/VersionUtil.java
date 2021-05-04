@@ -12,29 +12,23 @@
 package com.adobe.aem.analyser.mojos;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.apache.maven.artifact.metadata.ArtifactMetadataRetrievalException;
-import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
-import org.apache.maven.artifact.factory.ArtifactFactory;
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.ArtifactUtils;
+import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
-import org.apache.maven.execution.MavenSession;
+import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.repository.legacy.metadata.ArtifactMetadataRetrievalException;
+import org.apache.maven.repository.legacy.metadata.ArtifactMetadataSource;
 import org.apache.sling.feature.ArtifactId;
-import org.codehaus.mojo.versions.api.ArtifactVersions;
-import org.codehaus.mojo.versions.api.DefaultVersionsHelper;
-import org.codehaus.mojo.versions.api.UpdateScope;
-import org.codehaus.mojo.versions.api.VersionsHelper;
 
 /**
  * Helper methods to manage dependencies, versions, ...
@@ -45,11 +39,7 @@ public class VersionUtil {
 
     private final Log log;
 
-    private final ArtifactResolver artifactResolver;
-
-    private final MavenSession mavenSession;
-
-    private final ArtifactFactory artifactFactory;
+    private final ArtifactHandlerManager artifactHandlerManager;
 
     private final ArtifactMetadataSource artifactMetadataSource;
 
@@ -59,17 +49,13 @@ public class VersionUtil {
 
     public VersionUtil(final Log log, 
             final MavenProject project,
-            final ArtifactResolver artifactResolver,
-            final MavenSession mavenSession,
-            final ArtifactFactory artifactFactory,
+            final ArtifactHandlerManager artifactHandlerManager,
             final ArtifactMetadataSource artifactMetadataSource,
             final List<ArtifactRepository> remoteArtifactRepositories,
             final ArtifactRepository localRepository) {
         this.project = project;
         this.log = log;
-        this.artifactResolver = artifactResolver;
-        this.mavenSession = mavenSession;
-        this.artifactFactory = artifactFactory;
+        this.artifactHandlerManager = artifactHandlerManager;
         this.artifactMetadataSource = artifactMetadataSource;
         this.remoteArtifactRepositories = remoteArtifactRepositories;
         this.localRepository = localRepository;
@@ -214,94 +200,39 @@ public class VersionUtil {
         return null;
     }
 
-    /**
-     * Find the latest version for the dependency
-     * @param dependency The dependency to check
-     * @return The latest version or {code null}
-     * @throws MojoExecutionException If something goes wrong
-     */
-    String getLatestVersion(final Dependency dependency) throws MojoExecutionException {
-        final VersionsHelper helper = new DefaultVersionsHelper(artifactFactory, artifactResolver, artifactMetadataSource,
-                remoteArtifactRepositories, null, localRepository, null, null, null,
-                null, this.log, this.mavenSession, null);
+    String getLatestVersion( final Dependency dependency )
+        throws MojoExecutionException {
+        
         try {
-            final Map<Dependency, ArtifactVersions> updateInfos = helper.lookupDependenciesUpdates(Collections.singleton(dependency), false);
+            final Artifact artifact = new DefaultArtifact(dependency.getGroupId(),
+                dependency.getArtifactId(),
+                VersionRange.createFromVersion(dependency.getVersion()),
+                Artifact.SCOPE_PROVIDED,
+                dependency.getType(),
+                dependency.getClassifier(),
+                artifactHandlerManager.getArtifactHandler(dependency.getType()));
 
-            final Map<Dependency, String> result = new HashMap<>();
-
-            for (final Map.Entry<Dependency, ArtifactVersions> entry : updateInfos.entrySet()) {
-                UpdateScope scope = UpdateScope.ANY;
-                final String versionInfo = entry.getKey().getSystemPath();
-                String newVersion = null;
-                if (versionInfo != null && !versionInfo.trim().isEmpty()) {
-                    scope = getScope(versionInfo);
-                    if (scope == null) {
-                        this.log.debug("Using provided version " + versionInfo + " for " + entry.getKey());
-                        newVersion = versionInfo;
+            final List<ArtifactVersion> versions =
+                artifactMetadataSource.retrieveAvailableVersions( artifact, localRepository, remoteArtifactRepositories );
+    
+            ArtifactVersion latest = null;
+            for ( final ArtifactVersion candidate : versions ) {
+                if ( ArtifactUtils.isSnapshot( candidate.toString() ) ) {
+                    continue;
+                }
+        
+                if ( latest == null ) {
+                    latest = candidate;                
+                } else {
+                    if ( candidate.compareTo(latest) > 0 ) {
+                        latest = candidate;
                     }
                 }
-                if (newVersion == null) {
-                    newVersion = getVersion(entry, scope);
-                    this.log.debug("Detected new version " + newVersion + " using scope " + scope.toString() + " for "
-                            + entry.getKey());
-    
-                }
-                if (newVersion != null) {
-                    result.put(entry.getKey(), newVersion);
-                }
             }
-    
-            return result.get(dependency);
-    
-        } catch (ArtifactMetadataRetrievalException
-                | InvalidVersionSpecificationException e) {
-            throw new MojoExecutionException("Unable to calculate updates", e);
-        }
-    }
+            return latest != null ? latest.toString() : null;
 
-    /**
-     * Get the latest version
-     * @param entry The result
-     * @param scope The scope to use
-     * @return The latest version
-     */
-    private String getVersion(final Map.Entry<Dependency, ArtifactVersions> entry, final UpdateScope scope) {
-        ArtifactVersion latest;
-        if (entry.getValue().isCurrentVersionDefined()) {
-            latest = entry.getValue().getNewestUpdate(scope, false);
-        } else {
-            ArtifactVersion newestVersion = entry.getValue()
-                    .getNewestVersion(entry.getValue().getArtifact().getVersionRange(), false);
-            latest = newestVersion == null ? null
-                    : entry.getValue().getNewestUpdate(newestVersion, scope, false);
-            if (latest != null
-                    && ArtifactVersions.isVersionInRange(latest, entry.getValue().getArtifact().getVersionRange())) {
-                latest = null;
-            }
+        } catch ( final ArtifactMetadataRetrievalException e) {
+            throw new MojoExecutionException(e.getMessage(), e);
         }
-        return latest != null ? latest.toString() : null;
-    }
-
-    /**
-     * Get the scope from the version info
-     * @param versionInfo The info
-     * @return The scope
-     */
-    private UpdateScope getScope(final String versionInfo) {
-        final UpdateScope scope;
-        if (versionInfo == null || "ANY".equalsIgnoreCase(versionInfo)) {
-            scope = UpdateScope.ANY;
-        } else if ("MAJOR".equalsIgnoreCase(versionInfo)) {
-            scope = UpdateScope.MAJOR;
-        } else if ("MINOR".equalsIgnoreCase(versionInfo)) {
-            scope = UpdateScope.MINOR;
-        } else if ("INCREMENTAL".equalsIgnoreCase(versionInfo)) {
-            scope = UpdateScope.INCREMENTAL;
-        } else if ("SUBINCREMENTAL".equalsIgnoreCase(versionInfo)) {
-            scope = UpdateScope.SUBINCREMENTAL;
-        } else {
-            scope = null;
-        }
-        return scope;
     }
 }

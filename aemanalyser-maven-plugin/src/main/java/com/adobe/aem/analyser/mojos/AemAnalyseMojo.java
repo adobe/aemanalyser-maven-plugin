@@ -136,9 +136,6 @@ public class AemAnalyseMojo extends AbstractMojo {
     protected MavenSession mavenSession;
 
     @Component
-    private org.apache.maven.artifact.factory.ArtifactFactory artifactFactory;
-
-    @Component
     private ArtifactMetadataSource artifactMetadataSource;
 
     @Parameter(defaultValue = "${project.remoteArtifactRepositories}", readonly = true)
@@ -195,8 +192,8 @@ public class AemAnalyseMojo extends AbstractMojo {
             return;
         }
 
-        final VersionUtil versionUtil = new VersionUtil(this.getLog(), this.project, this.artifactResolver, 
-                this.mavenSession, this.artifactFactory, this.artifactMetadataSource, 
+        final VersionUtil versionUtil = new VersionUtil(this.getLog(), this.project, 
+                this.artifactHandlerManager, this.artifactMetadataSource, 
                 this.remoteArtifactRepositories, this.localRepository);
 
         final ArtifactId sdkId = versionUtil.getSDKArtifactId(this.sdkArtifactId, this.sdkVersion, this.useDependencyVersions);
