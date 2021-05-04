@@ -77,7 +77,7 @@ public class AemAnalyseMojo extends AbstractMojo {
      * Use dependency versions. If this is enabled, the version for the SDK and the Add-ons is taken
      * from the project dependencies. By default, the latest version is used.
      */
-    @Parameter(required = false, defaultValue = "false")
+    @Parameter(required = false, defaultValue = "false", property = "sdkUseDependency")
     boolean useDependencyVersions;
 
     /**
