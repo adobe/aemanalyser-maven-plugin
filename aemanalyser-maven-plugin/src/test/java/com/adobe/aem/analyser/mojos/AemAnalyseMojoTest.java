@@ -25,9 +25,6 @@ import java.util.List;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Build;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.DependencyManagement;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.builder.ArtifactProvider;
@@ -101,61 +98,9 @@ public class AemAnalyseMojoTest {
         assertEquals(def456.toUri().toURL(), url2);
     }
 
-    @Test(expected = MojoExecutionException.class)
-    public void testGetSDKFromDependencies() throws Exception {
-        MavenProject prj = Mockito.mock(MavenProject.class);
-        AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
-
-        mojo.getSDKFromDependencies("com.adobe.aem", "aem-sdk-api", true);
-    }
-
-    @Test
-    public void testGetSDKFromDependencies2() throws Exception {
-        Dependency dep = new Dependency();
-        Dependency sdkDep = new Dependency();
-        sdkDep.setGroupId("com.adobe.aem");
-        sdkDep.setArtifactId("aem-sdk-api");
-        sdkDep.setVersion("1.3.5");
-
-        DependencyManagement depMgmt = new DependencyManagement();
-        depMgmt.addDependency(dep);
-        depMgmt.addDependency(sdkDep);
-
-        MavenProject prj = Mockito.mock(MavenProject.class);
-        Mockito.when(prj.getDependencyManagement()).thenReturn(depMgmt);
-
-        AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
-
-        assertEquals(new ArtifactId(sdkDep.getGroupId(), sdkDep.getArtifactId(), sdkDep.getVersion(), sdkDep.getClassifier(), sdkDep.getType()), 
-                mojo.getSDKFromDependencies("com.adobe.aem", "aem-sdk-api", true));
-    }
-
-    @Test
-    public void testGetSDKFromDedpendencies2() throws Exception {
-        Dependency dep = new Dependency();
-        Dependency sdkDep = new Dependency();
-        sdkDep.setGroupId("com.adobe.aem");
-        sdkDep.setArtifactId("aem-cif-sdk-api");
-        sdkDep.setClassifier("aem-cif-sdk");
-        sdkDep.setVersion("1.3.2");
-
-        DependencyManagement depMgmt = new DependencyManagement();
-        depMgmt.addDependency(dep);
-        depMgmt.addDependency(sdkDep);
-
-        MavenProject prj = Mockito.mock(MavenProject.class);
-        Mockito.when(prj.getDependencyManagement()).thenReturn(depMgmt);
-
-        AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
-        final List<ArtifactId> addons = mojo.discoverAddons(null);
-        assertEquals(1, addons.size());
-        assertEquals(new ArtifactId(sdkDep.getGroupId(), sdkDep.getArtifactId(), sdkDep.getVersion(), sdkDep.getClassifier(), sdkDep.getType()), 
-                addons.get(0));
-    }
-    
     private static class TestAnalyseMojo extends AemAnalyseMojo {
-        private TestAnalyseMojo(MavenProject prj) {
-            project = prj;
+        private TestAnalyseMojo(final MavenProject prj) {
+            this.project = prj;
         }
     }
 }

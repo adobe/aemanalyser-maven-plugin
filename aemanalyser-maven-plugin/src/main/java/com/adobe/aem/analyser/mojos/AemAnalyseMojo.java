@@ -36,12 +36,13 @@ import com.adobe.aem.analyser.AemPackageConverter;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
+import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
+import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
 import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -59,22 +60,25 @@ import org.apache.sling.feature.io.json.FeatureJSONReader;
 public class AemAnalyseMojo extends AbstractMojo {
 
     /**
-     * The group id of the sdk api jar
+     * The artifact id of the sdk api jar. The artifact id is automatically detected by this plugin,
+     * by using this configuration the auto detection can be disabled
      */
-    @Parameter(defaultValue = Constants.SDK_GROUP_ID, property = "sdkGroupId")
-    String sdkGroupId;
-
-    /**
-     * The artifact id of the sdk api jar
-     */
-    @Parameter(defaultValue = Constants.SDK_ARTIFACT_ID, property = "sdkArtifactId")
+    @Parameter(property = "sdkArtifactId")
     String sdkArtifactId;
-
+    
     /**
-     * The version of the sdk api
+     * The version of the sdk api. Can be used to specify the exact version to be used. Otherwise the
+     * plugin detects the version to use.
      */
     @Parameter(required = false, property = "sdkVersion")
     String sdkVersion;
+
+    /**
+     * Use dependency versions. If this is enabled, the version for the SDK and the Add-ons is taken
+     * from the project dependencies. By default, the latest version is used.
+     */
+    @Parameter(required = false, defaultValue = "false")
+    boolean useDependencyVersions;
 
     /**
      * The list of add ons.
@@ -131,6 +135,15 @@ public class AemAnalyseMojo extends AbstractMojo {
     @Parameter(property = "session", readonly = true, required = true)
     protected MavenSession mavenSession;
 
+    @Component
+    private ArtifactMetadataSource artifactMetadataSource;
+
+    @Parameter(defaultValue = "${project.remoteArtifactRepositories}", readonly = true)
+    private List<ArtifactRepository> remoteArtifactRepositories;
+
+    @Parameter(defaultValue = "${localRepository}", readonly = true)
+    private ArtifactRepository localRepository;
+    
     /**
      * Artifact cache
      */
@@ -170,17 +183,27 @@ public class AemAnalyseMojo extends AbstractMojo {
         return skipExecution;
     }
 
+    /**
+     * Execute the plugin
+     */
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (this.skipRun()) {
             return;
         }
 
+        final VersionUtil versionUtil = new VersionUtil(this.getLog(), this.project, 
+                this.artifactHandlerManager, this.artifactMetadataSource, 
+                this.remoteArtifactRepositories, this.localRepository);
+
+        final ArtifactId sdkId = versionUtil.getSDKArtifactId(this.sdkArtifactId, this.sdkVersion, this.useDependencyVersions);
+        final List<ArtifactId> addons = versionUtil.discoverAddons(this.addons, this.useDependencyVersions);
+
         // 1. Phase : convert content packages
         this.convertContentPackages();
 
         // 2. Phase : aggregate feature models
-        final List<Feature> features = this.aggregateFeatureModels();
+        final List<Feature> features = this.aggregateFeatureModels(sdkId, addons);
 
         // 3. Phase : analyse features
         this.analyseFeatures(features);
@@ -239,7 +262,7 @@ public class AemAnalyseMojo extends AbstractMojo {
      * @return A list of feature models
      * @throws MojoExecutionException If anything goes wrong
      */
-    List<Feature> aggregateFeatureModels() throws MojoExecutionException {
+    List<Feature> aggregateFeatureModels(final ArtifactId sdkId, final List<ArtifactId> addons) throws MojoExecutionException {
         try {
             final AemAggregator a = new AemAggregator();
             a.setFeatureOutputDirectory(getGeneratedFeaturesDir());
@@ -251,86 +274,14 @@ public class AemAnalyseMojo extends AbstractMojo {
                 }
             });
             a.setProjectId(new ArtifactId(project.getGroupId(), project.getArtifactId(), project.getVersion(), null, null));
-            a.setSdkId(this.getSDKFeature());
-            a.setAddOnIds(this.discoverAddons(this.addons));
+            a.setSdkId(sdkId);
+            a.setAddOnIds(addons);
             
             return a.aggregate();
         
         } catch (final IOException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
-    }
-
-    /**
-     * Get the SDK feature
-     * @return The feature artifact id
-     * @throws MojoExecutionException
-     */
-    private ArtifactId getSDKFeature() throws MojoExecutionException {
-        ArtifactId sdkDep;
-        if (sdkVersion == null) {
-            sdkDep = getSDKFromDependencies(Constants.SDK_GROUP_ID, Constants.SDK_ARTIFACT_ID, true);
-        } else {
-            sdkDep = new ArtifactId(sdkGroupId, sdkArtifactId, sdkVersion, null, null);
-        }
-
-        getLog().info("Using SDK Version for analysis: " + sdkDep);
-        return sdkDep;
-    }
-
-    /**
-     * Get the list of addons
-     * @param addons Configured add ons
-     * @return The list of discovered addons
-     * @throws MojoExecutionException
-     */
-    List<ArtifactId> discoverAddons(final List<Addon> addons) throws MojoExecutionException {
-        final List<ArtifactId> result = new ArrayList<>();
-        for (Addon addon : addons == null ? Constants.DEFAULT_ADDONS : addons) {
-            ArtifactId addonSDK = getSDKFromDependencies(addon.groupId, addon.artifactId, false);
-
-            if (addonSDK == null)
-                continue;
-
-            getLog().info("Using Add-On for analysis: " + addonSDK);
-
-            result.add(addonSDK);
-        }
-
-        return result;
-    }
-
-    /**
-     * Get the artifact id for the SDK
-     * @param groupId The group id 
-     * @param artifactId The artifact id
-     * @param failOnError Whether to fail if not found
-     * @return The artifact id or null
-     * @throws MojoExecutionException On error
-     */
-    ArtifactId getSDKFromDependencies(String groupId, String artifactId, boolean failOnError) throws MojoExecutionException {
-        final List<Dependency> allDependencies = new ArrayList<>();
-        
-        if (project.getDependencies() != null) {
-            allDependencies.addAll(project.getDependencies());
-        }
-        if (project.getDependencyManagement() != null && project.getDependencyManagement().getDependencies() != null ) {
-            allDependencies.addAll(project.getDependencyManagement().getDependencies());
-        }
-
-        for (final Dependency d : allDependencies) {
-            if (groupId.equals(d.getGroupId()) &&
-                    artifactId.equals(d.getArtifactId())) {
-                return new ArtifactId(d.getGroupId(), d.getArtifactId(), d.getVersion(), d.getClassifier(), d.getType());
-            }
-        }
-
-        if (failOnError) {
-            throw new MojoExecutionException(
-                    "Unable to find SDK artifact in dependencies or dependency management: "
-                    + groupId + ":" + artifactId);
-        }
-        return null;
     }
 
     /**

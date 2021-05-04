@@ -20,9 +20,11 @@ public abstract class Constants {
     public static final String SDK_GROUP_ID = "com.adobe.aem";
 
     /** The artifact id for the SDK */
-
     public static final String SDK_ARTIFACT_ID = "aem-sdk-api";
     
+    /** The artifact id for the prerelease SDK */
+    public static final String SDK_PRERELEASE_ARTIFACT_ID = "aem-prerelease-sdk-api";
+
     /** The default addons */
     public static final List<Addon> DEFAULT_ADDONS =
             Arrays.asList(
