@@ -36,18 +36,13 @@ import com.adobe.aem.analyser.AemPackageConverter;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
-import org.apache.maven.artifact.metadata.ArtifactMetadataRetrievalException;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
 import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
-import org.apache.maven.artifact.versioning.ArtifactVersion;
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -61,18 +56,14 @@ import org.apache.sling.feature.builder.FeatureProvider;
 import org.apache.sling.feature.io.artifacts.ArtifactManager;
 import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
 import org.apache.sling.feature.io.json.FeatureJSONReader;
-import org.codehaus.mojo.versions.api.ArtifactVersions;
-import org.codehaus.mojo.versions.api.DefaultVersionsHelper;
-import org.codehaus.mojo.versions.api.UpdateScope;
-import org.codehaus.mojo.versions.api.VersionsHelper;
 
 public class AemAnalyseMojo extends AbstractMojo {
 
     /**
      * The artifact id of the sdk api jar. The artifact id is automatically detected by this plugin,
-     * but using this configuration the auto detection can be disabled
+     * by using this configuration the auto detection can be disabled
      */
-    @Parameter(defaultValue = Constants.SDK_ARTIFACT_ID, property = "sdkArtifactId")
+    @Parameter(property = "sdkArtifactId")
     String sdkArtifactId;
     
     /**
@@ -204,13 +195,18 @@ public class AemAnalyseMojo extends AbstractMojo {
             return;
         }
 
-        final ArtifactId sdkId = this.getSDKArtifactId();
+        final VersionUtil versionUtil = new VersionUtil(this.getLog(), this.project, this.artifactResolver, 
+                this.mavenSession, this.artifactFactory, this.artifactMetadataSource, 
+                this.remoteArtifactRepositories, this.localRepository);
+
+        final ArtifactId sdkId = versionUtil.getSDKArtifactId(this.sdkArtifactId, this.sdkVersion, this.useDependencyVersions);
+        final List<ArtifactId> addons = versionUtil.discoverAddons(this.addons, this.useDependencyVersions);
 
         // 1. Phase : convert content packages
         this.convertContentPackages();
 
         // 2. Phase : aggregate feature models
-        final List<Feature> features = this.aggregateFeatureModels(sdkId);
+        final List<Feature> features = this.aggregateFeatureModels(sdkId, addons);
 
         // 3. Phase : analyse features
         this.analyseFeatures(features);
@@ -269,7 +265,7 @@ public class AemAnalyseMojo extends AbstractMojo {
      * @return A list of feature models
      * @throws MojoExecutionException If anything goes wrong
      */
-    List<Feature> aggregateFeatureModels(final ArtifactId sdkId) throws MojoExecutionException {
+    List<Feature> aggregateFeatureModels(final ArtifactId sdkId, final List<ArtifactId> addons) throws MojoExecutionException {
         try {
             final AemAggregator a = new AemAggregator();
             a.setFeatureOutputDirectory(getGeneratedFeaturesDir());
@@ -282,114 +278,13 @@ public class AemAnalyseMojo extends AbstractMojo {
             });
             a.setProjectId(new ArtifactId(project.getGroupId(), project.getArtifactId(), project.getVersion(), null, null));
             a.setSdkId(sdkId);
-            a.setAddOnIds(this.discoverAddons(this.addons));
+            a.setAddOnIds(addons);
             
             return a.aggregate();
         
         } catch (final IOException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
-    }
-
-    /**
-     * Get the SDK artifact id
-     * @return The artifact id of the SDK
-     * @throws MojoExecutionException If the artifact id can't be detected
-     */
-    ArtifactId getSDKArtifactId() throws MojoExecutionException {
-        ArtifactId sdkDep;
-        if (this.sdkVersion == null) {
-            sdkDep = getArtifactIdFromDependencies(Constants.SDK_GROUP_ID, this.sdkArtifactId);
-
-            // check for latest version
-            final Dependency dep = new Dependency();
-            dep.setGroupId(Constants.SDK_GROUP_ID);
-            dep.setArtifactId(this.sdkArtifactId);
-            dep.setVersion(sdkDep == null ? "1.0" : sdkDep.getVersion());
-            final String foundVersion = this.useDependencyVersions ? null : this.getLatestVersion(dep);
-            if ( foundVersion == null && sdkDep == null ) {
-                throw new MojoExecutionException("Unable to find SDK artifact in dependencies or dependency management: "
-                                    + Constants.SDK_GROUP_ID + ":" + this.sdkArtifactId);
-            }
-            String useVersion = sdkDep != null ? sdkDep.getVersion() : null;
-            if ( sdkDep != null && foundVersion != null && isNewer(useVersion, foundVersion)) {
-                getLog().warn("Project is configured with outdated SDK version : " + sdkDep.getVersion());
-                getLog().warn("Please update to SDK version : " + foundVersion);
-                useVersion = foundVersion;
-            }
-            sdkDep = new ArtifactId(Constants.SDK_GROUP_ID, this.sdkArtifactId, useVersion, null, null);
-
-            getLog().info("Using detected SDK Version for analysis: " + sdkDep);
-
-        } else {
-            sdkDep = new ArtifactId(Constants.SDK_GROUP_ID, this.sdkArtifactId, sdkVersion, null, null);
-            getLog().info("Using configured SDK Version for analysis: " + sdkDep);
-        }
-
-        return sdkDep;
-    }
-
-    /**
-     * Get the list of addons
-     * @param addons Configured add ons
-     * @return The list of discovered addons
-     * @throws MojoExecutionException
-     */
-    List<ArtifactId> discoverAddons(final List<Addon> addons) throws MojoExecutionException {
-        final List<ArtifactId> result = new ArrayList<>();
-        for (Addon addon : addons == null ? Constants.DEFAULT_ADDONS : addons) {
-            ArtifactId addonSDK = getArtifactIdFromDependencies(addon.groupId, addon.artifactId);
-
-            if (addonSDK != null ) {
-                // check for latest version
-                final Dependency dep = new Dependency();
-                dep.setGroupId(addonSDK.getGroupId());
-                dep.setArtifactId(addonSDK.getArtifactId());
-                dep.setVersion(addonSDK.getVersion());
-                final String foundVersion = this.useDependencyVersions ? null : this.getLatestVersion(dep);
-                String useVersion = dep.getVersion();
-                if ( foundVersion != null && isNewer(useVersion, foundVersion)) {
-                    getLog().warn("Project is configured with outdated Add-On version : " + dep);
-                    getLog().warn("Please update to version : " + foundVersion);
-                    useVersion = foundVersion;
-                }
-                addonSDK = addonSDK.changeVersion(useVersion);
-
-                getLog().info("Using Add-On for analysis: " + addonSDK);
-
-                result.add(addonSDK);
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * Get the artifact id for the dependency
-     * @param groupId The group id 
-     * @param artifactId The artifact id
-     * @return The artifact id or {@code null}
-     * @throws MojoExecutionException On error
-     */
-    ArtifactId getArtifactIdFromDependencies(final String groupId, final String artifactId) 
-    throws MojoExecutionException {
-        final List<Dependency> allDependencies = new ArrayList<>();
-        
-        if (project.getDependencies() != null) {
-            allDependencies.addAll(project.getDependencies());
-        }
-        if (project.getDependencyManagement() != null && project.getDependencyManagement().getDependencies() != null ) {
-            allDependencies.addAll(project.getDependencyManagement().getDependencies());
-        }
-
-        for (final Dependency d : allDependencies) {
-            if (groupId.equals(d.getGroupId()) &&
-                    artifactId.equals(d.getArtifactId())) {
-
-                return new ArtifactId(d.getGroupId(), d.getArtifactId(), d.getVersion(), d.getClassifier(), d.getType());
-            }
-        }
-        return null;
     }
 
     /**
@@ -429,15 +324,6 @@ public class AemAnalyseMojo extends AbstractMojo {
             }
             getLog().warn("Errors found during analyser run, but this plugin is configured to ignore errors and continue the build!");
         }        
-    }
-
-    private boolean isNewer(final String existingVersion, final String foundVersion) {
-        if ( foundVersion == null ) {
-            return false;
-        }
-        final ArtifactVersion ev = new DefaultArtifactVersion(existingVersion);
-        final ArtifactVersion fv = new DefaultArtifactVersion(foundVersion);
-        return fv.compareTo(ev) > 0;
     }
 
     /**
@@ -575,96 +461,5 @@ public class AemAnalyseMojo extends AbstractMojo {
         } catch (final IOException ioe) {
             throw new RuntimeException("Unable to read feature file " + artFile + " for " + id.toMvnId(), ioe);
         }
-    }
-
-    /**
-     * Find the latest version for the dependency
-     * @param dependency The dependency to check
-     * @return The latest version or {code null}
-     * @throws MojoExecutionException If something goes wrong
-     */
-    String getLatestVersion(final Dependency dependency) throws MojoExecutionException {
-        final VersionsHelper helper = new DefaultVersionsHelper(artifactFactory, artifactResolver, artifactMetadataSource,
-                remoteArtifactRepositories, null, localRepository, null, null, null,
-                null, getLog(), this.mavenSession, null);
-        try {
-            final Map<Dependency, ArtifactVersions> updateInfos = helper.lookupDependenciesUpdates(Collections.singleton(dependency), false);
-
-            final Map<Dependency, String> result = new HashMap<>();
-
-            for (final Map.Entry<Dependency, ArtifactVersions> entry : updateInfos.entrySet()) {
-                UpdateScope scope = UpdateScope.ANY;
-                final String versionInfo = entry.getKey().getSystemPath();
-                String newVersion = null;
-                if (versionInfo != null && !versionInfo.trim().isEmpty()) {
-                    scope = getScope(versionInfo);
-                    if (scope == null) {
-                        getLog().debug("Using provided version " + versionInfo + " for " + entry.getKey());
-                        newVersion = versionInfo;
-                    }
-                }
-                if (newVersion == null) {
-                    newVersion = getVersion(entry, scope);
-                    getLog().debug("Detected new version " + newVersion + " using scope " + scope.toString() + " for "
-                            + entry.getKey());
-    
-                }
-                if (newVersion != null) {
-                    result.put(entry.getKey(), newVersion);
-                }
-            }
-    
-            return result.get(dependency);
-    
-        } catch (ArtifactMetadataRetrievalException
-                | InvalidVersionSpecificationException e) {
-            throw new MojoExecutionException("Unable to calculate updates", e);
-        }
-    }
-
-    /**
-     * Get the latest version
-     * @param entry The result
-     * @param scope The scope to use
-     * @return The latest version
-     */
-    private String getVersion(final Map.Entry<Dependency, ArtifactVersions> entry, final UpdateScope scope) {
-        ArtifactVersion latest;
-        if (entry.getValue().isCurrentVersionDefined()) {
-            latest = entry.getValue().getNewestUpdate(scope, false);
-        } else {
-            ArtifactVersion newestVersion = entry.getValue()
-                    .getNewestVersion(entry.getValue().getArtifact().getVersionRange(), false);
-            latest = newestVersion == null ? null
-                    : entry.getValue().getNewestUpdate(newestVersion, scope, false);
-            if (latest != null
-                    && ArtifactVersions.isVersionInRange(latest, entry.getValue().getArtifact().getVersionRange())) {
-                latest = null;
-            }
-        }
-        return latest != null ? latest.toString() : null;
-    }
-
-    /**
-     * Get the scope from the version info
-     * @param versionInfo The info
-     * @return The scope
-     */
-    private UpdateScope getScope(final String versionInfo) {
-        final UpdateScope scope;
-        if (versionInfo == null || "ANY".equalsIgnoreCase(versionInfo)) {
-            scope = UpdateScope.ANY;
-        } else if ("MAJOR".equalsIgnoreCase(versionInfo)) {
-            scope = UpdateScope.MAJOR;
-        } else if ("MINOR".equalsIgnoreCase(versionInfo)) {
-            scope = UpdateScope.MINOR;
-        } else if ("INCREMENTAL".equalsIgnoreCase(versionInfo)) {
-            scope = UpdateScope.INCREMENTAL;
-        } else if ("SUBINCREMENTAL".equalsIgnoreCase(versionInfo)) {
-            scope = UpdateScope.SUBINCREMENTAL;
-        } else {
-            scope = null;
-        }
-        return scope;
     }
 }
