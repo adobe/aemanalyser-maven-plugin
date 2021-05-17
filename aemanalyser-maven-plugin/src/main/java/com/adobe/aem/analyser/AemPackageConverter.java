@@ -13,12 +13,15 @@ package com.adobe.aem.analyser;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter;
+import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter.SlingInitialContentPolicy;
+import org.apache.sling.feature.cpconverter.accesscontrol.AclManager;
 import org.apache.sling.feature.cpconverter.accesscontrol.DefaultAclManager;
-import org.apache.sling.feature.cpconverter.artifacts.DefaultArtifactsDeployer;
+import org.apache.sling.feature.cpconverter.artifacts.LocalMavenRepositoryArtifactsDeployer;
 import org.apache.sling.feature.cpconverter.features.DefaultFeaturesManager;
 import org.apache.sling.feature.cpconverter.filtering.RegexBasedResourceFilter;
 import org.apache.sling.feature.cpconverter.filtering.ResourceFilter;
@@ -83,13 +86,16 @@ public class AemPackageConverter {
 
     public void convert(final Map<String, File> contentPackages) throws IOException {
         final Map<String, String> properties = new HashMap<>();
-        DefaultFeaturesManager featuresManager = new DefaultFeaturesManager(
+
+        final AclManager aclManager = new DefaultAclManager(null, "system");
+        final DefaultFeaturesManager featuresManager = new DefaultFeaturesManager(
             false,
             20,
             featureOutputDirectory,
             artifactIdOverride,
             null,
-            properties
+            properties,
+            aclManager
         );
 
         featuresManager.setExportToAPIRegion("global");
@@ -97,12 +103,12 @@ public class AemPackageConverter {
         ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(false)
                 .setFeaturesManager(featuresManager)
                 .setBundlesDeployer(
-                        new DefaultArtifactsDeployer(
+                        new LocalMavenRepositoryArtifactsDeployer(
                             this.converterOutputDirectory
                         )
                     )
                     .setEntryHandlersManager(
-                        new DefaultEntryHandlersManager()
+                        new DefaultEntryHandlersManager(Collections.emptyMap(), false, SlingInitialContentPolicy.KEEP)
                         )
                         .setAclManager(
                             new DefaultAclManager()
