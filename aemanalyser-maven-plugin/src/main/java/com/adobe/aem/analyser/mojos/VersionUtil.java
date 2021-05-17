@@ -47,6 +47,8 @@ public class VersionUtil {
 
     private final ArtifactRepository localRepository;
 
+    private final List<String> versionWarnings = new ArrayList<>();
+
     public VersionUtil(final Log log, 
             final MavenProject project,
             final ArtifactHandlerManager artifactHandlerManager,
@@ -59,6 +61,14 @@ public class VersionUtil {
         this.artifactMetadataSource = artifactMetadataSource;
         this.remoteArtifactRepositories = remoteArtifactRepositories;
         this.localRepository = localRepository;
+    }
+
+    /**
+     * Get warnings about outdated versions being used
+     * @return A list of warnings, might be empty
+     */
+    List<String> getVersionWarnings() {
+        return this.versionWarnings;
     }
 
     /**
@@ -81,8 +91,8 @@ public class VersionUtil {
                 final String foundVersion = useDependencyVersions ? null : this.getLatestVersion(dep);
                 String useVersion = dep.getVersion();
                 if ( foundVersion != null && isNewer(useVersion, foundVersion)) {
-                    this.log.warn("Project is configured with outdated Add-On version : " + dep);
-                    this.log.warn("Please update to version : " + foundVersion);
+                    this.versionWarnings.add("Project is configured with outdated Add-On version : " + dep);
+                    this.versionWarnings.add("Please update to version : " + foundVersion);
                     useVersion = foundVersion;
                 }
                 addonSDK = addonSDK.changeVersion(useVersion);
@@ -150,8 +160,8 @@ public class VersionUtil {
             }
             String useVersion = dependencySdk != null ? dependencySdk.getVersion() : null;
             if ( dependencySdk != null && foundVersion != null && isNewer(useVersion, foundVersion)) {
-                this.log.warn("Project is configured with outdated SDK version : " + dependencySdk.getVersion());
-                this.log.warn("Please update to SDK version : " + foundVersion);
+                this.versionWarnings.add("Project is configured with outdated SDK version : " + dependencySdk.getVersion());
+                this.versionWarnings.add("Please update to SDK version : " + foundVersion);
                 useVersion = foundVersion;
             }
             result = new ArtifactId(Constants.SDK_GROUP_ID, useArtifactId, useVersion, null, null);
