@@ -206,7 +206,7 @@ public class AemAnalyseMojo extends AbstractMojo {
         final List<Feature> features = this.aggregateFeatureModels(sdkId, addons);
 
         // 3. Phase : analyse features
-        this.analyseFeatures(features);
+        this.analyseFeatures(features, versionUtil.getVersionWarnings());
     }
 
     /**
@@ -288,10 +288,11 @@ public class AemAnalyseMojo extends AbstractMojo {
      * Analyse the features
      * 
      * @param features The features
+     * @param additionalWarnings List of additional warnings, might be empty
      * @throws MojoFailureException If the analysis fails
      * @throws MojoExecutionException If something goes wrong
      */
-    void analyseFeatures(final List<Feature> features) throws MojoFailureException, MojoExecutionException {
+    void analyseFeatures(final List<Feature> features, final List<String> additionalWarnings) throws MojoFailureException, MojoExecutionException {
         boolean hasErrors = false;
         try {
             final AemAnalyser analyser = new AemAnalyser();
@@ -301,9 +302,15 @@ public class AemAnalyseMojo extends AbstractMojo {
 
             final AemAnalyserResult result = analyser.analyse(features);
             
+            // print additional warnings first
+            for(final String msg : additionalWarnings) {
+                getLog().warn(msg);
+            }
+            // now analyser warnings
             for(final String msg : result.getWarnings()) {
                 getLog().warn(msg);
             }
+            // finally, analyser errors
             for(final String msg : result.getErrors()) {
                 getLog().error(msg);
             }
