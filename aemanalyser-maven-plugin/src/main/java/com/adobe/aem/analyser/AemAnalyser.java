@@ -22,9 +22,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.sling.feature.Artifact;
+import org.apache.sling.feature.Configuration;
+import org.apache.sling.feature.Extension;
+import org.apache.sling.feature.ExtensionType;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.analyser.Analyser;
 import org.apache.sling.feature.analyser.AnalyserResult;
+import org.apache.sling.feature.analyser.AnalyserResult.ArtifactReport;
+import org.apache.sling.feature.analyser.AnalyserResult.ConfigurationReport;
+import org.apache.sling.feature.analyser.AnalyserResult.ExtensionReport;
+import org.apache.sling.feature.analyser.AnalyserResult.GlobalReport;
 import org.apache.sling.feature.builder.ArtifactProvider;
 import org.apache.sling.feature.builder.FeatureProvider;
 import org.apache.sling.feature.scanner.Scanner;
@@ -45,6 +53,9 @@ public class AemAnalyser {
     + "configuration-api,"
     + "region-deprecated-api";
 
+    private static final String BUNDLE_ORIGINS = "content-package-origins";
+    private static final String CONFIGURATION_ORIGINS = Configuration.CONFIGURATOR_PREFIX.concat(BUNDLE_ORIGINS);
+    
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private ArtifactProvider artifactProvider;
@@ -176,14 +187,71 @@ public class AemAnalyser {
                 continue;
             }
             final AnalyserResult r = analyser.analyse(f, null, this.featureProvider);
-            featureErrors.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).addAll(r.getErrors());
-            featureWarnings.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).addAll(r.getWarnings());
+
+            // report errors
+            for(final GlobalReport report : r.getGlobalErrors()) {
+                featureErrors.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(report.toString());
+            }
+            for(final ArtifactReport report : r.getArtifactErrors()) {
+                featureErrors.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(getArtifactMessage(f, report));
+            }
+            for(final ExtensionReport report : r.getExtensionErrors()) {
+                featureErrors.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(report.toString());
+            }
+            for(final ConfigurationReport report : r.getConfigurationErrors()) {
+                featureErrors.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(getConfigurationMessage(f, report));
+            }
+
+            // report warnings
+            for(final GlobalReport report : r.getGlobalWarnings()) {
+                featureWarnings.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(report.toString());
+            }
+            for(final ArtifactReport report : r.getArtifactWarnings()) {
+                featureWarnings.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(getArtifactMessage(f, report));
+            }
+            for(final ExtensionReport report : r.getExtensionWarnings()) {
+                featureWarnings.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(report.toString());
+            }
+            for(final ConfigurationReport report : r.getConfigurationWarnings()) {
+                featureWarnings.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(getConfigurationMessage(f, report));
+            }
         }
 
         logOutput(result.getErrors(), featureErrors, "errors");
         logOutput(result.getWarnings(), featureWarnings, "warnings");
 
         return result;
+    }
+
+    private String getConfigurationMessage(final Feature f, final ConfigurationReport report) {
+        final Object val = report.getKey().getProperties().get(CONFIGURATION_ORIGINS);
+        if ( val != null ) {
+            return report.toString().concat(" (").concat(val.toString()).concat(")");
+        }
+        return report.toString();
+    }
+
+    private String getArtifactMessage(final Feature f, final ArtifactReport report) {
+        Artifact artifact = f.getBundles().getExact(report.getKey());
+        if ( artifact == null ) {
+            for(final Extension ext : f.getExtensions()) {
+                if ( ext.getType() == ExtensionType.ARTIFACTS ) {
+                    for(final Artifact c : ext.getArtifacts()) {
+                        if ( c.getId().equals(report.getKey())) {
+                            artifact = c;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if ( artifact != null ) {
+            final Object val = artifact.getMetadata().get(BUNDLE_ORIGINS);
+            if ( val != null ) {
+                return report.toString().concat(" (").concat(val.toString()).concat(")");
+            }
+        }
+        return report.toString();
     }
 
     private static final String KEY_AUTHOR_AND_PUBLISH = "author and publish";
