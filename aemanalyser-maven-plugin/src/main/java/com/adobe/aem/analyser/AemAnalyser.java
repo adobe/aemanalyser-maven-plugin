@@ -49,19 +49,19 @@ public class AemAnalyser {
     + "api-regions-check-order,"
     + "api-regions-crossfeature-dups,"
     + "api-regions-exportsimports,"
-//        + "repoinit," disable until SLING-10215 is fixed
+    + "repoinit,"
     + "configuration-api,"
     + "region-deprecated-api";
 
     private static final String BUNDLE_ORIGINS = "content-package-origins";
     private static final String CONFIGURATION_ORIGINS = Configuration.CONFIGURATOR_PREFIX.concat(BUNDLE_ORIGINS);
-    
+
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private ArtifactProvider artifactProvider;
 
     private FeatureProvider featureProvider;
-    
+
     private Set<String> includedTasks;
 
     private Map<String, Map<String, String>> taskConfigurations;
@@ -70,7 +70,7 @@ public class AemAnalyser {
         this.setIncludedTasks(new LinkedHashSet<>(Arrays.asList(DEFAULT_TASKS.split(","))));
         this.setTaskConfigurations(new HashMap<>());
     }
-    
+
     /**
      * @return the includedTasks
      */
@@ -102,7 +102,7 @@ public class AemAnalyser {
 
     private void applyDefaultTaskConfigurations() {
         Map<String, Map<String, String>> config = this.getTaskConfigurations();
-    
+
         // Set default task configuration
         if (!config.containsKey("api-regions-crossfeature-dups")) {
             final Map<String, String> cfd = new HashMap<>();
@@ -111,12 +111,12 @@ public class AemAnalyser {
             cfd.put("warningPackages", "*");
             config.put("api-regions-crossfeature-dups", cfd);
         }
-    
+
         if (!config.containsKey("api-regions-check-order")) {
             final Map<String, String> ord = new HashMap<>();
             ord.put("order", "global,com.adobe.aem.deprecated,com.adobe.aem.internal");
             config.put("api-regions-check-order", ord);
-        }    
+        }
     }
 
     /**
@@ -146,7 +146,7 @@ public class AemAnalyser {
     public void setFeatureProvider(FeatureProvider featureProvider) {
         this.featureProvider = featureProvider;
     }
-    
+
     private Scanner createScanner() throws IOException {
         logger.debug("Setting up scanner");
         final Scanner scanner = new Scanner(this.getArtifactProvider());
@@ -169,7 +169,7 @@ public class AemAnalyser {
     private boolean checkClassifier(final String classifier) {
         if ( classifier == null || !classifier.startsWith("aggregated-")) {
             return false;
-        } 
+        }
         return KEYS.contains(classifier);
     }
 
