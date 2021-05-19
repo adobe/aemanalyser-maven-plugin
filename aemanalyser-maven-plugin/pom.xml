@@ -16,7 +16,7 @@ governing permissions and limitations under the License.
   <parent>
     <groupId>com.adobe.aem</groupId>
     <artifactId>parent-oss</artifactId>
-    <version>0.0.15-SNAPSHOT</version>
+    <version>1</version>
     <relativePath>../parent-oss/pom.xml</relativePath>
   </parent>
 
