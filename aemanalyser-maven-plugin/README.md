@@ -6,7 +6,7 @@ The plugin provides an easy way to run the same checks locally as in the Cloud M
 
 ## Functionality
 
-The plugin performs similar tasks as the Cloud Manager pipeline after the application is built and before it is deployed. It inspects the generated content packages and runs a set of checks (analysers) on the contents of the packages.
+The plugin performs similar tasks as the Cloud Manager pipeline after the application is built and before it is deployed. It inspects the generated content packages and runs a set of checks (analysers) on the contents of the packages. By default it check against the latest available SDK version.
 
 Most of the analysers are based on the [Apache Sling Feature Model Analyser framework](https://github.com/apache/sling-org-apache-sling-feature-analyser/blob/master/readme.md).
 
@@ -55,9 +55,7 @@ Enable the plugin by listing it in the `build->plugins` section of the module.
         </plugins>
     </build>
 
-The analyser plugin will run the default set of analysers on the content packages configured while picking up the AEM SDK version from the `<parent>`. Please note that it is important that you have an AEM SDK version configured in your parent that is equal or higher to:
-
-    <aem.sdk.api>2020.11.4506.20201112T235200Z-201028</aem.sdk.api>
+The analyser plugin will run the default set of analysers on the content packages configured while picking up the AEM SDK version from the `<parent>`. 
 
 ## AEM as a Cloud Service
 
@@ -65,10 +63,10 @@ During the build in a Cloud Manager pipeline, the plugin as part of the Maven pr
 
 ## Maven Goals
 
-While the best way to use this plugin is to create a separate module as outlined above, the plugin can also be added to existing projects, for example a content-package project. It provides the following goals:
+The plugin provides the following goals:
 
 * **analyse** : This is the default goal used by a 'aem-analyse' Maven project. If the packaging type is `aem-analyse` all dependencies of type content package will be converted. Otherwise the current artifact will be converted.
-* **project-analyse** : This goal can be used in existing projects. By default in runs during the `verify` phase and will analyse the artifact of the current project.
+* **project-analyse** : This goal can be used in existing projects. By default it runs during the `verify` phase and will analyse the artifact of the current project.
 
 A typical use would be to just configure the **project-analyse** goal if the plugin should be integrated into an existing project.
 
@@ -78,6 +76,9 @@ The plugin can be configured with the following configuration properties:
 
 * **skip** : If this is set to `true` the plugin execution will be skipped. The plugin can also be skipped by setting the propert `aem.analyser.skip` to `true`.
 * **failOnAnalyserErrors** : This is by default enabled and causes the build to fail if any analyser reports an error. This can be set to `false` to continue the build.
+* **sdkArtifactId** : By default, the plugin inspects the dependencies of the project and looks for an artifact with the group id `com.adobe.aem` and an artifact id of either `aem-prerelease-sdk-api` or `aem-sdk-api`. For advanced usages, this property can be set to disable the detection mechanism.
+* **sdkVersion** : This property can be used to exactly specify the SDK version to be used for the analysis. If not set, the plugin will use the latest available SDK. The value for this property can also be specified via the command line by setting `sdkVersion`.
+* **useDependencyVersions** : If this property is enabled, the version for the SDK as specified via the dependencies is used. This is by default disabled to use the latest version. The value for this property can also be specified via the command line by setting `sdkUseDependency`.
 
 ## Advanced Configurations
 
@@ -143,7 +144,7 @@ With that, your project `pom.xml` needs to look somewhat like this:
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>0.9.2</version> <!-- Make sure to use the latest release -->
+                    <version>1.0.0</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
@@ -178,7 +179,7 @@ As an example, consider adding a new module to the [AEM WKND Sites project](http
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>0.9.2</version> <!-- Make sure to use the latest release -->
+                    <version>1.0.0</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
@@ -198,3 +199,7 @@ And then you need to add this module to the parent project by adding this line t
     <module>analyse</module>   <!-- This is the name of the subfolder -->
 
 Make sure to add it as the last module.
+
+## Deprecated Maven Goals
+
+Both, the `aggregate` as well as the `convert` Maven mojo have been deprecated. It is recommended to remove them from your project. Their implementation has been changed to do no work. All work has been moved into the remaining `analyse` mojo.
