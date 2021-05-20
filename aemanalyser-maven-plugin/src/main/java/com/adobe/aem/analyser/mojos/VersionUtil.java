@@ -49,7 +49,7 @@ public class VersionUtil {
 
     private final List<String> versionWarnings = new ArrayList<>();
 
-    public VersionUtil(final Log log, 
+    public VersionUtil(final Log log,
             final MavenProject project,
             final ArtifactHandlerManager artifactHandlerManager,
             final ArtifactMetadataSource artifactMetadataSource,
@@ -96,6 +96,8 @@ public class VersionUtil {
                     useVersion = foundVersion;
                 }
                 addonSDK = addonSDK.changeVersion(useVersion);
+                if (addon.classifier != null)
+                    addonSDK = addonSDK.changeClassifier(addon.classifier);
 
                 this.log.info("Using Add-On for analysis: " + addonSDK);
 
@@ -105,7 +107,7 @@ public class VersionUtil {
 
         return result;
     }
-    
+
     /**
      * Get the SDK artifact id
      * @return The artifact id of the SDK
@@ -126,7 +128,7 @@ public class VersionUtil {
                 if ( dependencySdk == null && configuredVersion == null ) {
                     throw new MojoExecutionException("Unable to find SDK artifact in dependencies or dependency management: "
                                         + Constants.SDK_GROUP_ID + ":" + configuredArtifactId);
-                }    
+                }
             }
         } else {
             // first search prerelease SDK
@@ -152,7 +154,7 @@ public class VersionUtil {
             dep.setGroupId(Constants.SDK_GROUP_ID);
             dep.setArtifactId(useArtifactId);
             dep.setVersion(dependencySdk == null ? "1.0" : dependencySdk.getVersion());
-            
+
             final String foundVersion = useDependencyVersions ? null : getLatestVersion(dep);
             if ( foundVersion == null && dependencySdk == null ) {
                 throw new MojoExecutionException("Unable to find SDK artifact in dependencies or dependency management: "
@@ -180,19 +182,19 @@ public class VersionUtil {
         final ArtifactVersion fv = new DefaultArtifactVersion(foundVersion);
         return fv.compareTo(ev) > 0;
     }
- 
+
 
     /**
      * Get the artifact id from the dependencies of the project
-     * @param groupId The group id 
+     * @param groupId The group id
      * @param artifactId The artifact id
      * @return The artifact id or {@code null}
      * @throws MojoExecutionException On error
      */
-    ArtifactId getArtifactIdFromDependencies(final String groupId, final String artifactId) 
+    ArtifactId getArtifactIdFromDependencies(final String groupId, final String artifactId)
     throws MojoExecutionException {
         final List<Dependency> allDependencies = new ArrayList<>();
-        
+
         if (project.getDependencies() != null) {
             allDependencies.addAll(project.getDependencies());
         }
@@ -212,7 +214,7 @@ public class VersionUtil {
 
     String getLatestVersion( final Dependency dependency )
         throws MojoExecutionException {
-        
+
         try {
             final Artifact artifact = new DefaultArtifact(dependency.getGroupId(),
                 dependency.getArtifactId(),
@@ -224,15 +226,15 @@ public class VersionUtil {
 
             final List<ArtifactVersion> versions =
                 artifactMetadataSource.retrieveAvailableVersions( artifact, localRepository, remoteArtifactRepositories );
-    
+
             ArtifactVersion latest = null;
             for ( final ArtifactVersion candidate : versions ) {
                 if ( ArtifactUtils.isSnapshot( candidate.toString() ) ) {
                     continue;
                 }
-        
+
                 if ( latest == null ) {
-                    latest = candidate;                
+                    latest = candidate;
                 } else {
                     if ( candidate.compareTo(latest) > 0 ) {
                         latest = candidate;
