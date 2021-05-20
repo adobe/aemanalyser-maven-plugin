@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -278,9 +279,9 @@ public class AemAnalyser {
         List<String> msgs = messages.get(tier);
         if ( msgs == null ) {
             msgs = new ArrayList<>();
-            msgs.addAll(messages.get(tier.concat(".dev")));
-            msgs.retainAll(messages.get(tier.concat(".stage")));
-            msgs.retainAll(messages.get(tier.concat(".prod")));
+            msgs.addAll(messages.getOrDefault(tier.concat(".dev"), Collections.emptyList()));
+            msgs.retainAll(messages.getOrDefault(tier.concat(".stage"), Collections.emptyList()));
+            msgs.retainAll(messages.getOrDefault(tier.concat(".prod"), Collections.emptyList()));
             messages.put(tier, msgs);
         }
         return msgs;
