@@ -60,9 +60,9 @@ public class AemAggregator {
     private ArtifactProvider artifactProvider;
 
     private FeatureProvider featureProvider;
-    
+
     private ArtifactId projectId;
-    
+
     private ArtifactId sdkId;
 
     private List<ArtifactId> addOnIds;
@@ -212,7 +212,7 @@ public class AemAggregator {
     throws IOException {
         // get run modes from converter output
         final Properties runmodes = getRunmodeMappings();
-        
+
         final Map<String, List<Feature>> aggregates = new HashMap<>();
 
         Map<String, Set<String>> toCreate = getUserAggregatesToCreate(runmodes);
@@ -228,7 +228,7 @@ public class AemAggregator {
 
     Map<String, Set<String>> getUserAggregatesToCreate(final Properties runmodes) throws IOException {
         try {
-            return AemAnalyserUtil.getAggregates(runmodes);            
+            return AemAnalyserUtil.getAggregates(runmodes);
         } catch ( final IllegalArgumentException iae) {
             throw new IOException(iae.getMessage());
         }
@@ -250,7 +250,7 @@ public class AemAggregator {
             list.add(sdkFeature);
             if ( this.getAddOnIds() != null ) {
                 for(final ArtifactId id : this.getAddOnIds()) {
-                    final Feature feature = getFeatureProvider().provide(id);
+                    final Feature feature = getFeatureProvider().provide(id.changeType(FEATUREMODEL_TYPE));
                     if ( feature == null ) {
                         throw new IOException("Unable to find addon feature for " + id.toMvnId());
                     }
@@ -261,7 +261,7 @@ public class AemAggregator {
 
         return aggregates;
     }
-    
+
     Map<String, List<Feature>> getFinalAggregates(final Map<String, List<Feature>> userAggregate,
             final Map<String, Feature> projectFeatures) throws IOException {
         final Map<String, List<Feature>> aggregates = new HashMap<>();
@@ -278,11 +278,11 @@ public class AemAggregator {
 
         return aggregates;
     }
-    
+
     private String getProductAggregateName(final boolean author) {
         return "product-aggregated-" + (author ? "author" : "publish");
     }
-    
+
 
     List<Feature> aggregate(final Map<String, List<Feature>> aggregates, final Mode mode,
         final Map<String, Feature> projectFeatures) throws IOException {
@@ -293,7 +293,7 @@ public class AemAggregator {
             logger.info("Building aggregate {}...", aggregate.getKey());
 
             final BuilderContext builderContext = new BuilderContext(new FeatureProvider(){
-           
+
                 @Override
                 public Feature provide(final ArtifactId id) {
                     // check in selection
@@ -330,8 +330,8 @@ public class AemAggregator {
             builderContext.addConfigsOverrides(Collections.singletonMap("*", "MERGE_LATEST"));
 
             final ArtifactId newFeatureID = this.getProjectId().changeClassifier(aggregate.getKey()).changeType(FEATUREMODEL_TYPE);
-            
-            final Feature feature = FeatureBuilder.assemble(newFeatureID, builderContext, 
+
+            final Feature feature = FeatureBuilder.assemble(newFeatureID, builderContext,
                   aggregate.getValue().toArray(new Feature[aggregate.getValue().size()]));
 
             try ( final Writer writer = new FileWriter(new File(this.getFeatureOutputDirectory(), aggregate.getKey().concat(".json")))) {
