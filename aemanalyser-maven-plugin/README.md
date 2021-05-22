@@ -4,6 +4,8 @@ A Maven plugin used by developers of applications for AEM as a Cloud Service (AE
 
 The plugin provides an easy way to run the same checks locally as in the Cloud Manager pipeline and ensures that the application works correctly when deployed in the cloud.
 
+> **_NOTE:_**  Please do NOT use the latest release 1.0.0 as it contains some bugs which are currently under investigation. A maintenance update will be released soon. The suggest version to use is 0.9.2 for now.
+
 ## Functionality
 
 The plugin performs similar tasks as the Cloud Manager pipeline after the application is built and before it is deployed. It inspects the generated content packages and runs a set of checks (analysers) on the contents of the packages. By default it check against the latest available SDK version.
