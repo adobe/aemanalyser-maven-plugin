@@ -110,6 +110,11 @@ governing permissions and limitations under the License.
       <artifactId>org.apache.sling.feature</artifactId>
       <version>1.2.22</version>
     </dependency>
+     <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>osgi.core</artifactId>
+      <version>7.0.0</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-json_1.1_spec</artifactId>
@@ -251,13 +256,12 @@ governing permissions and limitations under the License.
       <groupId>org.apache.felix</groupId>
       <artifactId>org.apache.felix.cm.json</artifactId>
       <version>1.0.6</version>
-    </dependency>-->
+    </dependency>
     <dependency>
       <groupId>org.osgi</groupId>
       <artifactId>org.osgi.framework</artifactId>
       <version>1.9.0</version>
     </dependency>
-    <!-- defined before 
     <dependency>
       <groupId>org.apache.felix</groupId>
       <artifactId>org.apache.felix.configadmin</artifactId>
