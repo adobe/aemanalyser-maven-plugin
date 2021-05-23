@@ -186,7 +186,7 @@ public class AemAggregator {
         final Map<String, Feature> result = new HashMap<>();
         for(final File f : this.getFeatureOutputDirectory().listFiles()) {
             if ( f.getName().endsWith(".json") && !f.getName().startsWith(".") ) {
-                logger.info("Reading feature {}...", f.getName());
+                logger.info("Reading feature model {}...", f.getName());
                 try (final Reader reader = new FileReader(f)) {
                     final Feature feature = FeatureJSONReader.read(reader, f.getName());
                     result.put(f.getName(), feature);
@@ -290,7 +290,7 @@ public class AemAggregator {
         final List<Feature> result = new ArrayList<>();
         for (final Map.Entry<String, List<Feature>> aggregate : aggregates.entrySet()) {
 
-            logger.info("Building aggregate {}...", aggregate.getKey());
+            logger.info("Building aggregate feature model {}...", aggregate.getKey());
 
             final BuilderContext builderContext = new BuilderContext(new FeatureProvider(){
 
