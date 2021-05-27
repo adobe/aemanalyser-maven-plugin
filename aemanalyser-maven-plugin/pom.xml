@@ -202,14 +202,14 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>org.apache.sling.feature.extension.apiregions</artifactId>
-      <version>1.2.4</version>
+      <version>1.2.8</version>
     </dependency>
 
     <!-- Content Package to Feature Model Converter-->
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>org.apache.sling.feature.cpconverter</artifactId>
-      <version>1.1.0</version>
+      <version>1.1.2</version>
     </dependency>
     <dependency>
       <groupId>org.apache.felix</groupId>
