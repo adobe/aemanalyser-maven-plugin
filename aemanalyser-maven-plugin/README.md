@@ -4,7 +4,7 @@ A Maven plugin used by developers of applications for AEM as a Cloud Service (AE
 
 The plugin provides an easy way to run the same checks locally as in the Cloud Manager pipeline and ensures that the application works correctly when deployed in the cloud.
 
-> **_NOTE:_**  Please do NOT use the latest release 1.0.0 as it contains some bugs which are currently under investigation. A maintenance update will be released soon. The suggest version to use is 0.9.2 for now.
+> **_NOTE:_**  Please make sure to always use the latest version. Refrain from using any version below 1.0.2.
 
 ## Functionality
 
@@ -27,7 +27,7 @@ Example:
     <plugin>
         <groupId>com.adobe.aem</groupId>
         <artifactId>aemanalyser-maven-plugin</artifactId>
-        <version>1.0.0</version> <!-- Make sure to use the latest release -->
+        <version>1.0.2</version> <!-- Make sure to use the latest release -->
     </plugin>
 
 As this plugin is available in Maven Central, no additional configuration is needed to bring it into your Maven project.
@@ -44,7 +44,7 @@ Enable the plugin by listing it in the `build->plugins` section of the module.
             <plugin>
                 <groupId>com.adobe.aem</groupId>
                 <artifactId>aemanalyser-maven-plugin</artifactId>
-                <version>1.0.0</version> <!-- Make sure to use the latest release -->
+                <version>1.0.2</version> <!-- Make sure to use the latest release -->
                 <executions>
                     <execution>
                         <id>aem-analyser</id>
@@ -146,7 +146,7 @@ With that, your project `pom.xml` needs to look somewhat like this:
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>1.0.0</version> <!-- Make sure to use the latest release -->
+                    <version>1.0.2</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
@@ -181,7 +181,7 @@ As an example, consider adding a new module to the [AEM WKND Sites project](http
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>1.0.0</version> <!-- Make sure to use the latest release -->
+                    <version>1.0.2</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
