@@ -112,6 +112,12 @@ public class AemAnalyseMojo extends AbstractMojo {
     private boolean failOnAnalyserErrors;
 
     /**
+     * Only analyze the package attached to the project with the given classifier.
+     */
+    @Parameter(property = "aem.analyser.classifier")
+    private String classifier;
+
+    /**
      * The maven project
      */
     @Parameter(property = "project", readonly = true, required = true)
@@ -230,31 +236,41 @@ public class AemAnalyseMojo extends AbstractMojo {
     }
 
     /**
-     * Search for all content packages.
+     * Search for relevant content packages.
      * @return The list of artifacts (non empty)
      * @throws MojoExecutionException If anything goes wrong, for example no content packages are found
      */
     private List<Artifact> getContentPackages() throws MojoExecutionException {
-        final List<Artifact> result = new ArrayList<>();
-        
         if (!Constants.PACKAGING_AEM_ANALYSE.equals(project.getPackaging())) {
-            // Use the current project artifact as the content package
-            getLog().info("Using current project as content package: " + project.getArtifact());
-            result.add(project.getArtifact());
+            if (classifier != null) {
+                // look for attached artifact with given classifier
+                for (Artifact artifact : project.getAttachedArtifacts()) {
+                    if (classifier.equals(artifact.getClassifier())) {
+                        getLog().info("Using attached artifact with classifier '" + classifier + "' as content package: " + project.getArtifact());
+                        return Collections.singletonList(artifact);
+                    }
+                }
+                throw new MojoExecutionException("No attached artifact with classifier " + classifier + " found for project.");
+            } else {
+                // Use the current project artifact as the content package
+                getLog().info("Using current project as content package: " + project.getArtifact());
+                return Collections.singletonList(project.getArtifact());
+            }
         } else {
+            final List<Artifact> result = new ArrayList<>();
             for (final Artifact d : project.getDependencyArtifacts()) {
                 if (Constants.PACKAGING_ZIP.equals(d.getType()) || Constants.PACKAGING_CONTENT_PACKAGE.equals(d.getType())) {
                     // If a dependency is of type 'zip' it is assumed to be a content package
                     result.add(d);
                 }
             }    
+            if (result.isEmpty()) {
+                throw new MojoExecutionException("No content packages found for project.");
+            }
             getLog().info("Found content packages from dependencies: " + result);
+            return result;
         }
 
-        if (result.isEmpty()) {
-            throw new MojoExecutionException("No content packages found for project.");
-        }
-        return result;
     }
 
     /**
