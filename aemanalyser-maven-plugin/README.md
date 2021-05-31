@@ -27,7 +27,7 @@ Example:
     <plugin>
         <groupId>com.adobe.aem</groupId>
         <artifactId>aemanalyser-maven-plugin</artifactId>
-        <version>1.0.2</version> <!-- Make sure to use the latest release -->
+        <version>1.0.4</version> <!-- Make sure to use the latest release -->
     </plugin>
 
 As this plugin is available in Maven Central, no additional configuration is needed to bring it into your Maven project.
@@ -44,7 +44,7 @@ Enable the plugin by listing it in the `build->plugins` section of the module.
             <plugin>
                 <groupId>com.adobe.aem</groupId>
                 <artifactId>aemanalyser-maven-plugin</artifactId>
-                <version>1.0.2</version> <!-- Make sure to use the latest release -->
+                <version>1.0.4</version> <!-- Make sure to use the latest release -->
                 <executions>
                     <execution>
                         <id>aem-analyser</id>
@@ -147,7 +147,7 @@ With that, your project `pom.xml` needs to look somewhat like this:
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>1.0.2</version> <!-- Make sure to use the latest release -->
+                    <version>1.0.4</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
@@ -182,7 +182,7 @@ As an example, consider adding a new module to the [AEM WKND Sites project](http
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>1.0.2</version> <!-- Make sure to use the latest release -->
+                    <version>1.0.4</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
