@@ -160,7 +160,7 @@ public class VersionUtil {
                 throw new MojoExecutionException("Unable to find SDK artifact in dependencies or dependency management: "
                                     + Constants.SDK_GROUP_ID + ":" + useArtifactId);
             }
-            String useVersion = dependencySdk != null ? dependencySdk.getVersion() : null;
+            String useVersion = dependencySdk != null ? dependencySdk.getVersion() : foundVersion;
             if ( dependencySdk != null && foundVersion != null && isNewer(useVersion, foundVersion)) {
                 this.versionWarnings.add("Project is configured with outdated SDK version : " + dependencySdk.getVersion());
                 this.versionWarnings.add("Please update to SDK version : " + foundVersion);
