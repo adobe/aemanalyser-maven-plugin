@@ -81,6 +81,7 @@ The plugin can be configured with the following configuration properties:
 * **sdkArtifactId** : By default, the plugin inspects the dependencies of the project and looks for an artifact with the group id `com.adobe.aem` and an artifact id of either `aem-prerelease-sdk-api` or `aem-sdk-api`. For advanced usages, this property can be set to disable the detection mechanism.
 * **sdkVersion** : This property can be used to exactly specify the SDK version to be used for the analysis. If not set, the plugin will use the latest available SDK. The value for this property can also be specified via the command line by setting `sdkVersion`.
 * **useDependencyVersions** : If this property is enabled, the version for the SDK as specified via the dependencies is used. This is by default disabled to use the latest version. The value for this property can also be specified via the command line by setting `sdkUseDependency`.
+* **classifier**  : If this property is set the content package to analyze is retrieved from the attached project artifact with the given classifier. The value for this property can also be specified via the command line by setting `aem.analyser.classifier`.
 
 ## Advanced Configurations
 
