@@ -116,13 +116,18 @@ public class AemPackageConverter {
                             .setEmitter(DefaultPackagesEventsEmitter.open(this.featureOutputDirectory))
                             .setResourceFilter(getResourceFilter());
 
-        for(Map.Entry<String, File> entry : contentPackages.entrySet()) {
-            logger.info("Converting package {}", entry.getKey());
-            try {
-                converter.convert(entry.getValue());
-            } catch (final Throwable t) {
-                throw new IOException("Content Package Converter Exception " + t.getMessage(), t);        
+        try {
+            for(Map.Entry<String, File> entry : contentPackages.entrySet()) {
+                logger.info("Converting package {}", entry.getKey());
+                try {
+                    converter.convert(entry.getValue());
+                } catch (final Throwable t) {
+                    throw new IOException("Content Package Converter Exception " + t.getMessage(), t);        
+                }
             }
+        } finally {
+            // make sure to remove the temp folders
+            converter.cleanup();
         }
     }
 
