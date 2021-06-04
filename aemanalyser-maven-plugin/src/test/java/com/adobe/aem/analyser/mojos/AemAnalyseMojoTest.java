@@ -74,15 +74,15 @@ public class AemAnalyseMojoTest {
 
         AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
 
-        try (ArtifactManager artifactManager = mojo.getLocalArtifactProvider()) {
-            ArtifactProvider ap = mojo.getArtifactProvider(artifactManager);
+        try (ArtifactManager artifactManager = mojo.getArtifactManager()) {
+            ArtifactProvider ap = mojo.getCompositeArtifactProvider(artifactManager);
             URL url = ap.provide(ArtifactId.fromMvnId("a:b:123"));
             assertEquals(ab123.toURI().toURL(), url);
         }
     }
 
     @Test
-    public void testLocalArtifactProvider() throws Exception {
+    public void testArtifactManager() throws Exception {
         Path dir = tempDir.resolve("cp-conversion/d/e/f/456");
         Files.createDirectories(dir);
         Path def456 = dir.resolve("f-456.jar");
@@ -96,9 +96,10 @@ public class AemAnalyseMojoTest {
 
         AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
 
-        ArtifactProvider ap = mojo.getLocalArtifactProvider();
-        URL url2 = ap.provide(ArtifactId.fromMvnId("d.e:f:456"));
-        assertEquals(def456.toUri().toURL(), url2);
+        try (ArtifactManager am = mojo.getArtifactManager()) {
+            URL url2 = am.provide(ArtifactId.fromMvnId("d.e:f:456"));
+            assertEquals(def456.toUri().toURL(), url2);
+        }
     }
 
     private static class TestAnalyseMojo extends AemAnalyseMojo {
