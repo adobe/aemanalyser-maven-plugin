@@ -28,6 +28,7 @@ import org.apache.maven.model.Build;
 import org.apache.maven.project.MavenProject;
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.builder.ArtifactProvider;
+import org.apache.sling.feature.io.artifacts.ArtifactManager;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -73,9 +74,11 @@ public class AemAnalyseMojoTest {
 
         AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
 
-        ArtifactProvider ap = mojo.getArtifactProvider();
-        URL url = ap.provide(ArtifactId.fromMvnId("a:b:123"));
-        assertEquals(ab123.toURI().toURL(), url);
+        try (ArtifactManager artifactManager = mojo.getLocalArtifactProvider()) {
+            ArtifactProvider ap = mojo.getArtifactProvider(artifactManager);
+            URL url = ap.provide(ArtifactId.fromMvnId("a:b:123"));
+            assertEquals(ab123.toURI().toURL(), url);
+        }
     }
 
     @Test
