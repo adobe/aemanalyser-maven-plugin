@@ -208,11 +208,17 @@ public class AemAnalyseMojo extends AbstractMojo {
         // 1. Phase : convert content packages
         this.convertContentPackages();
 
-        // 2. Phase : aggregate feature models
-        final List<Feature> features = this.aggregateFeatureModels(sdkId, addons);
+        try (ArtifactManager artifactManager = getArtifactManager()) {
+            ArtifactProvider compositeArtifactProvider = getCompositeArtifactProvider(artifactManager);
+            // 2. Phase : aggregate feature models
+            final List<Feature> features = this.aggregateFeatureModels(sdkId, addons, compositeArtifactProvider);
 
-        // 3. Phase : analyse features
-        this.analyseFeatures(features, versionUtil.getVersionWarnings());
+            // 3. Phase : analyse features
+            this.analyseFeatures(features, versionUtil.getVersionWarnings(), compositeArtifactProvider);
+        } catch (IOException e) {
+            throw new MojoExecutionException(e.getMessage(), e);
+        }
+        
     }
 
     /**
@@ -278,11 +284,11 @@ public class AemAnalyseMojo extends AbstractMojo {
      * @return A list of feature models
      * @throws MojoExecutionException If anything goes wrong
      */
-    List<Feature> aggregateFeatureModels(final ArtifactId sdkId, final List<ArtifactId> addons) throws MojoExecutionException {
+    List<Feature> aggregateFeatureModels(final ArtifactId sdkId, final List<ArtifactId> addons, final ArtifactProvider artifactProvider) throws MojoExecutionException {
         try {
             final AemAggregator a = new AemAggregator();
             a.setFeatureOutputDirectory(getGeneratedFeaturesDir());
-            a.setArtifactProvider(getArtifactProvider());
+            a.setArtifactProvider(artifactProvider);
             a.setFeatureProvider(new FeatureProvider() {
                 @Override
                 public Feature provide(final ArtifactId id) {
@@ -308,11 +314,11 @@ public class AemAnalyseMojo extends AbstractMojo {
      * @throws MojoFailureException If the analysis fails
      * @throws MojoExecutionException If something goes wrong
      */
-    void analyseFeatures(final List<Feature> features, final List<String> additionalWarnings) throws MojoFailureException, MojoExecutionException {
+    void analyseFeatures(final List<Feature> features, final List<String> additionalWarnings, final ArtifactProvider artifactProvider) throws MojoFailureException, MojoExecutionException {
         boolean hasErrors = false;
         try {
             final AemAnalyser analyser = new AemAnalyser();
-            analyser.setArtifactProvider(getArtifactProvider());
+            analyser.setArtifactProvider(artifactProvider);
             analyser.setIncludedTasks(this.getAnalyserTasks());
             analyser.setTaskConfigurations(this.getAnalyserTaskConfigurations());
 
@@ -347,17 +353,16 @@ public class AemAnalyseMojo extends AbstractMojo {
     }
 
     /**
-     * Get the artifact provider
-     * @return The provider
+     * Get the composite artifact provider of a default artifact manager and a custom provider which is able to resolve the project attached artifacts
+     * @return the composite provider
      * @throws IOException If creation of the provider fails
      */
-    ArtifactProvider getArtifactProvider() throws IOException {
-        final ArtifactProvider localProvider = this.getLocalArtifactProvider();
+    ArtifactProvider getCompositeArtifactProvider(final ArtifactManager artifactManager) throws IOException {
         return new ArtifactProvider() {
 
             @Override
             public URL provide(final ArtifactId id) {
-                URL url = localProvider.provide(id);
+                URL url = artifactManager.provide(id);
                 if (url != null) {
                     return url;
                 }
@@ -399,11 +404,11 @@ public class AemAnalyseMojo extends AbstractMojo {
     }
 
     /**
-     * Get the local artifact provider
+     * Get an artifact manager. The returned one must be shut down.
      * @return The provider
      * @throws IOException If the provider can't be created
      */
-    ArtifactProvider getLocalArtifactProvider() throws IOException {
+    ArtifactManager getArtifactManager() throws IOException {
         ArtifactManagerConfig amcfg = new ArtifactManagerConfig();
         amcfg.setRepositoryUrls(new String[] { getConversionOutputDir().toURI().toURL().toString() });
 
