@@ -76,8 +76,9 @@ A typical use would be to just configure the **project-analyse** goal if the plu
 
 The plugin can be configured with the following configuration properties:
 
-* **skip** : If this is set to `true` the plugin execution will be skipped. The plugin can also be skipped by setting the propert `aem.analyser.skip` to `true`.
+* **skip** : If this is set to `true` the plugin execution will be skipped. The plugin can also be skipped by setting the property `aem.analyser.skip` to `true`.
 * **failOnAnalyserErrors** : This is by default enabled and causes the build to fail if any analyser reports an error. This can be set to `false` to continue the build.
+* **strictValidation** : If this is set to `true` all warnings from the analyser will be turned in errors and fail the build. The property `aem.analyser.strict` can be used to set this from the commandline.
 * **sdkArtifactId** : By default, the plugin inspects the dependencies of the project and looks for an artifact with the group id `com.adobe.aem` and an artifact id of either `aem-prerelease-sdk-api` or `aem-sdk-api`. For advanced usages, this property can be set to disable the detection mechanism.
 * **sdkVersion** : This property can be used to exactly specify the SDK version to be used for the analysis. If not set, the plugin will use the latest available SDK. The value for this property can also be specified via the command line by setting `sdkVersion`.
 * **useDependencyVersions** : If this property is enabled, the version for the SDK as specified via the dependencies is used. This is by default disabled to use the latest version. The value for this property can also be specified via the command line by setting `sdkUseDependency`.
