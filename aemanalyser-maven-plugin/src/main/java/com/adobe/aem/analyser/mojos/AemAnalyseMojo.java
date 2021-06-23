@@ -118,6 +118,13 @@ public class AemAnalyseMojo extends AbstractMojo {
     private String classifier;
 
     /**
+     * If enabled, all analyser warnings will be turned into errors and fail the build.
+     * @since 1.0.12
+     */
+    @Parameter(defaultValue = "false", property = "aem.analyser.strict")
+    private boolean strictValidation;
+
+    /**
      * The maven project
      */
     @Parameter(property = "project", readonly = true, required = true)
@@ -326,17 +333,25 @@ public class AemAnalyseMojo extends AbstractMojo {
             
             // print additional warnings first
             for(final String msg : additionalWarnings) {
-                getLog().warn(msg);
+                if ( strictValidation ) {
+                    getLog().error(msg);
+                } else {
+                    getLog().warn(msg);
+                }
             }
             // now analyser warnings
             for(final String msg : result.getWarnings()) {
-                getLog().warn(msg);
+                if ( strictValidation ) {
+                    getLog().error(msg);
+                } else {
+                    getLog().warn(msg);
+                }
             }
             // finally, analyser errors
             for(final String msg : result.getErrors()) {
                 getLog().error(msg);
             }
-            hasErrors = result.hasErrors();
+            hasErrors = result.hasErrors() || (strictValidation && result.hasWarnings());
 
         } catch ( final Exception e) {
             throw new MojoExecutionException("A fatal error occurred while analysing the features, see error cause:",
