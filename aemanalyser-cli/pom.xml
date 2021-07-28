@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Copyright 2021 Adobe. All rights reserved.
+This file is licensed to you under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License. You may obtain a copy
+of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under
+the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+OF ANY KIND, either express or implied. See the License for the specific language
+governing permissions and limitations under the License.
+ -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.adobe.aem</groupId>
+    <artifactId>parent-oss</artifactId>
+    <version>1</version>
+    <relativePath>../parent-oss/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>aemanalyser-cli</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>AEM Analyser CLI</name>
+  <description>AEM Analyser Command-line tool</description>
+
+  <scm>
+    <connection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</developerConnection>
+    <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/aemanalyser-cli</url>
+    <tag>HEAD</tag>
+  </scm>
+  
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.2.0</version>
+        <executions>
+          <execution>
+            <phase>prepare-package</phase>
+            <goals><goal>copy-dependencies</goal></goals>
+            <configuration>
+              <includeArtifactIds>
+                aemanalyser-core,
+                geronimo-json_1.1_spec,
+                johnzon-core,
+                org.apache.felix.cm.json,
+                org.apache.felix.converter,
+                org.apache.sling.feature,
+                org.apache.sling.feature.analyser,
+                org.apache.sling.feature.extension.apiregions,
+                org.osgi.framework,
+                org.osgi.resource,
+                org.osgi.util.function,
+                picocli,
+                slf4j-api,
+                slf4j-simple
+              </includeArtifactIds>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>              
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.3.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>single</goal></goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/zip-assembly.xml</descriptor>
+              </descriptors>              
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.2.0</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <!-- TODO this includes too much, which is harmless but ugly, clean up -->
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib</classpathPrefix>
+              <mainClass>com.adobe.aem.analyser.cli.Analyse</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+    
+    </plugins>
+  </build>
+  
+  <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>aemanalyser-core</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+    </dependency>
+  
+    <!--
+     | CLI
+    -->
+    <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <version>4.6.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>1.7.26</version>
+    </dependency>
+  </dependencies>
+</project>

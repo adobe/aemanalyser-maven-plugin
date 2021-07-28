@@ -167,7 +167,7 @@ public class AemAnalyser {
         return analyser;
     }
 
-    private boolean checkClassifier(final String classifier) {
+    protected boolean checkClassifier(final String classifier) {
         if ( classifier == null || !classifier.startsWith("aggregated-")) {
             return false;
         }
@@ -287,7 +287,7 @@ public class AemAnalyser {
         return msgs;
     }
 
-    private void logOutput(final List<String> output, final Map<String, List<String>> messages, final String type) {
+    protected void logOutput(final List<String> output, final Map<String, List<String>> messages, final String type) {
         // clean up environment specific messages
         final List<String> authorMsgs = getTierMessages(messages, KEY_AUTHOR);
         final List<String> publishMsgs = getTierMessages(messages, KEY_PUBLISH);

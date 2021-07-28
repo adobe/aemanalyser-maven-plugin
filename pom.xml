@@ -25,6 +25,8 @@ governing permissions and limitations under the License.
 
   <modules>
     <module>parent-oss</module>
+    <module>aemanalyser-core</module>
+    <module>aemanalyser-cli</module>
     <module>aemanalyser-maven-plugin</module>
   </modules>
 </project>
