@@ -31,7 +31,8 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(name = "analyse", mixinStandardHelpOptions =  true,
-    description = "Execute feature model analysers")
+    description = "Execute feature model analysers",
+    versionProvider = VersionProvider.class)
 public class Analyse implements Callable<Integer> {
     @Option(names = {"-f", "--features"}, description = "Feature files to analyser")
     private File[] featureFiles;
