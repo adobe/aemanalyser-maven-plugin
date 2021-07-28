@@ -4,6 +4,8 @@ A Maven plugin used by developers of applications for AEM as a Cloud Service (AE
 
 The plugin provides an easy way to run the same checks locally as in the Cloud Manager pipeline and ensures that the application works correctly when deployed in the cloud.
 
+There is also a commandline tool that can execute the Analysers: [AEM Analyser CLI](../aemanalyser-cli/README.md)
+
 > **_NOTE:_**  Please make sure to always use the latest version. Refrain from using any version below 1.0.2.
 
 ## Functionality
