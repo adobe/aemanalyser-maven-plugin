@@ -26,12 +26,11 @@ import org.apache.sling.feature.io.json.FeatureJSONReader;
 import com.adobe.aem.analyser.AemAnalyser;
 import com.adobe.aem.analyser.AemAnalyserResult;
 
-import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(name = "analyse", mixinStandardHelpOptions =  true,
-    description = "Execute feature model analysers",
+    description = "Analyse one or more feature models",
     versionProvider = VersionProvider.class)
 public class Analyse implements Callable<Integer> {
     @Option(names = {"-f", "--features"}, description = "Feature files to analyser")
@@ -68,10 +67,5 @@ public class Analyse implements Callable<Integer> {
         }
 
         return result.hasErrors() ? 1 : 0;
-    }
-
-    public static void main(String[] args) {
-        int exitCode = new CommandLine(new Analyse()).execute(args);
-        System.exit(exitCode);
     }
 }

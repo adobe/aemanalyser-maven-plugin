@@ -16,16 +16,29 @@ inside the distro and placed in the lib subdirectory.
 
 ## Usage
 
-For the latest usage information, run the help command of the tool:
+For the latest usage information, run the help option of the tool:
 
 ```
 $ java -jar aemanalyser-cli.jar -h
-Usage: analyse [-hV] [-a=<analysers>]... [-f=<featureFiles>]...
-Execute feature model analysers
+Usage: java -jar analyser.jar [-hV] [COMMAND]
+Execute feature model analyser tool
+  -h, --help      Show this help message and exit.
+  -V, --version   Print version information and exit.
+Commands:
+  analyse  Analyse one or more feature models
+```
+
+Help information on subcommands can be obtained by providing the -h option to the subcommand:
+
+```
+$ java -jar aemanalyser-cli.jar analyse -h
+Usage: java -jar analyser.jar analyse [-hV] [-a=<analysers>]...
+                                      [-f=<featureFiles>]...
+Analyse one or more feature models
   -a, --analyser=<analysers>
                   Analysers to execute
   -f, --features=<featureFiles>
                   Feature files to analyser
   -h, --help      Show this help message and exit.
   -V, --version   Print version information and exit.
-  ```
+```
