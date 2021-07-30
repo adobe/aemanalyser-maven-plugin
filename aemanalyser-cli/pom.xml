@@ -52,10 +52,12 @@ governing permissions and limitations under the License.
                 geronimo-json_1.1_spec,
                 johnzon-core,
                 org.apache.felix.cm.json,
+                org.apache.felix.configadmin.plugin.interpolation,
                 org.apache.felix.converter,
                 org.apache.sling.feature,
                 org.apache.sling.feature.analyser,
                 org.apache.sling.feature.extension.apiregions,
+                org.osgi.service.cm,
                 org.osgi.framework,
                 org.osgi.resource,
                 org.osgi.util.function,
@@ -138,7 +140,21 @@ governing permissions and limitations under the License.
       <artifactId>aemanalyser-core</artifactId>
       <version>0.0.1-SNAPSHOT</version>
     </dependency>
-  
+
+    <!-- 
+     Interpolation
+     -->    
+    <dependency>
+      <groupId>org.apache.felix</groupId>
+      <artifactId>org.apache.felix.configadmin.plugin.interpolation</artifactId>
+      <version>1.2.0-SNAPSHOT</version>    
+    </dependency>
+    <dependency>
+       <groupId>org.osgi</groupId>
+       <artifactId>org.osgi.service.cm</artifactId>
+       <version>1.6.0</version>
+    </dependency>
+
     <!--
      | CLI
     -->
