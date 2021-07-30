@@ -41,8 +41,11 @@ governing permissions and limitations under the License.
         <version>3.2.0</version>
         <executions>
           <execution>
-            <phase>prepare-package</phase>
-            <goals><goal>copy-dependencies</goal></goals>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+              <goal>build-classpath</goal>
+            </goals>
             <configuration>
               <includeArtifactIds>
                 aemanalyser-core,
@@ -61,9 +64,55 @@ governing permissions and limitations under the License.
                 slf4j-simple
               </includeArtifactIds>
               <outputDirectory>${project.build.directory}/lib</outputDirectory>              
+
+              <!-- These properties are for build-classpath. It creates a classpath for the copied
+                   dependencies and puts it in the ${distro.classpath} property. The jar Class-Path
+                   uses spaces as separators. Unfortunately <pathSeparator> configuration property
+                   does not work with a space as value, so the pathSeparator is set to a character
+                   here and this is then replaced later using the regex-property plugin. -->
+              <prefix>lib</prefix>
+              <outputProperty>distro.classpath</outputProperty>
+              <pathSeparator>:</pathSeparator>
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.2.0</version>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>regex-property</goal>
+            </goals>
+            <configuration>
+              <!-- Here the value of property for the jar the Class-Path is replaced to have a space
+                   as separator. Unfortunately <replacement> does not work if a single space if specified
+                   so this uses the surrounding .jar and lib to provide some content. -->
+              <name>distro.classpath.replaced</name>
+              <value>${distro.classpath}</value>
+              <regex>[.]jar[:]lib</regex>
+              <replacement>.jar lib</replacement>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.2.0</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>com.adobe.aem.analyser.cli.Main</mainClass>
+            </manifest>
+            <manifestEntries>
+              <!-- Include the computed classpath with all copied dependencies in the jar here -->
+              <Class-Path>${distro.classpath.replaced}</Class-Path>
+            </manifestEntries>
+          </archive>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -79,22 +128,7 @@ governing permissions and limitations under the License.
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.2.0</version>
-        <configuration>
-          <archive>
-            <manifest>
-              <!-- TODO this includes too much, which is harmless but ugly, clean up -->
-              <addClasspath>true</addClasspath>
-              <classpathPrefix>lib</classpathPrefix>
-              <mainClass>com.adobe.aem.analyser.cli.Analyse</mainClass>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
-    
+      </plugin>    
     </plugins>
   </build>
   
