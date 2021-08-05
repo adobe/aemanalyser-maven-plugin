@@ -108,7 +108,7 @@ public class AemPackageConverter {
                         )
                     )
                     .setEntryHandlersManager(
-                        new DefaultEntryHandlersManager(Collections.emptyMap(), false, SlingInitialContentPolicy.KEEP)
+                        new DefaultEntryHandlersManager(Collections.emptyMap(), true, SlingInitialContentPolicy.KEEP)
                         )
                         .setAclManager(
                             new DefaultAclManager()
