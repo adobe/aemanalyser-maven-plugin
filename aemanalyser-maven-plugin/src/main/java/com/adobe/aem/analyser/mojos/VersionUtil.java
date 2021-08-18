@@ -49,18 +49,22 @@ public class VersionUtil {
 
     private final List<String> versionWarnings = new ArrayList<>();
 
+    private final boolean isOffline;
+
     public VersionUtil(final Log log,
             final MavenProject project,
             final ArtifactHandlerManager artifactHandlerManager,
             final ArtifactMetadataSource artifactMetadataSource,
             final List<ArtifactRepository> remoteArtifactRepositories,
-            final ArtifactRepository localRepository) {
+            final ArtifactRepository localRepository,
+            final boolean isOffline) {
         this.project = project;
         this.log = log;
         this.artifactHandlerManager = artifactHandlerManager;
         this.artifactMetadataSource = artifactMetadataSource;
         this.remoteArtifactRepositories = remoteArtifactRepositories;
         this.localRepository = localRepository;
+        this.isOffline = isOffline;
     }
 
     /**
@@ -215,6 +219,10 @@ public class VersionUtil {
     String getLatestVersion( final Dependency dependency )
         throws MojoExecutionException {
 
+        if ( this.isOffline ) {
+            this.versionWarnings.add("Plugin is used in offline mode, checking for latest version for " + dependency + " is disabled.");
+            return null;
+        }
         try {
             final Artifact artifact = new DefaultArtifact(dependency.getGroupId(),
                 dependency.getArtifactId(),
