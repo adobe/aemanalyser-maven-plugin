@@ -92,7 +92,7 @@ public class VersionUtilTest {
 
     private static class TestVersionUtil extends VersionUtil {
         private TestVersionUtil(final MavenProject prj) {
-            super(Mockito.mock(Log.class), prj, null, null, null, null);
+            super(Mockito.mock(Log.class), prj, null, null, null, null, false);
         }
 
         String getLatestVersion(final Dependency dependencies) throws MojoExecutionException {

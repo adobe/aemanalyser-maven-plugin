@@ -207,7 +207,8 @@ public class AemAnalyseMojo extends AbstractMojo {
 
         final VersionUtil versionUtil = new VersionUtil(this.getLog(), this.project, 
                 this.artifactHandlerManager, this.artifactMetadataSource, 
-                this.remoteArtifactRepositories, this.localRepository);
+                this.remoteArtifactRepositories, this.localRepository,
+                this.mavenSession.isOffline());
 
         final ArtifactId sdkId = versionUtil.getSDKArtifactId(this.sdkArtifactId, this.sdkVersion, this.useDependencyVersions);
         final List<ArtifactId> addons = versionUtil.discoverAddons(this.addons, this.useDependencyVersions);
