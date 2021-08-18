@@ -35,6 +35,8 @@ import org.apache.sling.feature.ArtifactId;
  */
 public class VersionUtil {
 
+    private static final String PLUGIN_TYPE = "maven-plugin";
+
     private final MavenProject project;
 
     private final Log log;
@@ -44,6 +46,8 @@ public class VersionUtil {
     private final ArtifactMetadataSource artifactMetadataSource;
 
     private final List<ArtifactRepository> remoteArtifactRepositories;
+
+    private final List<ArtifactRepository> remotePluginRepositories;
 
     private final ArtifactRepository localRepository;
 
@@ -56,6 +60,7 @@ public class VersionUtil {
             final ArtifactHandlerManager artifactHandlerManager,
             final ArtifactMetadataSource artifactMetadataSource,
             final List<ArtifactRepository> remoteArtifactRepositories,
+            final List<ArtifactRepository> remotePluginRepositories,
             final ArtifactRepository localRepository,
             final boolean isOffline) {
         this.project = project;
@@ -63,6 +68,7 @@ public class VersionUtil {
         this.artifactHandlerManager = artifactHandlerManager;
         this.artifactMetadataSource = artifactMetadataSource;
         this.remoteArtifactRepositories = remoteArtifactRepositories;
+        this.remotePluginRepositories = remotePluginRepositories;
         this.localRepository = localRepository;
         this.isOffline = isOffline;
     }
@@ -233,7 +239,8 @@ public class VersionUtil {
                 artifactHandlerManager.getArtifactHandler(dependency.getType()));
 
             final List<ArtifactVersion> versions =
-                artifactMetadataSource.retrieveAvailableVersions( artifact, localRepository, remoteArtifactRepositories );
+                artifactMetadataSource.retrieveAvailableVersions( artifact, localRepository, 
+                        PLUGIN_TYPE.equals(dependency.getType()) ? remotePluginRepositories :  remoteArtifactRepositories);
 
             ArtifactVersion latest = null;
             for ( final ArtifactVersion candidate : versions ) {
@@ -253,6 +260,27 @@ public class VersionUtil {
 
         } catch ( final ArtifactMetadataRetrievalException e) {
             throw new MojoExecutionException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Check for a newer version of the plugin
+     * @param groupId Group id of the plugin
+     * @param artifactId Artifact id of the plugin
+     * @param version Version of the plugin
+     * @throws MojoExecutionException
+     */
+    public void checkPluginVersion(final String groupId, final String artifactId, final String version) throws MojoExecutionException {
+        final Dependency pluginDependency = new Dependency();
+        pluginDependency.setGroupId(groupId);
+        pluginDependency.setArtifactId(artifactId);
+        pluginDependency.setVersion(version);
+        pluginDependency.setType(PLUGIN_TYPE);
+
+        final String latestVersion = this.getLatestVersion(pluginDependency);
+        if ( latestVersion != null && isNewer(version, latestVersion)) {
+            this.versionWarnings.add("Project is configured with outdated aemanalyser plugin version : " + version);
+            this.versionWarnings.add("Please update to plugin version : " + latestVersion);
         }
     }
 }

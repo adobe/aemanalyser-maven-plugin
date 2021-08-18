@@ -43,9 +43,11 @@ import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
@@ -151,12 +153,9 @@ public class AemAnalyseMojo extends AbstractMojo {
     @Component
     private ArtifactMetadataSource artifactMetadataSource;
 
-    @Parameter(defaultValue = "${project.remoteArtifactRepositories}", readonly = true)
-    private List<ArtifactRepository> remoteArtifactRepositories;
-
-    @Parameter(defaultValue = "${localRepository}", readonly = true)
-    private ArtifactRepository localRepository;
-    
+    @Parameter( defaultValue = "${plugin}", readonly = true ) // Maven 3 only
+    private PluginDescriptor plugin;
+ 
     /**
      * Artifact cache
      */
@@ -207,12 +206,19 @@ public class AemAnalyseMojo extends AbstractMojo {
 
         final VersionUtil versionUtil = new VersionUtil(this.getLog(), this.project, 
                 this.artifactHandlerManager, this.artifactMetadataSource, 
-                this.remoteArtifactRepositories, this.localRepository,
-                this.mavenSession.isOffline());
+                this.project.getRemoteArtifactRepositories(), this.project.getPluginArtifactRepositories(), 
+                this.mavenSession.getLocalRepository(), this.mavenSession.isOffline());
+
+        versionUtil.checkPluginVersion(this.plugin.getGroupId(), this.plugin.getArtifactId(), this.plugin.getVersion());
 
         final ArtifactId sdkId = versionUtil.getSDKArtifactId(this.sdkArtifactId, this.sdkVersion, this.useDependencyVersions);
         final List<ArtifactId> addons = versionUtil.discoverAddons(this.addons, this.useDependencyVersions);
 
+        // log warnings at start and end
+        for(final String msg : versionUtil.getVersionWarnings()) {
+            this.getLog().warn(msg);
+        }
+        
         // 1. Phase : convert content packages
         this.convertContentPackages();
 
