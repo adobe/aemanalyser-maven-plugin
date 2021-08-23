@@ -26,6 +26,7 @@ import org.apache.sling.feature.cpconverter.features.DefaultFeaturesManager;
 import org.apache.sling.feature.cpconverter.filtering.RegexBasedResourceFilter;
 import org.apache.sling.feature.cpconverter.filtering.ResourceFilter;
 import org.apache.sling.feature.cpconverter.handlers.DefaultEntryHandlersManager;
+import org.apache.sling.feature.cpconverter.shared.ConverterConstants;
 import org.apache.sling.feature.cpconverter.vltpkg.DefaultPackagesEventsEmitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,7 @@ public class AemPackageConverter {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private static final String FILTER = ".*/(apps|libs)/(.*)/install\\.(((author|publish)\\.(dev|stage|prod))|((dev|stage|prod)\\.(author|publish))|(dev|stage|prod))/(.*)(?<=\\.(zip|jar)$)";
-    
+
     private File featureOutputDirectory;
 
     private File converterOutputDirectory;
@@ -100,7 +101,8 @@ public class AemPackageConverter {
 
         featuresManager.setExportToAPIRegion("global");
 
-        ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(false)
+        ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(false,
+                SlingInitialContentPolicy.KEEP)
                 .setFeaturesManager(featuresManager)
                 .setBundlesDeployer(
                         new LocalMavenRepositoryArtifactsDeployer(
@@ -108,7 +110,8 @@ public class AemPackageConverter {
                         )
                     )
                     .setEntryHandlersManager(
-                        new DefaultEntryHandlersManager(Collections.emptyMap(), true, SlingInitialContentPolicy.KEEP)
+                        new DefaultEntryHandlersManager(Collections.emptyMap(), true,
+                                SlingInitialContentPolicy.KEEP, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT)
                         )
                         .setAclManager(
                             new DefaultAclManager()
@@ -122,7 +125,7 @@ public class AemPackageConverter {
                 try {
                     converter.convert(entry.getValue());
                 } catch (final Throwable t) {
-                    throw new IOException("Content Package Converter Exception " + t.getMessage(), t);        
+                    throw new IOException("Content Package Converter Exception " + t.getMessage(), t);
                 }
             }
         } finally {
