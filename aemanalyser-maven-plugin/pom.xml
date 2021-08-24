@@ -107,7 +107,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>aemanalyser-core</artifactId>
-      <version>1.0.0</version>
+      <version>1.0.1-SNAPSHOT</version>
     </dependency>
 
     <!-- Feature Model -->
