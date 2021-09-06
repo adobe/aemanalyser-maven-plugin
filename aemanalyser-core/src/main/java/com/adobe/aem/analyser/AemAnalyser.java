@@ -52,6 +52,7 @@ public class AemAnalyser {
     + "api-regions-exportsimports,"
     + "repoinit,"
     + "configuration-api,"
+    + "artifact-rules,"
     + "region-deprecated-api";
 
     private static final String BUNDLE_ORIGINS = "content-package-origins";
