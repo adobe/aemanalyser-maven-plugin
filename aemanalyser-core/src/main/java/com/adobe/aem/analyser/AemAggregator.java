@@ -257,6 +257,7 @@ public class AemAggregator {
                     if ( feature == null ) {
                         throw new IOException("Unable to find addon feature for " + id.toMvnId());
                     }
+                    postProcessProductFeature(feature);
                     list.add(feature);
                 }
             }
@@ -265,7 +266,7 @@ public class AemAggregator {
         return aggregates;
     }
 
-    private final void postProcessProductFeature(final Feature feature) {
+    final void postProcessProductFeature(final Feature feature) {
         // check for artifact rules
         final ArtifactRules rules = ArtifactRules.getArtifactRules(feature);
         if ( rules != null ) {
