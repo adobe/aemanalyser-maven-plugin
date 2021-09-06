@@ -276,6 +276,9 @@ public class AemAggregator {
                 }
             }
             ArtifactRules.setArtifactRules(feature, rules);
+        } else {
+            // create empty rules to avoid analyser warning
+            ArtifactRules.setArtifactRules(feature, new ArtifactRules());
         }
     }
 

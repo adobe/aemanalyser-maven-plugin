@@ -12,6 +12,7 @@
 package com.adobe.aem.analyser;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -257,6 +258,8 @@ public class AemAggregatorTest {
         final Feature f = new Feature(ArtifactId.parse("g:a:1"));
         final AemAggregator agg = new AemAggregator();
         agg.postProcessProductFeature(f);
+        final ArtifactRules newRules = ArtifactRules.getArtifactRules(f);
+        assertNotNull(newRules);
     }
 
     @Test
