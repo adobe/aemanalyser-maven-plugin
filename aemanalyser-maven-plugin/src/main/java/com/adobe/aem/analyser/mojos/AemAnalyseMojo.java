@@ -32,7 +32,6 @@ import com.adobe.aem.analyser.AemAggregator;
 import com.adobe.aem.analyser.AemAnalyser;
 import com.adobe.aem.analyser.AemAnalyserResult;
 import com.adobe.aem.analyser.AemPackageConverter;
-import com.google.common.base.Converter;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
