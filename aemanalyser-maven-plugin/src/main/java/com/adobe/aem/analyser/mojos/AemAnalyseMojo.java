@@ -37,13 +37,11 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
-import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
 import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -55,6 +53,7 @@ import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.ArtifactProvider;
 import org.apache.sling.feature.builder.FeatureProvider;
+import org.apache.sling.feature.cpconverter.ConverterException;
 import org.apache.sling.feature.io.artifacts.ArtifactManager;
 import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
 import org.apache.sling.feature.io.json.FeatureJSONReader;
@@ -232,7 +231,6 @@ public class AemAnalyseMojo extends AbstractMojo {
         } catch (IOException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
-        
     }
 
     /**
@@ -249,6 +247,9 @@ public class AemAnalyseMojo extends AbstractMojo {
             final File source = contentPackage.getFile();
             try {
                 converter.convert(Collections.singletonMap(contentPackage.toString(), source));
+            } catch ( final ConverterException ce) {
+                getLog().error(ce.getMessage());
+                throw new MojoExecutionException(ce.getMessage());        
             } catch (final IOException t) {
                 throw new MojoExecutionException("Content Package Converter Exception " + t.getMessage(), t);        
             }

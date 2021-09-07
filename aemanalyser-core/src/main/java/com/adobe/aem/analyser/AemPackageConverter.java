@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter;
+import org.apache.sling.feature.cpconverter.ConverterException;
 import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter.SlingInitialContentPolicy;
 import org.apache.sling.feature.cpconverter.accesscontrol.AclManager;
 import org.apache.sling.feature.cpconverter.accesscontrol.DefaultAclManager;
@@ -85,7 +86,7 @@ public class AemPackageConverter {
         this.artifactIdOverride = artifactIdOverride;
     }
 
-    public void convert(final Map<String, File> contentPackages) throws IOException {
+    public void convert(final Map<String, File> contentPackages) throws IOException, ConverterException {
         final Map<String, String> properties = new HashMap<>();
 
         final AclManager aclManager = new DefaultAclManager(null, "system");
