@@ -12,6 +12,8 @@
 package com.adobe.aem.analyser;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -31,6 +33,8 @@ import java.util.Map;
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.FeatureProvider;
+import org.apache.sling.feature.extension.apiregions.api.artifacts.ArtifactRules;
+import org.apache.sling.feature.extension.apiregions.api.artifacts.VersionRule;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -246,5 +250,46 @@ public class AemAggregatorTest {
             Files.createDirectories(targetPath.getParent());
             Files.copy(is, targetPath);
         }
+    }
+
+    @Test
+    public void testPostProcessProductFeatureNoRules() {
+        // this test just ensures that features without rules do not cause problems
+        final Feature f = new Feature(ArtifactId.parse("g:a:1"));
+        final AemAggregator agg = new AemAggregator();
+        agg.postProcessProductFeature(f);
+        final ArtifactRules newRules = ArtifactRules.getArtifactRules(f);
+        assertNotNull(newRules);
+    }
+
+    @Test
+    public void testPostProcessProductFeatureRules() {
+        final Feature f = new Feature(ArtifactId.parse("g:a:1"));
+
+        final ArtifactRules rules = new ArtifactRules();
+        final VersionRule rule1 = new VersionRule();
+        rule1.setArtifactId(ArtifactId.parse("g:a:zip:c:1"));
+        rules.getArtifactVersionRules().add(rule1);
+        final VersionRule rule2 = new VersionRule();
+        rule2.setArtifactId(ArtifactId.parse("g:b:jar:c:1"));
+        rules.getArtifactVersionRules().add(rule2);
+        final VersionRule rule3 = new VersionRule();
+        rule3.setArtifactId(ArtifactId.parse("g:c:zip:1"));
+        rules.getArtifactVersionRules().add(rule3);
+        final VersionRule rule4 = new VersionRule();
+        rules.getArtifactVersionRules().add(rule4);
+
+        ArtifactRules.setArtifactRules(f, rules);
+
+        final AemAggregator agg = new AemAggregator();
+        agg.postProcessProductFeature(f);
+
+        final ArtifactRules newRules = ArtifactRules.getArtifactRules(f);
+        assertEquals(4, newRules.getArtifactVersionRules().size());
+
+        assertEquals(ArtifactId.parse("g:a:zip:cp2fm-converted:1"), newRules.getArtifactVersionRules().get(0).getArtifactId());
+        assertEquals(ArtifactId.parse("g:b:jar:c:1"), newRules.getArtifactVersionRules().get(1).getArtifactId());
+        assertEquals(ArtifactId.parse("g:c:zip:cp2fm-converted:1"), newRules.getArtifactVersionRules().get(2).getArtifactId());
+        assertNull(newRules.getArtifactVersionRules().get(3).getArtifactId());
     }
 }

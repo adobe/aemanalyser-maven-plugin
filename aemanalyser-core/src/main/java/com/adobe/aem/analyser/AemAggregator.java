@@ -39,6 +39,8 @@ import org.apache.sling.feature.builder.FeatureBuilder;
 import org.apache.sling.feature.builder.FeatureProvider;
 import org.apache.sling.feature.builder.MergeHandler;
 import org.apache.sling.feature.builder.PostProcessHandler;
+import org.apache.sling.feature.extension.apiregions.api.artifacts.ArtifactRules;
+import org.apache.sling.feature.extension.apiregions.api.artifacts.VersionRule;
 import org.apache.sling.feature.io.json.FeatureJSONReader;
 import org.apache.sling.feature.io.json.FeatureJSONWriter;
 import org.slf4j.Logger;
@@ -247,6 +249,7 @@ public class AemAggregator {
             if ( sdkFeature == null ) {
                 throw new IOException("Unable to find SDK feature for " + this.getSdkId().toMvnId());
             }
+            postProcessProductFeature(sdkFeature);
             list.add(sdkFeature);
             if ( this.getAddOnIds() != null ) {
                 for(final ArtifactId id : this.getAddOnIds()) {
@@ -254,12 +257,29 @@ public class AemAggregator {
                     if ( feature == null ) {
                         throw new IOException("Unable to find addon feature for " + id.toMvnId());
                     }
+                    postProcessProductFeature(feature);
                     list.add(feature);
                 }
             }
         }
 
         return aggregates;
+    }
+
+    final void postProcessProductFeature(final Feature feature) {
+        // check for artifact rules
+        final ArtifactRules rules = ArtifactRules.getArtifactRules(feature);
+        if ( rules != null ) {
+            for(final VersionRule rule : rules.getArtifactVersionRules()) {
+                if ( rule.getArtifactId() != null && "zip".equals(rule.getArtifactId().getType()) ) {
+                    rule.setArtifactId(rule.getArtifactId().changeClassifier("cp2fm-converted"));
+                }
+            }
+            ArtifactRules.setArtifactRules(feature, rules);
+        } else {
+            // create empty rules to avoid analyser warning
+            ArtifactRules.setArtifactRules(feature, new ArtifactRules());
+        }
     }
 
     Map<String, List<Feature>> getFinalAggregates(final Map<String, List<Feature>> userAggregate,
