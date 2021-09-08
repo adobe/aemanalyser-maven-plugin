@@ -18,8 +18,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter;
-import org.apache.sling.feature.cpconverter.ConverterException;
 import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter.SlingInitialContentPolicy;
+import org.apache.sling.feature.cpconverter.ConverterException;
 import org.apache.sling.feature.cpconverter.accesscontrol.AclManager;
 import org.apache.sling.feature.cpconverter.accesscontrol.DefaultAclManager;
 import org.apache.sling.feature.cpconverter.artifacts.LocalMavenRepositoryArtifactsDeployer;
@@ -40,6 +40,8 @@ public class AemPackageConverter {
 
     private File featureOutputDirectory;
 
+    private File bundlesOutputDirectory;
+
     private File converterOutputDirectory;
 
     private String artifactIdOverride;
@@ -56,6 +58,20 @@ public class AemPackageConverter {
      */
     public void setFeatureOutputDirectory(File featureOutputDirectory) {
         this.featureOutputDirectory = featureOutputDirectory;
+    }
+
+    /**
+     * @return the bundlesOutputDirectory
+     */
+    public File getBundlesOutputDirectory() {
+        return bundlesOutputDirectory;
+    }
+
+    /**
+     * @param bundlesOutputDirectory the featureOutputDirectory to set
+     */
+    public void setBundlesOutputDirectory(File bundlesOutputDirectory) {
+        this.bundlesOutputDirectory = bundlesOutputDirectory;
     }
 
     /**
@@ -102,12 +118,14 @@ public class AemPackageConverter {
 
         featuresManager.setExportToAPIRegion("global");
 
+        File bundlesOutputDir = this.bundlesOutputDirectory != null
+                ? this.bundlesOutputDirectory : this.converterOutputDirectory;
         ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(false,
                 SlingInitialContentPolicy.KEEP)
                 .setFeaturesManager(featuresManager)
                 .setBundlesDeployer(
                         new LocalMavenRepositoryArtifactsDeployer(
-                            this.converterOutputDirectory
+                            bundlesOutputDir
                         )
                     )
                     .setEntryHandlersManager(
