@@ -39,6 +39,8 @@ import org.apache.sling.feature.builder.FeatureBuilder;
 import org.apache.sling.feature.builder.FeatureProvider;
 import org.apache.sling.feature.builder.MergeHandler;
 import org.apache.sling.feature.builder.PostProcessHandler;
+import org.apache.sling.feature.cpconverter.artifacts.ArtifactsDeployer;
+import org.apache.sling.feature.cpconverter.artifacts.FileArtifactWriter;
 import org.apache.sling.feature.extension.apiregions.api.artifacts.ArtifactRules;
 import org.apache.sling.feature.extension.apiregions.api.artifacts.VersionRule;
 import org.apache.sling.feature.io.json.FeatureJSONReader;
@@ -61,6 +63,8 @@ public class AemAggregator {
 
     private ArtifactProvider artifactProvider;
 
+    private ArtifactsDeployer artifactsDeployer;
+
     private FeatureProvider featureProvider;
 
     private ArtifactId projectId;
@@ -81,6 +85,24 @@ public class AemAggregator {
      */
     public void setArtifactProvider(ArtifactProvider artifactProvider) {
         this.artifactProvider = artifactProvider;
+    }
+
+    /**
+     * @return the artifactsDeployer
+     */
+    public ArtifactsDeployer getArtifactsDeployer() {
+        return artifactsDeployer;
+    }
+
+    /**
+     * Sets an artifactDeployer
+     *
+     * <p>When a deployer is set it will be used to deploy the aggregated features.</p>
+     *
+     * @param artifactsDeployer the artifactsDeployer to set
+     */
+    public void setArtifactsDeployer(ArtifactsDeployer artifactsDeployer) {
+        this.artifactsDeployer = artifactsDeployer;
     }
 
     /**
@@ -354,9 +376,13 @@ public class AemAggregator {
             final Feature feature = FeatureBuilder.assemble(newFeatureID, builderContext,
                   aggregate.getValue().toArray(new Feature[aggregate.getValue().size()]));
 
-            try ( final Writer writer = new FileWriter(new File(this.getFeatureOutputDirectory(), aggregate.getKey().concat(".json")))) {
+            File featureFile = new File(this.getFeatureOutputDirectory(), aggregate.getKey().concat(".json"));
+            try ( final Writer writer = new FileWriter(featureFile)) {
                 FeatureJSONWriter.write(writer, feature);
             }
+
+            if ( artifactsDeployer != null )
+                artifactsDeployer.deploy(new FileArtifactWriter(featureFile), newFeatureID);
             projectFeatures.put(aggregate.getKey(), feature);
 
             result.add(feature);
