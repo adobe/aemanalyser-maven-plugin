@@ -17,7 +17,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -25,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,31 +33,17 @@ import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.FeatureProvider;
 import org.apache.sling.feature.extension.apiregions.api.artifacts.ArtifactRules;
 import org.apache.sling.feature.extension.apiregions.api.artifacts.VersionRule;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class AemAggregatorTest {
-    private Path tempDir;
-
-    @Before
-    public void setUp() throws IOException {
-        tempDir = Files.createTempDirectory(getClass().getSimpleName());
-    }
-
-    @After
-    public void tearDown() throws IOException {
-        // Delete the temp dir again
-        Files.walk(tempDir)
-            .sorted(Comparator.reverseOrder())
-            .map(Path::toFile)
-            .forEach(File::delete);
-    }
+    public @Rule TemporaryFolder tempDir = new TemporaryFolder();
 
     @Test
     public void testUserAggregates1() throws Exception {
         final AemAggregator agg = new AemAggregator();
-        agg.setFeatureOutputDirectory(new File(tempDir.toFile(), "target/cp-conversion/fm.out"));
+        agg.setFeatureOutputDirectory(tempDir.newFolder("target", "cp-conversion", "fm.out"));
         agg.setProjectId(ArtifactId.parse("gp:ap:5"));
         agg.setSdkId(ArtifactId.parse("lala:hoho:0.0.1"));
         agg.setAddOnIds(Arrays.asList(ArtifactId.parse("com.adobe.aem:hihi:1.2.2"), ArtifactId.parse("com.adobe.aem:aem-sdk-api:9.9.1")));
@@ -96,7 +80,7 @@ public class AemAggregatorTest {
     @Test
     public void testUserAggregates2() throws Exception {
         final AemAggregator agg = new AemAggregator();
-        agg.setFeatureOutputDirectory(new File(tempDir.toFile(), "target/cp-conversion/fm.out"));
+        agg.setFeatureOutputDirectory(tempDir.newFolder("target", "cp-conversion", "fm.out"));
         agg.setProjectId(ArtifactId.parse("gp:ap:5"));
         agg.setSdkId(ArtifactId.parse("lala:hoho:0.0.1"));
         agg.setAddOnIds(Arrays.asList(ArtifactId.parse("com.adobe.aem:hihi:1.2.2"), ArtifactId.parse("com.adobe.aem:aem-sdk-api:9.9.1")));
@@ -140,7 +124,7 @@ public class AemAggregatorTest {
     @Test
     public void testProductAggregates() throws Exception {
         final AemAggregator agg = new AemAggregator();
-        agg.setFeatureOutputDirectory(new File(tempDir.toFile(), "target/cp-conversion/fm.out"));
+        agg.setFeatureOutputDirectory(tempDir.newFolder("target", "cp-conversion", "fm.out"));
         agg.setProjectId(ArtifactId.parse("gp:ap:5"));
         agg.setSdkId(ArtifactId.parse("lala:hoho:0.0.1"));
 
@@ -150,7 +134,7 @@ public class AemAggregatorTest {
             public Feature provide(ArtifactId id) {
                 return new Feature(id);
             }
-            
+
         });
         final Map<String, List<Feature>> aggregates = agg.getProductAggregates();
         assertEquals(2, aggregates.size());
@@ -178,11 +162,11 @@ public class AemAggregatorTest {
         assertTrue(authorFound);
         assertTrue(publishFound);
     }
-    
+
     @Test
     public void testFinalAggregates() throws Exception {
         final AemAggregator agg = new AemAggregator();
-        agg.setFeatureOutputDirectory(new File(tempDir.toFile(), "target/cp-conversion/fm.out"));
+        agg.setFeatureOutputDirectory(tempDir.newFolder("target", "cp-conversion", "fm.out"));
         agg.setProjectId(ArtifactId.parse("gp:ap:5"));
         agg.setSdkId(ArtifactId.parse("lala:hoho:0.0.1"));
 
@@ -192,7 +176,7 @@ public class AemAggregatorTest {
             public Feature provide(ArtifactId id) {
                 return new Feature(id);
             }
-            
+
         });
         final Map<String, List<Feature>> userAggregates = new HashMap<>();
         userAggregates.put("user-aggregated-author", Collections.emptyList());
@@ -205,7 +189,7 @@ public class AemAggregatorTest {
         projectFeatures.put("user-aggregated-publish", new Feature(ArtifactId.parse("projectgroup:project:slingosgifeature:user-aggregated-publish:4")));
         projectFeatures.put("product-aggregated-author", new Feature(agg.getSdkId().changeClassifier("product-aggregated-author").changeType("slingosgifeature")));
         projectFeatures.put("product-aggregated-publish", new Feature(agg.getSdkId().changeClassifier("product-aggregated-publish").changeType("slingosgifeature")));
-    
+
         final Map<String, List<Feature>> aggregates = agg.getFinalAggregates(userAggregates, projectFeatures);
         assertEquals(3, aggregates.size());
 
@@ -246,7 +230,7 @@ public class AemAggregatorTest {
     private void copyTestResource(String resource, String file) throws IOException {
         URL runmodesFile = getClass().getResource("/" + resource);
         try (InputStream is = runmodesFile.openStream()) {
-            Path targetPath = tempDir.resolve(file);
+            Path targetPath = tempDir.getRoot().toPath().resolve(file);
             Files.createDirectories(targetPath.getParent());
             Files.copy(is, targetPath);
         }
