@@ -72,19 +72,25 @@ public class AemAnalyserUtil {
 
         final Object defaultFm = runmodes.remove(DEFAULT_MODE);
         if (defaultFm != null ) {
-            allModels.values().stream().forEach(s -> s.add(defaultFm.toString()));
+            for(final String pck : defaultFm.toString().split(",")) {
+                allModels.values().stream().forEach(s -> s.add(pck));
+            }
         }
 
         for (final String mode : runmodes.stringPropertyNames()) {
             Set<String> models = allModels.get(mode);
             boolean valid = false;
             if ( models != null ) {
-                models.add(runmodes.getProperty(mode));
+                for(final String pck : runmodes.getProperty(mode).split(",")) {
+                    models.add(pck);
+                }
                 for (final String ap : new String [] {".dev", ".stage", ".prod"}) {
                     final String key = mode.concat(ap);
                     models = allModels.get(key);
                     if ( models != null ) {
-                        models.add(runmodes.getProperty(mode));                
+                        for(final String pck : runmodes.getProperty(mode).split(",")) {
+                            models.add(pck);
+                        }
                     }
                 }
                 valid = true;                
@@ -93,7 +99,9 @@ public class AemAnalyserUtil {
                     final String key = ap.concat(mode);
                     models = allModels.get(key);
                     if ( models != null ) {
-                        models.add(runmodes.getProperty(mode));                
+                        for(final String pck : runmodes.getProperty(mode).split(",")) {
+                            models.add(pck);
+                        }
                         valid = true;                
                     }
                 }

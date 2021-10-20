@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -243,16 +244,18 @@ public class AemAnalyseMojo extends AbstractMojo {
         converter.setConverterOutputDirectory(getConversionOutputDir());
         converter.setFeatureOutputDirectory(getGeneratedFeaturesDir());
     
+        final Map<String, File> packages = new LinkedHashMap<>();
         for(final Artifact contentPackage: getContentPackages()) {
             final File source = contentPackage.getFile();
-            try {
-                converter.convert(Collections.singletonMap(contentPackage.toString(), source));
-            } catch ( final ConverterException ce) {
-                getLog().error(ce.getMessage());
-                throw new MojoExecutionException(ce.getMessage());        
-            } catch (final IOException t) {
-                throw new MojoExecutionException("Content Package Converter Exception " + t.getMessage(), t);        
-            }
+            packages.put(contentPackage.getId().toString(), source);
+        }
+        try {
+            converter.convert(packages);
+        } catch ( final ConverterException ce) {
+            getLog().error(ce.getMessage());
+            throw new MojoExecutionException(ce.getMessage());
+        } catch (final IOException t) {
+            throw new MojoExecutionException("Content Package Converter Exception " + t.getMessage(), t);
         }
     }
 
