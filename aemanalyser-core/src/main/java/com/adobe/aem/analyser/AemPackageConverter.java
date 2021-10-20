@@ -139,13 +139,11 @@ public class AemPackageConverter {
                             .setResourceFilter(getResourceFilter());
 
         try {
-            for(Map.Entry<String, File> entry : contentPackages.entrySet()) {
-                logger.info("Converting package {}", entry.getKey());
-                try {
-                    converter.convert(entry.getValue());
-                } catch (final Throwable t) {
-                    throw new IOException("Content Package Converter Exception " + t.getMessage(), t);
-                }
+            logger.info("Converting packages {}", contentPackages.keySet());
+            try {
+                converter.convert(contentPackages.values().toArray(new File[contentPackages.size()]));
+            } catch (final Throwable t) {
+                throw new IOException("Content Package Converter Exception " + t.getMessage(), t);
             }
         } finally {
             // make sure to remove the temp folders
