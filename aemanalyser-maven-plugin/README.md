@@ -27,7 +27,7 @@ Example:
     <plugin>
         <groupId>com.adobe.aem</groupId>
         <artifactId>aemanalyser-maven-plugin</artifactId>
-        <version>1.1.10</version> <!-- Make sure to use the latest release -->
+        <version>1.1.12</version> <!-- Make sure to use the latest release -->
     </plugin>
 
 As this plugin is available in Maven Central, no additional configuration is needed to bring it into your Maven project.
@@ -44,7 +44,7 @@ Enable the plugin by listing it in the `build->plugins` section of the module.
             <plugin>
                 <groupId>com.adobe.aem</groupId>
                 <artifactId>aemanalyser-maven-plugin</artifactId>
-                <version>1.1.10</version> <!-- Make sure to use the latest release -->
+                <version>1.1.12</version> <!-- Make sure to use the latest release -->
                 <executions>
                     <execution>
                         <id>aem-analyser</id>
@@ -148,7 +148,7 @@ With that, your project `pom.xml` needs to look somewhat like this:
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>1.1.10</version> <!-- Make sure to use the latest release -->
+                    <version>1.1.12</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
@@ -164,35 +164,49 @@ With that, your project `pom.xml` needs to look somewhat like this:
         </dependencies>
     </project>
 
-### Example
+### Example for a Multi Project Setup
 
-As an example, consider adding a new module to the [AEM WKND Sites project](https://github.com/adobe/aem-guides-wknd]). All that is needed is a new `pom.xml` in a subfolder looking like this:
+If your AEM project creates multiple application content packages, for example if you have a multi project setup, then instead of running the analyser on every project, it is better to run it once on the combination of all projects. This is especially important if there are dependencie between the projects.
+
+All that is needed is a new `pom.xml` in a subfolder, for example named analyse, looking like this:
 
     <project>
         <modelVersion>4.0.0</modelVersion>
         <parent>
-            <groupId>com.adobe.aem.guides</groupId>
-            <artifactId>aem-guides-wknd</artifactId>
-            <version>0.0.7-SNAPSHOT</version>
+            <groupId>!!insert.parent.groupId!!</groupId>
+            <artifactId>!!insert.parent.artifactId!!</artifactId>
+            <version>!!insert.parent.version!!</version>
             <relativePath>../pom.xml</relativePath>
         </parent>
-        <artifactId>wknd.analyse</artifactId>
+        <artifactId>!!insert.artifactId!!</artifactId>
         <packaging>aem-analyse</packaging>
         <build>
             <plugins>
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>1.1.10</version> <!-- Make sure to use the latest release -->
+                    <version>1.1.12</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
         </build>
-        <dependencies>
+        <dependencies> <!-- Add all application content packages -->
             <dependency>
-                <groupId>com.adobe.aem.guides</groupId>
-                <artifactId>aem-guides-wknd.all</artifactId>
-                <version>0.0.7-SNAPSHOT</version>
+                <groupId>!!insert.groupId!!</groupId>
+                <artifactId>!!insert.artifactId.project1.all</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+                <type>zip</type>
+            </dependency>
+            <dependency>
+                <groupId>!!insert.groupId!!</groupId>
+                <artifactId>!!insert.artifactId.project2.all</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+                <type>zip</type>
+            </dependency>
+            <dependency>
+                <groupId>!!insert.groupId!!</groupId>
+                <artifactId>!!insert.artifactId.project3.all</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
                 <type>zip</type>
             </dependency>
         </dependencies>
