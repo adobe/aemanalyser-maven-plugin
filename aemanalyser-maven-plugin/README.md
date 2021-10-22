@@ -34,7 +34,7 @@ As this plugin is available in Maven Central, no additional configuration is nee
 
 ## Usage
 
-The best way to use this plugin is to add it to a Maven project producing a `container` package. For example if you are using a project structure similar to the [AEM Archetype](https://github.com/adobe/aem-project-archetype) then this is the `all` module.
+The usage of this plugin depends on the AEM project structure. For most projects the best way to use this plugin is to add it to a Maven project producing a `container` package (aka `all` package). For example if you are using a project structure similar to the [AEM Archetype](https://github.com/adobe/aem-project-archetype) then this is the `all` module.
 
 Enable the plugin by listing it in the `build->plugins` section of the module.
 
@@ -58,6 +58,102 @@ Enable the plugin by listing it in the `build->plugins` section of the module.
     </build>
 
 The analyser plugin will run the default set of analysers on the content packages configured while picking up the AEM SDK version from the `<parent>`. 
+
+### Use Analyser in a Separate Maven Module
+
+The analyser can also be used in a dedicated module with packaging-type `aem-analyse`. Enable the plugin by listing it in the `build->plugins` section and specify the content packages to analyse in the `<dependencies>` section.
+
+With that, your project `pom.xml` needs to look somewhat like this:
+
+    <project>
+        <modelVersion>4.0.0</modelVersion>
+
+        <parent>
+            <groupId>!!insert.parent.groupId!!</groupId>
+            <artifactId>!!insert.parent.artifactId!!</artifactId>
+            <version>!!insert.parent.version!!</version>
+            <relativePath>../pom.xml</relativePath>
+        </parent>
+    
+        <groupId>!!insert.groupId!!</groupId>
+        <artifactId>!!insert.artifactId!!</artifactId>
+        <version>!!insert.version!!</version>
+        <packaging>aem-analyse</packaging>
+
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>com.adobe.aem</groupId>
+                    <artifactId>aemanalyser-maven-plugin</artifactId>
+                    <version>1.1.12</version> <!-- Make sure to use the latest release -->
+                    <extensions>true</extensions>
+                </plugin>
+            </plugins>
+        </build>
+
+        <dependencies>
+            <dependency>
+                <groupId>!!insert.dependency.groupId!!</groupId>
+                <artifactId>!!insert.dependency.artifactId!!</artifactId>
+                <version>!!insert.dependency.version!!</version>
+                <type>zip</type>
+            </dependency>
+        </dependencies>
+    </project>
+
+### Example for a Multi Project Setup
+
+If your AEM project creates multiple container content packages, for example if you have a multi project setup, then instead of running the analyser on every project, it is better to run it once on all packages. This is especially important if there are dependencie between the projects.
+
+All that is needed is a new `pom.xml` in a subfolder, for example named `analyse`, looking like this:
+
+    <project>
+        <modelVersion>4.0.0</modelVersion>
+        <parent>
+            <groupId>!!insert.parent.groupId!!</groupId>
+            <artifactId>!!insert.parent.artifactId!!</artifactId>
+            <version>!!insert.parent.version!!</version>
+            <relativePath>../pom.xml</relativePath>
+        </parent>
+        <artifactId>!!insert.artifactId!!</artifactId>
+        <packaging>aem-analyse</packaging>
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>com.adobe.aem</groupId>
+                    <artifactId>aemanalyser-maven-plugin</artifactId>
+                    <version>1.1.12</version> <!-- Make sure to use the latest release -->
+                    <extensions>true</extensions>
+                </plugin>
+            </plugins>
+        </build>
+        <dependencies> <!-- Add all application content packages -->
+            <dependency>
+                <groupId>!!insert.groupId!!</groupId>
+                <artifactId>!!insert.artifactId.project1.all</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+                <type>zip</type>
+            </dependency>
+            <dependency>
+                <groupId>!!insert.groupId!!</groupId>
+                <artifactId>!!insert.artifactId.project2.all</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+                <type>zip</type>
+            </dependency>
+            <dependency>
+                <groupId>!!insert.groupId!!</groupId>
+                <artifactId>!!insert.artifactId.project3.all</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+                <type>zip</type>
+            </dependency>
+        </dependencies>
+    </project>
+
+And then you need to add this module to the parent project by adding this line to the parent `pom.xml` in the modules section:
+
+    <module>analyse</module>   <!-- This is the name of the subfolder -->
+
+Make sure to add it as the last module.
 
 ## AEM as a Cloud Service
 
@@ -117,106 +213,6 @@ Some analyser tasks require configuration. Default configuration is used by the 
     </analyserTaskConfigurations>
 
 Please note, that overriding the default configuration for the analysers might hide errors locally that will be catched in the Cloud Manager pipeline.
-
-## Use Analyser in a Separate Maven Module
-
-The analyser can also be used in a dedicated module with packaging-type `aem-analyse`. However, this usage is not recommended. Enable the plugin by listing it in the `build->plugins` section and specify the content packages to analyse in the `<dependencies>` section.
-
-The analyser plugin will run the default set of analysers on the content packages configured while picking up the AEM SDK version from the `<parent>`. Please note that it is important that you have an AEM SDK version configured in your parent that is equal or higher to:
-
-    <aem.sdk.api>2020.11.4506.20201112T235200Z-201028</aem.sdk.api>
-
-With that, your project `pom.xml` needs to look somewhat like this:
-
-    <project>
-        <modelVersion>4.0.0</modelVersion>
-
-        <parent>
-            <groupId>!!insert.parent.groupId!!</groupId>
-            <artifactId>!!insert.parent.artifactId!!</artifactId>
-            <version>!!insert.parent.version!!</version>
-            <relativePath>../pom.xml</relativePath>
-        </parent>
-    
-        <groupId>!!insert.groupId!!</groupId>
-        <artifactId>!!insert.artifactId!!</artifactId>
-        <version>!!insert.version!!</version>
-        <packaging>aem-analyse</packaging>
-
-        <build>
-            <plugins>
-                <plugin>
-                    <groupId>com.adobe.aem</groupId>
-                    <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>1.1.12</version> <!-- Make sure to use the latest release -->
-                    <extensions>true</extensions>
-                </plugin>
-            </plugins>
-        </build>
-
-        <dependencies>
-            <dependency>
-                <groupId>!!insert.dependency.groupId!!</groupId>
-                <artifactId>!!insert.dependency.artifactId!!</artifactId>
-                <version>!!insert.dependency.version!!</version>
-                <type>zip</type>
-            </dependency>
-        </dependencies>
-    </project>
-
-### Example for a Multi Project Setup
-
-If your AEM project creates multiple application content packages, for example if you have a multi project setup, then instead of running the analyser on every project, it is better to run it once on the combination of all projects. This is especially important if there are dependencie between the projects.
-
-All that is needed is a new `pom.xml` in a subfolder, for example named analyse, looking like this:
-
-    <project>
-        <modelVersion>4.0.0</modelVersion>
-        <parent>
-            <groupId>!!insert.parent.groupId!!</groupId>
-            <artifactId>!!insert.parent.artifactId!!</artifactId>
-            <version>!!insert.parent.version!!</version>
-            <relativePath>../pom.xml</relativePath>
-        </parent>
-        <artifactId>!!insert.artifactId!!</artifactId>
-        <packaging>aem-analyse</packaging>
-        <build>
-            <plugins>
-                <plugin>
-                    <groupId>com.adobe.aem</groupId>
-                    <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>1.1.12</version> <!-- Make sure to use the latest release -->
-                    <extensions>true</extensions>
-                </plugin>
-            </plugins>
-        </build>
-        <dependencies> <!-- Add all application content packages -->
-            <dependency>
-                <groupId>!!insert.groupId!!</groupId>
-                <artifactId>!!insert.artifactId.project1.all</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
-                <type>zip</type>
-            </dependency>
-            <dependency>
-                <groupId>!!insert.groupId!!</groupId>
-                <artifactId>!!insert.artifactId.project2.all</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
-                <type>zip</type>
-            </dependency>
-            <dependency>
-                <groupId>!!insert.groupId!!</groupId>
-                <artifactId>!!insert.artifactId.project3.all</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
-                <type>zip</type>
-            </dependency>
-        </dependencies>
-    </project>
-
-And then you need to add this module to the parent project by adding this line to the parent `pom.xml` in the modules section:
-
-    <module>analyse</module>   <!-- This is the name of the subfolder -->
-
-Make sure to add it as the last module.
 
 ## Deprecated Maven Goals
 
