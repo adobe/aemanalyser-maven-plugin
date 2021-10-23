@@ -186,25 +186,24 @@ The following configuration options can be provided to the plugin. However they 
 
 ### Selecting Tasks
 
-The plugin will execute a number of default analysers. It is possible to select a different set of analyser tasks, for example with the following configuration:
+The plugin will execute a number of default analysers. It is possible to select a different set of analyser tasks, for example with the following configuration, the set of analysers running on the final aggregates can be changes.
 
     <analyserTasks>
         <analyserTask>bundle-packages</analyserTask>
         <analyserTask>requirements-capabilities</analyserTask>
     </analyserTasks>
+
+Some analysers are only run on the provided content packages. These can be changed with setting the user tasks:
+
+    <analyserUserTasks>
+        <analyserUserTask>bundle-content</analyserUserTask>
+    </analyserUserTasks>
 
 Please note that if you remove tasks which are run by default, the plugin might not report any errors in your project, while the analysers that run as part of the Cloud Manager pipeline might report errors.
 
 ### Configuring Analyser Tasks
 
 Some analyser tasks require configuration. Default configuration is used by the plugin for the default set of analysers. Additional or different configuration can be provided like this:
-
-    <analyserTasks>
-        <analyserTask>bundle-packages</analyserTask>
-        <analyserTask>requirements-capabilities</analyserTask>
-        <analyserTask>bundle-resources</analyserTask>
-        <analyserTask>api-regions-check-order</analyserTask>
-    </analyserTasks>
 
     <analyserTaskConfigurations>
         <api-regions-check-order>
