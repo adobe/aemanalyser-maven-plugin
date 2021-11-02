@@ -89,11 +89,18 @@ public class AemAnalyseMojo extends AbstractMojo {
     List<Addon> addons;
     
     /**
-     * The analyser tasks run be the analyser
+     * The analyser tasks run be the analyser on the final aggregates
      */
     @Parameter(defaultValue = AemAnalyser.DEFAULT_TASKS,
         property = "analyserTasks")
     List<String> analyserTasks;
+
+    /**
+     * The analyser tasks run be the analyser on the user aggregates
+     */
+    @Parameter(defaultValue = AemAnalyser.DEFAULT_USER_TASKS,
+        property = "analyserUserTasks")
+    List<String> analyserUserTasks;
 
     /**
      * Optional configurations for the analyser tasks
@@ -338,6 +345,7 @@ public class AemAnalyseMojo extends AbstractMojo {
             final AemAnalyser analyser = new AemAnalyser();
             analyser.setArtifactProvider(artifactProvider);
             analyser.setIncludedTasks(this.getAnalyserTasks());
+            analyser.setIncludedUserTasks(this.getAnalyserUserTasks());
             analyser.setTaskConfigurations(this.getAnalyserTaskConfigurations());
 
             final AemAnalyserResult result = analyser.analyse(features);
@@ -427,6 +435,14 @@ public class AemAnalyseMojo extends AbstractMojo {
      */
     Set<String> getAnalyserTasks() {
         return new LinkedHashSet<>(this.analyserTasks);
+    }
+
+    /**
+     * Get the analyser user task
+     * @return The tasks
+     */
+    Set<String> getAnalyserUserTasks() {
+        return new LinkedHashSet<>(this.analyserUserTasks);
     }
 
     /**

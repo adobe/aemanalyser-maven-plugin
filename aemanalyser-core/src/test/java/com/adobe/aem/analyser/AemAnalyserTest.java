@@ -32,6 +32,15 @@ public class AemAnalyserTest {
         }
     }
 
+    @Test public void testUserIncludedTasks() {
+        final AemAnalyser analyser = new AemAnalyser();
+        assertNotNull(analyser.getIncludedUserTasks());
+        assertEquals(AemAnalyser.DEFAULT_USER_TASKS.split(",").length, analyser.getIncludedUserTasks().size());
+        for(final String t : AemAnalyser.DEFAULT_USER_TASKS.split(",")) {
+            assertTrue(analyser.getIncludedUserTasks().contains(t));
+        }
+    }
+
     @Test public void testDefaultTaskConfigurations() {
         final AemAnalyser analyser = new AemAnalyser();
         assertNotNull(analyser.getTaskConfigurations());
@@ -95,5 +104,13 @@ public class AemAnalyserTest {
 
         assertEquals(1, analyser.getIncludedTasks().size());
         assertTrue(analyser.getIncludedTasks().contains("mytask"));
+    }
+
+    @Test public void testSetIncludedUserTasks() throws Exception {
+        final AemAnalyser analyser = new AemAnalyser();
+        analyser.setIncludedUserTasks(Collections.singleton("mytask"));
+
+        assertEquals(1, analyser.getIncludedUserTasks().size());
+        assertTrue(analyser.getIncludedUserTasks().contains("mytask"));
     }
 }

@@ -42,18 +42,26 @@ import org.slf4j.LoggerFactory;
 
 public class AemAnalyser {
 
+    /**
+     * These tasks are executed by default on the final aggregates
+     */
     public static final String DEFAULT_TASKS = "requirements-capabilities,"
-    + "bundle-content,"
-    + "bundle-resources,"
-    + "bundle-nativecode,"
     + "api-regions,"
     + "api-regions-check-order,"
     + "api-regions-crossfeature-dups,"
     + "api-regions-exportsimports,"
     + "repoinit,"
     + "configuration-api,"
-    + "artifact-rules,"
     + "region-deprecated-api";
+
+    /**
+     * These tasks are executed on the user aggregates (before the product is merged in)
+     */
+    public static final String DEFAULT_USER_TASKS = "bundle-content"
+    + ",bundle-resources"
+    + ",bundle-nativecode"
+    + ",artifact-rules"
+    + ",aem-env-var";
 
     private static final String BUNDLE_ORIGINS = "content-package-origins";
     private static final String CONFIGURATION_ORIGINS = Configuration.CONFIGURATOR_PREFIX.concat(BUNDLE_ORIGINS);
@@ -66,10 +74,13 @@ public class AemAnalyser {
 
     private Set<String> includedTasks;
 
+    private Set<String> includedUserTasks;
+
     private Map<String, Map<String, String>> taskConfigurations;
 
     public AemAnalyser() {
         this.setIncludedTasks(new LinkedHashSet<>(Arrays.asList(DEFAULT_TASKS.split(","))));
+        this.setIncludedUserTasks(new LinkedHashSet<>(Arrays.asList(DEFAULT_USER_TASKS.split(","))));
         this.setTaskConfigurations(new HashMap<>());
     }
 
@@ -81,10 +92,24 @@ public class AemAnalyser {
     }
 
     /**
+     * @return the included user tasks
+     */
+    public Set<String> getIncludedUserTasks() {
+        return includedUserTasks;
+    }
+
+    /**
      * @param includedTasks the includedTasks to set
      */
     public void setIncludedTasks(final Set<String> includedTasks) {
         this.includedTasks = includedTasks;
+    }
+
+    /**
+     * @param includedTasks the includedTasks to set
+     */
+    public void setIncludedUserTasks(final Set<String> includedTasks) {
+        this.includedUserTasks = includedTasks;
     }
 
     /**
@@ -157,34 +182,45 @@ public class AemAnalyser {
         return scanner;
     }
 
-    private Analyser createAnalyser() throws IOException {
-        final Scanner scanner = this.createScanner();
+    private Analyser createAnalyser(final Scanner scanner, final Set<String> tasks, final Map<String, Map<String, String>> configs) throws IOException {
+        logger.debug("Setting up user analyser with task configurations = {}, included tasks = {}", configs, tasks);
 
-        logger.debug("Setting up analyser with task configurations = {}, included tasks = {}", this.getTaskConfigurations(), this.getIncludedTasks());
-
-        final Analyser analyser = new Analyser(scanner, this.getTaskConfigurations(), this.getIncludedTasks(), null);
+        final Analyser analyser = new Analyser(scanner, configs, tasks, null);
         logger.debug("Analyser successfully set up : {}", analyser);
 
         return analyser;
     }
 
-    protected boolean checkClassifier(final String classifier) {
-        if ( classifier == null || !classifier.startsWith("aggregated-")) {
-            return false;
-        }
+    protected boolean checkFinalClassifier(final String classifier) {
         return KEYS.contains(classifier);
+    }
+
+    protected boolean checkUserClassifier(final String classifier) {
+        return classifier != null && classifier.startsWith("user-") && KEYS.contains(classifier.substring(5));
     }
 
     public AemAnalyserResult analyse(final Collection<Feature> features) throws Exception {
         final AemAnalyserResult result = new AemAnalyserResult();
 
-        final Analyser analyser = this.createAnalyser();
+        final Scanner scanner = this.createScanner();
+        final Analyser userAnalyser = this.createAnalyser(scanner, this.getIncludedUserTasks(), this.getTaskConfigurations());
+        final Analyser finalAnalyser = this.createAnalyser(scanner, this.getIncludedTasks(), this.getTaskConfigurations());
 
         final Map<String, List<String>> featureErrors = new LinkedHashMap<>();
         final Map<String, List<String>> featureWarnings = new LinkedHashMap<>();
 
         for (final Feature f : features) {
-            if ( !checkClassifier(f.getId().getClassifier())) {
+            final String classifier = f.getId().getClassifier();
+            String msgKey = null;
+            Analyser analyser = null;
+            if ( checkFinalClassifier(classifier) ) {
+                msgKey = classifier;
+                analyser = finalAnalyser;
+            } else if ( checkUserClassifier(classifier) ) {
+                msgKey = classifier.substring(5);
+                analyser = userAnalyser;
+            }
+            if ( analyser == null ) {
                 this.logger.info("Skipping unused feature {}", f.getId());
                 continue;
             }
@@ -192,30 +228,30 @@ public class AemAnalyser {
 
             // report errors
             for(final GlobalReport report : r.getGlobalErrors()) {
-                featureErrors.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(report.toString());
+                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(report.toString());
             }
             for(final ArtifactReport report : r.getArtifactErrors()) {
-                featureErrors.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(getArtifactMessage(f, report));
+                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getArtifactMessage(f, report));
             }
             for(final ExtensionReport report : r.getExtensionErrors()) {
-                featureErrors.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(report.toString());
+                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(report.toString());
             }
             for(final ConfigurationReport report : r.getConfigurationErrors()) {
-                featureErrors.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(getConfigurationMessage(f, report));
+                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getConfigurationMessage(f, report));
             }
 
             // report warnings
             for(final GlobalReport report : r.getGlobalWarnings()) {
-                featureWarnings.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(report.toString());
+                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(report.toString());
             }
             for(final ArtifactReport report : r.getArtifactWarnings()) {
-                featureWarnings.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(getArtifactMessage(f, report));
+                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getArtifactMessage(f, report));
             }
             for(final ExtensionReport report : r.getExtensionWarnings()) {
-                featureWarnings.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(report.toString());
+                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(report.toString());
             }
             for(final ConfigurationReport report : r.getConfigurationWarnings()) {
-                featureWarnings.computeIfAbsent(f.getId().getClassifier(), key -> new ArrayList<>()).add(getConfigurationMessage(f, report));
+                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getConfigurationMessage(f, report));
             }
         }
 

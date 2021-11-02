@@ -101,7 +101,7 @@ public class AemAggregator {
      *
      * @param artifactsDeployer the artifactsDeployer to set
      */
-    public void setArtifactsDeployer(ArtifactsDeployer artifactsDeployer) {
+    public void setArtifactsDeployer(final ArtifactsDeployer artifactsDeployer) {
         this.artifactsDeployer = artifactsDeployer;
     }
 
@@ -115,7 +115,7 @@ public class AemAggregator {
     /**
      * @param featureProvider the featureProvider to set
      */
-    public void setFeatureProvider(FeatureProvider featureProvider) {
+    public void setFeatureProvider(final FeatureProvider featureProvider) {
         this.featureProvider = featureProvider;
     }
 
@@ -129,7 +129,7 @@ public class AemAggregator {
     /**
      * @param projectId the projectId to set
      */
-    public void setProjectId(ArtifactId projectId) {
+    public void setProjectId(final ArtifactId projectId) {
         this.projectId = projectId;
     }
 
@@ -143,7 +143,7 @@ public class AemAggregator {
     /**
      * @param featureOutputDirectory the featureOutputDirectory to set
      */
-    public void setFeatureOutputDirectory(File featureOutputDirectory) {
+    public void setFeatureOutputDirectory(final File featureOutputDirectory) {
         this.featureOutputDirectory = featureOutputDirectory;
     }
 
@@ -193,7 +193,7 @@ public class AemAggregator {
         // Produce the user aggregates
         final Map<String, List<Feature>> userAggregates = getUserAggregates(projectFeatures);
 
-        this.aggregate(userAggregates, Mode.USER, projectFeatures);
+        final List<Feature> userResult = this.aggregate(userAggregates, Mode.USER, projectFeatures);
 
         // Produce the product aggregates
         final Map<String, List<Feature>> productAggregates = getProductAggregates();
@@ -203,7 +203,12 @@ public class AemAggregator {
         // Produce the final aggregates
         final Map<String, List<Feature>> finalAggregates = getFinalAggregates(userAggregates, projectFeatures);
 
-        return this.aggregate(finalAggregates, Mode.FINAL, projectFeatures);
+        final List<Feature> finalResult = this.aggregate(finalAggregates, Mode.FINAL, projectFeatures);
+
+        final List<Feature> result = new ArrayList<>();
+        result.addAll(userResult);
+        result.addAll(finalResult);
+        return result;
     }
 
     private Map<String, Feature> readFeatures() throws IOException {
