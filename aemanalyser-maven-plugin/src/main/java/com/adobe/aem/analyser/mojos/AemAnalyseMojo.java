@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import com.adobe.aem.analyser.AemAggregator;
 import com.adobe.aem.analyser.AemAnalyser;
@@ -36,6 +37,7 @@ import com.adobe.aem.analyser.AemPackageConverter;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.artifact.handler.ArtifactHandler;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
@@ -125,6 +127,12 @@ public class AemAnalyseMojo extends AbstractMojo {
      */
     @Parameter(property = "aem.analyser.classifier")
     private String classifier;
+
+    /**
+     * Alternatively analyzes the given list of content package files. 
+     */
+    @Parameter
+    private List<File> contentPackageFiles;
 
     /**
      * If enabled, all analyser warnings will be turned into errors and fail the build.
@@ -273,7 +281,12 @@ public class AemAnalyseMojo extends AbstractMojo {
      */
     private List<Artifact> getContentPackages() throws MojoExecutionException {
         if (!Constants.PACKAGING_AEM_ANALYSE.equals(project.getPackaging())) {
-            if (classifier != null) {
+            if (contentPackageFiles != null && !contentPackageFiles.isEmpty()) {
+                return contentPackageFiles.stream()
+                        .map(this::contentPackageFileToArtifact)
+                        .collect(Collectors.toList());
+                        
+            } else if (classifier != null) {
                 // look for attached artifact with given classifier
                 for (Artifact artifact : project.getAttachedArtifacts()) {
                     if (classifier.equals(artifact.getClassifier())) {
@@ -301,7 +314,20 @@ public class AemAnalyseMojo extends AbstractMojo {
             getLog().info("Found content packages from dependencies: " + result);
             return result;
         }
+    }
 
+    /**
+     * Creates a "virtual" maven artifact out of the given custom content package file. 
+     * @param file Content package file
+     * @return Maven artifact
+     */
+    private Artifact contentPackageFileToArtifact(File file) {
+        String fileClassifier = "hash-" + file.getPath().hashCode();
+        String type = "zip";
+        ArtifactHandler artifactHandler = artifactHandlerManager.getArtifactHandler(type);
+        Artifact fileArtifact = new DefaultArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion(), null, type, fileClassifier, artifactHandler);
+        fileArtifact.setFile(file);
+        return fileArtifact;
     }
 
     /**
