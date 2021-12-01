@@ -129,7 +129,8 @@ public class AemAnalyseMojo extends AbstractMojo {
     private String classifier;
 
     /**
-     * Alternatively analyzes the given list of content package files. 
+     * Analyzes the given list of content package files.
+     * If this is configured, only these files are validated, and not the main project artifact or dependencies. 
      */
     @Parameter
     private List<File> contentPackageFiles;
