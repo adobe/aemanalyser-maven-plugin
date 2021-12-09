@@ -179,7 +179,7 @@ The plugin can be configured with the following configuration properties:
 * **sdkVersion** : This property can be used to exactly specify the SDK version to be used for the analysis. If not set, the plugin will use the latest available SDK. The value for this property can also be specified via the command line by setting `sdkVersion`.
 * **useDependencyVersions** : If this property is enabled, the version for the SDK as specified via the dependencies is used. This is by default disabled to use the latest version. The value for this property can also be specified via the command line by setting `sdkUseDependency`.
 * **classifier**  : If this property is set the content package to analyze is retrieved from the attached project artifact with the given classifier. The value for this property can also be specified via the command line by setting `aem.analyser.classifier`.
-* **contentPackageFiles**: Analyzes the given list of content package files. If this is configured, only these files are validated, and not the main project artifact or dependencies.
+* **contentPackageFiles**: Analyzes the given list of content package files. If this is configured, only these files are validated, and not the main project artifact or dependencies. The files must be located inside the Maven project directory (e.g. src or target folder).
 
 ## Advanced Configurations
 
