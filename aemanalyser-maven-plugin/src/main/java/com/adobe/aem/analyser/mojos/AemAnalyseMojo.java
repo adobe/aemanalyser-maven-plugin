@@ -35,6 +35,7 @@ import com.adobe.aem.analyser.AemAnalyser;
 import com.adobe.aem.analyser.AemAnalyserResult;
 import com.adobe.aem.analyser.AemPackageConverter;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.ArtifactHandler;
@@ -130,7 +131,8 @@ public class AemAnalyseMojo extends AbstractMojo {
 
     /**
      * Analyzes the given list of content package files.
-     * If this is configured, only these files are validated, and not the main project artifact or dependencies. 
+     * If this is configured, only these files are validated, and not the main project artifact or dependencies.
+     * The files must be located inside the Maven project directory (e.g. src or target folder). 
      */
     @Parameter
     private List<File> contentPackageFiles;
@@ -283,6 +285,7 @@ public class AemAnalyseMojo extends AbstractMojo {
     private List<Artifact> getContentPackages() throws MojoExecutionException {
         if (!Constants.PACKAGING_AEM_ANALYSE.equals(project.getPackaging())) {
             if (contentPackageFiles != null && !contentPackageFiles.isEmpty()) {
+                validateContentPackageFiles(contentPackageFiles);
                 return contentPackageFiles.stream()
                         .map(this::contentPackageFileToArtifact)
                         .collect(Collectors.toList());
@@ -314,6 +317,27 @@ public class AemAnalyseMojo extends AbstractMojo {
             }
             getLog().info("Found content packages from dependencies: " + result);
             return result;
+        }
+    }
+
+    /**
+     * Ensures that all files are stored inside the project directory.
+     * @param files Files
+     * @throws MojoExecutionException If invalid files are found.
+     */
+    private void validateContentPackageFiles(List<File> files) throws MojoExecutionException {
+        for (File file : files) {
+            try {
+                if (!file.exists()) {
+                    throw new MojoExecutionException("File not found: " + file.getAbsolutePath());
+                }
+                if (!FileUtils.directoryContains(project.getBasedir(), file)) {
+                    throw new MojoExecutionException("File not inside project directory: " + file.getAbsolutePath());
+                }
+            }
+            catch (IOException ex) {
+                throw new MojoExecutionException("Error validation file: " + file.getAbsolutePath(), ex);
+            }
         }
     }
 
