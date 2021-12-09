@@ -34,6 +34,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
 public class AemAnalyseMojoTest {
 
     private Path tempDir;
@@ -102,9 +105,36 @@ public class AemAnalyseMojoTest {
         }
     }
 
+    @Test
+    public void testGetAnalyserTasks() {
+        MavenProject prj = Mockito.mock(MavenProject.class);
+        AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
+        
+        mojo.analyserTasks = ImmutableList.of("task1","task2","task3","task4");
+        mojo.analyserUserTasks = ImmutableList.of("utask1","utask2","utask3");
+
+        assertEquals(ImmutableSet.of("task1","task2","task3","task4"), mojo.getAnalyserTasks());
+        assertEquals(ImmutableSet.of("utask1","utask2","utask3"), mojo.getAnalyserUserTasks());
+    }
+
+    @Test
+    public void testGetAnalyserTasksWithSkip() {
+        MavenProject prj = Mockito.mock(MavenProject.class);
+        AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
+        
+        mojo.analyserTasks = ImmutableList.of("task1","task2","task3","task4");
+        mojo.skipAnalyserTasks = ImmutableList.of("task3","task2");
+        mojo.analyserUserTasks = ImmutableList.of("utask1","utask2","utask3");
+        mojo.skipAnalyserUserTasks = ImmutableList.of("utask1","utask5");
+
+        assertEquals(ImmutableSet.of("task1","task4"), mojo.getAnalyserTasks());
+        assertEquals(ImmutableSet.of("utask2","utask3"), mojo.getAnalyserUserTasks());
+    }
+
     private static class TestAnalyseMojo extends AemAnalyseMojo {
         private TestAnalyseMojo(final MavenProject prj) {
             this.project = prj;
         }
     }
+
 }

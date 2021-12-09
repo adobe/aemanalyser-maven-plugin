@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import com.adobe.aem.analyser.AemAggregator;
 import com.adobe.aem.analyser.AemAnalyser;
@@ -89,18 +91,32 @@ public class AemAnalyseMojo extends AbstractMojo {
     List<Addon> addons;
     
     /**
-     * The analyser tasks run be the analyser on the final aggregates
+     * The analyser tasks run by the analyser on the final aggregates
      */
     @Parameter(defaultValue = AemAnalyser.DEFAULT_TASKS,
         property = "analyserTasks")
     List<String> analyserTasks;
 
     /**
-     * The analyser tasks run be the analyser on the user aggregates
+     * List of analyser tasks that should not be run on the final aggregates.
+     * This allows to skip tasks that are configured by default in {@link #analyserTasks}.
+     */
+    @Parameter(property = "skipAnalyserTasks")
+    List<String> skipAnalyserTasks;
+
+    /**
+     * The analyser tasks run by the analyser on the user aggregates
      */
     @Parameter(defaultValue = AemAnalyser.DEFAULT_USER_TASKS,
         property = "analyserUserTasks")
     List<String> analyserUserTasks;
+
+    /**
+     * List of analyser tasks that should not run on the user aggregates.
+     * This allows to skip tasks that are configured by default in {@link #analyserUserTasks}.
+     */
+    @Parameter(property = "skipAnalyserUserTasks")
+    List<String> skipAnalyserUserTasks;
 
     /**
      * Optional configurations for the analyser tasks
@@ -434,7 +450,7 @@ public class AemAnalyseMojo extends AbstractMojo {
      * @return The tasks
      */
     Set<String> getAnalyserTasks() {
-        return new LinkedHashSet<>(this.analyserTasks);
+        return getFilteredSet(this.analyserTasks, this.skipAnalyserTasks);
     }
 
     /**
@@ -442,7 +458,14 @@ public class AemAnalyseMojo extends AbstractMojo {
      * @return The tasks
      */
     Set<String> getAnalyserUserTasks() {
-        return new LinkedHashSet<>(this.analyserUserTasks);
+        return getFilteredSet(this.analyserUserTasks, this.skipAnalyserUserTasks);
+    }
+
+    private static Set<String> getFilteredSet(List<String> values, List<String> skipValues) {
+        Set<String> skipValuesSet = new HashSet<>(skipValues != null ? skipValues : Collections.emptyList());
+        return values.stream()
+                .filter(value -> !skipValuesSet.contains(value))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     /**
