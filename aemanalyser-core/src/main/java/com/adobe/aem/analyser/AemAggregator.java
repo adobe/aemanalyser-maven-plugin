@@ -276,7 +276,6 @@ public class AemAggregator {
             if ( sdkFeature == null ) {
                 throw new IOException("Unable to find SDK feature for " + this.getSdkId().toMvnId());
             }
-            postProcessProductFeature(sdkFeature);
             list.add(sdkFeature);
             if ( this.getAddOnIds() != null ) {
                 for(final ArtifactId id : this.getAddOnIds()) {
@@ -284,7 +283,6 @@ public class AemAggregator {
                     if ( feature == null ) {
                         throw new IOException("Unable to find addon feature for " + id.toMvnId());
                     }
-                    postProcessProductFeature(feature);
                     list.add(feature);
                 }
             }
@@ -389,6 +387,8 @@ public class AemAggregator {
             if ( artifactsDeployer != null )
                 artifactsDeployer.deploy(new FileArtifactWriter(featureFile), newFeatureID);
             projectFeatures.put(aggregate.getKey(), feature);
+
+            postProcessProductFeature(feature);
 
             result.add(feature);
         }
