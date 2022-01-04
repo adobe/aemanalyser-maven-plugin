@@ -31,21 +31,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import com.adobe.aem.analyser.AemAggregator;
-import com.adobe.aem.analyser.AemAnalyser;
-import com.adobe.aem.analyser.AemAnalyserResult;
-import com.adobe.aem.analyser.AemPackageConverter;
-
 import org.apache.commons.io.FileUtils;
+import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.ArtifactHandler;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
-import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
-import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionException;
-import org.apache.maven.artifact.resolver.ArtifactResolver;
-import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -62,6 +53,17 @@ import org.apache.sling.feature.cpconverter.ConverterException;
 import org.apache.sling.feature.io.artifacts.ArtifactManager;
 import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
 import org.apache.sling.feature.io.json.FeatureJSONReader;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
+
+import com.adobe.aem.analyser.AemAggregator;
+import com.adobe.aem.analyser.AemAnalyser;
+import com.adobe.aem.analyser.AemAnalyserResult;
+import com.adobe.aem.analyser.AemPackageConverter;
 
 public class AemAnalyseMojo extends AbstractMojo {
 
@@ -172,19 +174,22 @@ public class AemAnalyseMojo extends AbstractMojo {
     protected ArtifactHandlerManager artifactHandlerManager;
 
     /**
-     * The artifact resolver
-     */
-    @Component
-    protected ArtifactResolver artifactResolver;
-
-    /**
      * The maven session
      */
     @Parameter(property = "session", readonly = true, required = true)
     protected MavenSession mavenSession;
 
     @Component
-    private ArtifactMetadataSource artifactMetadataSource;
+    private RepositorySystem repoSystem;
+
+    @Parameter(defaultValue = "${repositorySystemSession}", readonly = true, required = true)
+    private RepositorySystemSession repoSession;
+
+    @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
+    private List<RemoteRepository> remoteProjectRepositories;
+
+    @Parameter(defaultValue = "${project.remotePluginRepositories}", readonly = true, required = true)
+    private List<RemoteRepository> remotePluginRepositories;
 
     @Parameter( defaultValue = "${plugin}", readonly = true ) // Maven 3 only
     private PluginDescriptor plugin;
@@ -237,10 +242,10 @@ public class AemAnalyseMojo extends AbstractMojo {
             return;
         }
 
-        final VersionUtil versionUtil = new VersionUtil(this.getLog(), this.project, 
-                this.artifactHandlerManager, this.artifactMetadataSource, 
-                this.project.getRemoteArtifactRepositories(), this.project.getPluginArtifactRepositories(), 
-                this.mavenSession.getLocalRepository(), this.mavenSession.isOffline());
+        final VersionUtil versionUtil = new VersionUtil(this.getLog(), this.project, artifactHandlerManager,
+                this.repoSystem, this.repoSession,
+                this.remoteProjectRepositories, this.remotePluginRepositories,
+                this.mavenSession.isOffline());
 
         versionUtil.checkPluginVersion(this.plugin.getGroupId(), this.plugin.getArtifactId(), this.plugin.getVersion());
 
@@ -558,27 +563,20 @@ public class AemAnalyseMojo extends AbstractMojo {
      * @return the artifact, which has been resolved.
      * @throws RuntimeException if the artifact can't be resolved
      */
-    @SuppressWarnings("deprecation")
     Artifact getOrResolveArtifact(final ArtifactId id) {
         Artifact result = this.artifactCache.get(id.toMvnId());
         if ( result == null ) {
             result = findArtifact(id, project.getAttachedArtifacts());
             if ( result == null ) {
-                result = findArtifact(id, project.getDependencyArtifacts());
+                result = findArtifact(id, project.getArtifacts());
                 if ( result == null ) {
-                    final Artifact prjArtifact = new DefaultArtifact(id.getGroupId(),
-                            id.getArtifactId(),
-                            VersionRange.createFromVersion(id.getVersion()),
-                            Artifact.SCOPE_PROVIDED,
-                            id.getType(),
-                            id.getClassifier(),
-                            artifactHandlerManager.getArtifactHandler(id.getType()));
+                    ArtifactRequest req = new ArtifactRequest(new org.eclipse.aether.artifact.DefaultArtifact(id.toMvnId()), remoteProjectRepositories, null);
                     try {
-                        this.artifactResolver.resolve(prjArtifact, project.getRemoteArtifactRepositories(), this.mavenSession.getLocalRepository());
-                    } catch (final ArtifactResolutionException | ArtifactNotFoundException e) {
+                        ArtifactResult resolutionResult = repoSystem.resolveArtifact(repoSession, req);
+                        result = RepositoryUtils.toArtifact(resolutionResult.getArtifact());
+                    } catch (ArtifactResolutionException e) {
                         throw new RuntimeException("Unable to get artifact for " + id.toMvnId(), e);
                     }
-                    result = prjArtifact;
                 }
             }
             this.artifactCache.put(id.toMvnId(), result);
