@@ -26,7 +26,6 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.VersionRequest;
 import org.eclipse.aether.resolution.VersionResolutionException;
 import org.eclipse.aether.resolution.VersionResult;
@@ -48,10 +47,6 @@ public class VersionUtil {
 
     private final RepositorySystemSession repoSession;
 
-    private final List<RemoteRepository> remoteProjectRepositories;
-
-    private final List<RemoteRepository> remotePluginRepositories;
-
     private final List<String> versionWarnings = new ArrayList<>();
 
     private final boolean isOffline;
@@ -61,16 +56,12 @@ public class VersionUtil {
             final ArtifactHandlerManager artifactHandlerManager,
             final RepositorySystem repoSystem,
             final RepositorySystemSession repoSession,
-            final List<RemoteRepository> remoteProjectRepositories,
-            final List<RemoteRepository> remotePluginRepositories,
             final boolean isOffline) {
         this.project = project;
         this.log = log;
         this.artifactHandlerManager = artifactHandlerManager;
         this.repoSystem = repoSystem;
         this.repoSession = repoSession;
-        this.remoteProjectRepositories = remoteProjectRepositories;
-        this.remotePluginRepositories = remotePluginRepositories;
         this.isOffline = isOffline;
     }
 
@@ -236,7 +227,7 @@ public class VersionUtil {
                 artifactHandlerManager.getArtifactHandler(dependency.getType()).getExtension(),
                 "RELEASE"); // this refers to the latest release version
 
-        VersionRequest versionRequest = new VersionRequest(artifact, PLUGIN_TYPE.equals(dependency.getType()) ? remotePluginRepositories :  remoteProjectRepositories, null);
+        VersionRequest versionRequest = new VersionRequest(artifact, PLUGIN_TYPE.equals(dependency.getType()) ? project.getRemotePluginRepositories() :  project.getRemoteProjectRepositories(), null);
         try {
             VersionResult result = repoSystem.resolveVersion(repoSession, versionRequest);
             return result.getVersion();

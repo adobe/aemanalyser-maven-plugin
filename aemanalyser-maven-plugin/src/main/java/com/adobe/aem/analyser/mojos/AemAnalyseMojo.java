@@ -185,12 +185,6 @@ public class AemAnalyseMojo extends AbstractMojo {
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true, required = true)
     private RepositorySystemSession repoSession;
 
-    @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
-    private List<RemoteRepository> remoteProjectRepositories;
-
-    @Parameter(defaultValue = "${project.remotePluginRepositories}", readonly = true, required = true)
-    private List<RemoteRepository> remotePluginRepositories;
-
     @Parameter( defaultValue = "${plugin}", readonly = true ) // Maven 3 only
     private PluginDescriptor plugin;
  
@@ -244,7 +238,6 @@ public class AemAnalyseMojo extends AbstractMojo {
 
         final VersionUtil versionUtil = new VersionUtil(this.getLog(), this.project, artifactHandlerManager,
                 this.repoSystem, this.repoSession,
-                this.remoteProjectRepositories, this.remotePluginRepositories,
                 this.mavenSession.isOffline());
 
         versionUtil.checkPluginVersion(this.plugin.getGroupId(), this.plugin.getArtifactId(), this.plugin.getVersion());
@@ -568,9 +561,9 @@ public class AemAnalyseMojo extends AbstractMojo {
         if ( result == null ) {
             result = findArtifact(id, project.getAttachedArtifacts());
             if ( result == null ) {
-                result = findArtifact(id, project.getArtifacts());
+                result = findArtifact(id, project.getDependencyArtifacts());
                 if ( result == null ) {
-                    ArtifactRequest req = new ArtifactRequest(new org.eclipse.aether.artifact.DefaultArtifact(id.toMvnId()), remoteProjectRepositories, null);
+                    ArtifactRequest req = new ArtifactRequest(new org.eclipse.aether.artifact.DefaultArtifact(id.toMvnId()), project.getRemoteProjectRepositories(), null);
                     try {
                         ArtifactResult resolutionResult = repoSystem.resolveArtifact(repoSession, req);
                         result = RepositoryUtils.toArtifact(resolutionResult.getArtifact());
