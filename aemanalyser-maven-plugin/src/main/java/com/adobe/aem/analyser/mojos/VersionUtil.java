@@ -14,21 +14,21 @@ package com.adobe.aem.analyser.mojos;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.ArtifactUtils;
-import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
-import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.repository.legacy.metadata.ArtifactMetadataRetrievalException;
-import org.apache.maven.repository.legacy.metadata.ArtifactMetadataSource;
 import org.apache.sling.feature.ArtifactId;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.resolution.VersionRequest;
+import org.eclipse.aether.resolution.VersionResolutionException;
+import org.eclipse.aether.resolution.VersionResult;
 
 /**
  * Helper methods to manage dependencies, versions, ...
@@ -43,13 +43,9 @@ public class VersionUtil {
 
     private final ArtifactHandlerManager artifactHandlerManager;
 
-    private final ArtifactMetadataSource artifactMetadataSource;
+    private final RepositorySystem repoSystem;
 
-    private final List<ArtifactRepository> remoteArtifactRepositories;
-
-    private final List<ArtifactRepository> remotePluginRepositories;
-
-    private final ArtifactRepository localRepository;
+    private final RepositorySystemSession repoSession;
 
     private final List<String> versionWarnings = new ArrayList<>();
 
@@ -58,18 +54,14 @@ public class VersionUtil {
     public VersionUtil(final Log log,
             final MavenProject project,
             final ArtifactHandlerManager artifactHandlerManager,
-            final ArtifactMetadataSource artifactMetadataSource,
-            final List<ArtifactRepository> remoteArtifactRepositories,
-            final List<ArtifactRepository> remotePluginRepositories,
-            final ArtifactRepository localRepository,
+            final RepositorySystem repoSystem,
+            final RepositorySystemSession repoSession,
             final boolean isOffline) {
         this.project = project;
         this.log = log;
         this.artifactHandlerManager = artifactHandlerManager;
-        this.artifactMetadataSource = artifactMetadataSource;
-        this.remoteArtifactRepositories = remoteArtifactRepositories;
-        this.remotePluginRepositories = remotePluginRepositories;
-        this.localRepository = localRepository;
+        this.repoSystem = repoSystem;
+        this.repoSession = repoSession;
         this.isOffline = isOffline;
     }
 
@@ -229,36 +221,17 @@ public class VersionUtil {
             this.versionWarnings.add("Plugin is used in offline mode, checking for latest version for " + dependency + " is disabled.");
             return null;
         }
-        try {
-            final Artifact artifact = new DefaultArtifact(dependency.getGroupId(),
+        final Artifact artifact = new DefaultArtifact(dependency.getGroupId(),
                 dependency.getArtifactId(),
-                VersionRange.createFromVersion(dependency.getVersion()),
-                Artifact.SCOPE_PROVIDED,
-                dependency.getType(),
                 dependency.getClassifier(),
-                artifactHandlerManager.getArtifactHandler(dependency.getType()));
+                artifactHandlerManager.getArtifactHandler(dependency.getType()).getExtension(),
+                "RELEASE"); // this refers to the latest release version
 
-            final List<ArtifactVersion> versions =
-                artifactMetadataSource.retrieveAvailableVersions( artifact, localRepository, 
-                        PLUGIN_TYPE.equals(dependency.getType()) ? remotePluginRepositories :  remoteArtifactRepositories);
-
-            ArtifactVersion latest = null;
-            for ( final ArtifactVersion candidate : versions ) {
-                if ( ArtifactUtils.isSnapshot( candidate.toString() ) ) {
-                    continue;
-                }
-
-                if ( latest == null ) {
-                    latest = candidate;
-                } else {
-                    if ( candidate.compareTo(latest) > 0 ) {
-                        latest = candidate;
-                    }
-                }
-            }
-            return latest != null ? latest.toString() : null;
-
-        } catch ( final ArtifactMetadataRetrievalException e) {
+        VersionRequest versionRequest = new VersionRequest(artifact, PLUGIN_TYPE.equals(dependency.getType()) ? project.getRemotePluginRepositories() :  project.getRemoteProjectRepositories(), null);
+        try {
+            VersionResult result = repoSystem.resolveVersion(repoSession, versionRequest);
+            return result.getVersion();
+        } catch (VersionResolutionException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
     }
