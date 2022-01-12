@@ -38,6 +38,7 @@ import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.ArtifactHandler;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -55,7 +56,6 @@ import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
 import org.apache.sling.feature.io.json.FeatureJSONReader;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
@@ -319,10 +319,11 @@ public class AemAnalyseMojo extends AbstractMojo {
             }
         } else {
             final List<Artifact> result = new ArrayList<>();
-            for (final Artifact d : project.getDependencyArtifacts()) {
+            for( final Dependency d : project.getDependencies()) {
                 if (Constants.PACKAGING_ZIP.equals(d.getType()) || Constants.PACKAGING_CONTENT_PACKAGE.equals(d.getType())) {
                     // If a dependency is of type 'zip' it is assumed to be a content package
-                    result.add(d);
+                    final Artifact artifact = getOrResolveArtifact(new ArtifactId(d.getGroupId(), d.getArtifactId(), d.getVersion(), d.getClassifier(), d.getType()));
+                    result.add(artifact);
                 }
             }    
             if (result.isEmpty()) {
@@ -561,7 +562,7 @@ public class AemAnalyseMojo extends AbstractMojo {
         if ( result == null ) {
             result = findArtifact(id, project.getAttachedArtifacts());
             if ( result == null ) {
-                result = findArtifact(id, project.getDependencyArtifacts());
+                result = findArtifact(id, project.getArtifacts());
                 if ( result == null ) {
                     ArtifactRequest req = new ArtifactRequest(new org.eclipse.aether.artifact.DefaultArtifact(id.toMvnId()), project.getRemoteProjectRepositories(), null);
                     try {
