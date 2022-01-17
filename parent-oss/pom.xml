@@ -54,6 +54,7 @@ governing permissions and limitations under the License.
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- this is used for both enforcing the minimum java version and as compile target -->
     <project.java.version>1.8</project.java.version>
+    <maven.plugin.tools.version>3.6.1</maven.plugin.tools.version>
   </properties>
 
   <dependencyManagement>
@@ -62,6 +63,11 @@ governing permissions and limitations under the License.
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
         <version>3.2.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-annotations</artifactId>
+        <version>${maven.plugin.tools.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -158,8 +164,8 @@ governing permissions and limitations under the License.
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-plugin-plugin</artifactId>
-          <version>3.6.0</version>
-        </plugin>        
+          <version>${maven.plugin.tools.version}</version>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
