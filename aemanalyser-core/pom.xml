@@ -46,7 +46,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>org.apache.sling.feature</artifactId>
-      <version>1.2.28</version>
+      <version>1.2.30</version>
     </dependency>
     <dependency>
       <groupId>org.osgi</groupId>
@@ -65,7 +65,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>org.apache.sling.feature.extension.apiregions</artifactId>
-      <version>1.4.2</version>
+      <version>1.4.4</version>
     </dependency>
 
     <!-- Content Package to Feature Model Converter-->
