@@ -118,12 +118,12 @@ public class AemPackageConverter {
 
         featuresManager.setExportToAPIRegion("global");
 
-        File bundlesOutputDir = this.bundlesOutputDirectory != null
+        final File bundlesOutputDir = this.bundlesOutputDirectory != null
                 ? this.bundlesOutputDirectory : this.converterOutputDirectory;
-        ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(false,
-                SlingInitialContentPolicy.KEEP)
-                .setFeaturesManager(featuresManager)
-                .setBundlesDeployer(
+        try (final ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(false,
+                SlingInitialContentPolicy.KEEP) ) {
+            converter.setFeaturesManager(featuresManager)
+                    .setBundlesDeployer(
                         new LocalMavenRepositoryArtifactsDeployer(
                             bundlesOutputDir
                         )
@@ -132,22 +132,17 @@ public class AemPackageConverter {
                         new DefaultEntryHandlersManager(Collections.emptyMap(), true,
                                 SlingInitialContentPolicy.KEEP, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT)
                         )
-                        .setAclManager(
+                    .setAclManager(
                             new DefaultAclManager()
                             )
-                            .setEmitter(DefaultPackagesEventsEmitter.open(this.featureOutputDirectory))
-                            .setResourceFilter(getResourceFilter());
-
-        try {
+                    .setEmitter(DefaultPackagesEventsEmitter.open(this.featureOutputDirectory))
+                    .setResourceFilter(getResourceFilter());
             logger.info("Converting packages {}", contentPackages.keySet());
-            try {
-                converter.convert(contentPackages.values().toArray(new File[contentPackages.size()]));
-            } catch (final Throwable t) {
-                throw new IOException("Content Package Converter Exception " + t.getMessage(), t);
-            }
-        } finally {
-            // make sure to remove the temp folders
-            converter.cleanup();
+            converter.convert(contentPackages.values().toArray(new File[contentPackages.size()]));
+        } catch ( final IOException | ConverterException e) {
+            throw e;
+        } catch (final Throwable t) {
+            throw new IOException("Content Package Converter exception " + t.getMessage(), t);
         }
     }
 
