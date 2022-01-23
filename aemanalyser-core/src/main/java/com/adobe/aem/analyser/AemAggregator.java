@@ -43,6 +43,7 @@ import org.apache.sling.feature.cpconverter.artifacts.ArtifactsDeployer;
 import org.apache.sling.feature.cpconverter.artifacts.FileArtifactWriter;
 import org.apache.sling.feature.extension.apiregions.api.artifacts.ArtifactRules;
 import org.apache.sling.feature.extension.apiregions.api.artifacts.VersionRule;
+import org.apache.sling.feature.extension.apiregions.api.config.ConfigurationApi;
 import org.apache.sling.feature.io.json.FeatureJSONReader;
 import org.apache.sling.feature.io.json.FeatureJSONWriter;
 import org.slf4j.Logger;
@@ -205,10 +206,60 @@ public class AemAggregator {
 
         final List<Feature> finalResult = this.aggregate(finalAggregates, Mode.FINAL, projectFeatures);
 
+        // find final author and publish feature and get configuration api
+        final ConfigurationApi authorApi = ConfigurationApi.getConfigurationApi(findFeature(finalResult, true));
+        final ConfigurationApi publishApi = ConfigurationApi.getConfigurationApi(findFeature(finalResult, false));
+
+        // add configuration api to all user features
+        for(final Feature f : userResult) {
+            if ( f.getId().getClassifier().contains("-author")) {
+                ConfigurationApi.setConfigurationApi(f, authorApi);
+            } else {
+                ConfigurationApi.setConfigurationApi(f, publishApi);
+            }
+        }
         final List<Feature> result = new ArrayList<>();
         result.addAll(userResult);
         result.addAll(finalResult);
         return result;
+    }
+
+    /**
+     * Find a feature, either author or publish
+     * @throws IOException
+     */
+    private Feature findFeature(final List<Feature> finalFeatures, final boolean isAuthor) throws IOException {
+        Feature f = null;
+        if ( isAuthor ) {
+            f = findFeatureWithClassifier(finalFeatures, "aggregated-author");
+            if ( f == null ) {
+                f = findFeatureWithClassifier(finalFeatures, "aggregated-author.prod");
+            }
+        } else {
+            f = findFeatureWithClassifier(finalFeatures, "aggregated-publish");
+            if ( f == null ) {
+                f = findFeatureWithClassifier(finalFeatures, "aggregated-publish.prod");
+            }
+        }
+        if ( f != null ) {
+            return f;
+        }
+        throw new IOException("Unable to find final author or publish feature.");
+    }
+
+    /**
+     * Search a feature with the given classifier
+     * @param features List of features
+     * @param classifier  The classifier
+     * @return The feature or {@code null}
+     */
+    private Feature findFeatureWithClassifier(final List<Feature> features, final String classifier) {
+        for(final Feature f : features) {
+            if ( f.getId().getClassifier().equals(classifier)) {
+                return f;
+            }
+        }
+        return null;
     }
 
     private Map<String, Feature> readFeatures() throws IOException {
@@ -379,16 +430,17 @@ public class AemAggregator {
             final Feature feature = FeatureBuilder.assemble(newFeatureID, builderContext,
                   aggregate.getValue().toArray(new Feature[aggregate.getValue().size()]));
 
-            File featureFile = new File(this.getFeatureOutputDirectory(), aggregate.getKey().concat(".json"));
+            postProcessProductFeature(feature);
+
+            final File featureFile = new File(this.getFeatureOutputDirectory(), aggregate.getKey().concat(".json"));
             try ( final Writer writer = new FileWriter(featureFile)) {
                 FeatureJSONWriter.write(writer, feature);
             }
 
-            if ( artifactsDeployer != null )
+            if ( artifactsDeployer != null ) {
                 artifactsDeployer.deploy(new FileArtifactWriter(featureFile), newFeatureID);
+            }
             projectFeatures.put(aggregate.getKey(), feature);
-
-            postProcessProductFeature(feature);
 
             result.add(feature);
         }
