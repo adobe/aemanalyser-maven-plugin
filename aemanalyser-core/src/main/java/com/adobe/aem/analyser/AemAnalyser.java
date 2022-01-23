@@ -45,23 +45,23 @@ public class AemAnalyser {
     /**
      * These tasks are executed by default on the final aggregates
      */
-    public static final String DEFAULT_TASKS = "requirements-capabilities,"
-    + "api-regions,"
-    + "api-regions-check-order,"
-    + "api-regions-crossfeature-dups,"
-    + "api-regions-exportsimports,"
-    + "repoinit,"
-    + "configuration-api,"
-    + "region-deprecated-api";
+    public static final String DEFAULT_TASKS = "requirements-capabilities"
+        + ",api-regions"
+        + ",api-regions-check-order"
+        + ",api-regions-crossfeature-dups"
+        + ",api-regions-exportsimports"
+        + ",repoinit"
+        + ",region-deprecated-api";
 
     /**
      * These tasks are executed on the user aggregates (before the product is merged in)
      */
     public static final String DEFAULT_USER_TASKS = "bundle-content"
-    + ",bundle-resources"
-    + ",bundle-nativecode"
-    + ",artifact-rules"
-    + ",aem-env-var";
+        + ",bundle-resources"
+        + ",bundle-nativecode"
+        + ",artifact-rules"
+        + ",configuration-api"
+        + ",aem-env-var";
 
     private static final String BUNDLE_ORIGINS = "content-package-origins";
     private static final String CONFIGURATION_ORIGINS = Configuration.CONFIGURATOR_PREFIX.concat(BUNDLE_ORIGINS);
