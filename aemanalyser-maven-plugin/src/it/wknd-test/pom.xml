@@ -25,8 +25,17 @@ governing permissions and limitations under the License.
                 <groupId>@project.groupId@</groupId>
                 <artifactId>@project.artifactId@</artifactId>
                 <version>@project.version@</version>
-		<extensions>true</extensions>
-	    </plugin>
+                <extensions>true</extensions>
+<!--
+                <dependencies>
+                    <dependency>
+                        <groupId>com.adobe.aem</groupId>
+                        <artifactId>aem-sdk-api</artifactId>
+                        <version>2021.9.5899.20210929T093525Z-210800</version>
+                    </dependency>
+                </dependencies>
+-->
+            </plugin>
         </plugins>
     </build>
     <dependencies>

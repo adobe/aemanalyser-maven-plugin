@@ -61,7 +61,8 @@ public class AemAnalyser {
         + ",bundle-nativecode"
         + ",artifact-rules"
         + ",configuration-api"
-        + ",aem-env-var";
+        + ",aem-env-var"
+        + ",content-packages-validation";
 
     private static final String BUNDLE_ORIGINS = "content-package-origins";
     private static final String CONFIGURATION_ORIGINS = Configuration.CONFIGURATOR_PREFIX.concat(BUNDLE_ORIGINS);
