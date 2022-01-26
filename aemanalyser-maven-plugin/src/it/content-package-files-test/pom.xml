@@ -25,13 +25,6 @@ governing permissions and limitations under the License.
                 <groupId>@project.groupId@</groupId>
                 <artifactId>@project.artifactId@</artifactId>
                 <version>@project.version@</version>
-                <configuration>
-                    <analyserTaskConfigurations>
-                        <content-packages-validation>
-                            <disabled-validators>jackrabbit-nodetypes</disabled-validators>
-                        </content-packages-validation>
-                    </analyserTaskConfigurations>
-                </configuration>
                 <executions>
                     <execution>
                         <id>aem-analyser</id>

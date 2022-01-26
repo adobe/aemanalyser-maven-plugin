@@ -11,6 +11,8 @@
 */
 package com.adobe.aem.analyser;
 
+import static java.util.Collections.singletonMap;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -130,21 +132,25 @@ public class AemAnalyser {
 
     private void applyDefaultTaskConfigurations() {
         Map<String, Map<String, String>> config = this.getTaskConfigurations();
+        config.computeIfAbsent("api-regions-crossfeature-dups", (key) -> apiRegionsCrossfeatureDupsDefaults());
+        config.computeIfAbsent("content-packages-validation", (key) -> contentPackagesValidationDefaults());
+        config.computeIfAbsent("api-regions-check-order", (key) -> apiRegionsCheckOrderDefaults());
+    }
 
-        // Set default task configuration
-        if (!config.containsKey("api-regions-crossfeature-dups")) {
-            final Map<String, String> cfd = new HashMap<>();
-            cfd.put("regions", "global,com.adobe.aem.deprecated");
-            cfd.put("definingFeatures", "com.adobe.aem:aem-sdk-api:slingosgifeature:*");
-            cfd.put("warningPackages", "*");
-            config.put("api-regions-crossfeature-dups", cfd);
-        }
-
-        if (!config.containsKey("api-regions-check-order")) {
-            final Map<String, String> ord = new HashMap<>();
-            ord.put("order", "global,com.adobe.aem.deprecated,com.adobe.aem.internal");
-            config.put("api-regions-check-order", ord);
-        }
+    private Map<String, String> apiRegionsCrossfeatureDupsDefaults() {
+        final Map<String, String> config = new HashMap<>();
+        config.put("regions", "global,com.adobe.aem.deprecated");
+        config.put("definingFeatures", "com.adobe.aem:aem-sdk-api:slingosgifeature:*");
+        config.put("warningPackages", "*");
+        return config;
+    }
+    
+    private Map<String, String> contentPackagesValidationDefaults() {
+        return singletonMap("disabled-validators", "jackrabbit-nodetypes");
+    }
+    
+    private Map<String, String> apiRegionsCheckOrderDefaults() {
+        return singletonMap("order", "global,com.adobe.aem.deprecated,com.adobe.aem.internal");
     }
 
     /**

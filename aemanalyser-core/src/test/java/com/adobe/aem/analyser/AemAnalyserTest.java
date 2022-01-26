@@ -45,8 +45,8 @@ public class AemAnalyserTest {
         final AemAnalyser analyser = new AemAnalyser();
         assertNotNull(analyser.getTaskConfigurations());
 
-        // 2 configs by default
-        assertEquals(2, analyser.getTaskConfigurations().size());
+        // 3 configs by default
+        assertEquals(3, analyser.getTaskConfigurations().size());
        
         // check first config
         Map<String, String> config = analyser.getTaskConfigurations().get("api-regions-crossfeature-dups");
@@ -61,6 +61,12 @@ public class AemAnalyserTest {
         assertNotNull(config);
         assertEquals(1, config.size());
         assertEquals("global,com.adobe.aem.deprecated,com.adobe.aem.internal", config.get("order"));
+        
+        // check validation config
+        config = analyser.getTaskConfigurations().get("content-packages-validation");
+        assertNotNull(config);
+        assertEquals(1, config.size());
+        assertEquals("jackrabbit-nodetypes", config.get("disabled-validators"));
     }
 
     @Test public void testSetTaskConfigurations() throws Exception {
@@ -76,8 +82,8 @@ public class AemAnalyserTest {
         final AemAnalyser analyser = new AemAnalyser();
         analyser.setTaskConfigurations(taskConfigurations);
 
-        // 3 configurations (2 default + 1 custom)
-        assertEquals(3, analyser.getTaskConfigurations().size());
+        // 4 configurations (3 default + 1 custom)
+        assertEquals(4, analyser.getTaskConfigurations().size());
 
         // check overridden default config
         Map<String, String> config = analyser.getTaskConfigurations().get("api-regions-crossfeature-dups");
