@@ -52,7 +52,6 @@ public class AemAnalyser {
         + ",api-regions-check-order"
         + ",api-regions-crossfeature-dups"
         + ",api-regions-exportsimports"
-        + ",repoinit"
         + ",region-deprecated-api";
 
     /**
@@ -64,6 +63,7 @@ public class AemAnalyser {
         + ",artifact-rules"
         + ",configuration-api"
         + ",aem-env-var"
+        + ",repoinit"
         + ",content-packages-validation";
 
     private static final String BUNDLE_ORIGINS = "content-package-origins";
