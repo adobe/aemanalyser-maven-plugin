@@ -244,7 +244,7 @@ public class AemAggregator {
         if ( f != null ) {
             return f;
         }
-        throw new IOException("Unable to find final author or publish feature.");
+        throw new IOException("Unable to find final " + ( isAuthor? "author" : "publish" ) + " feature.");
     }
 
     /**
