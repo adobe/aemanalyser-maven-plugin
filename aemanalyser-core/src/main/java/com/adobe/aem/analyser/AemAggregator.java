@@ -387,7 +387,7 @@ public class AemAggregator {
         for (final String name : userAggregate.keySet()) {
             final boolean isAuthor = name.startsWith("user-aggregated-author");
 
-            final String classifier = name.substring(5);
+            final String classifier = name.replaceAll("^user-", "");
             final List<Feature> list = aggregates.computeIfAbsent(classifier, n -> new ArrayList<>());
 
             list.add(projectFeatures.get(getProductAggregateName(isAuthor)));
