@@ -287,7 +287,7 @@ public class AemAggregator {
     private Map<String, Feature> readFeatures() throws IOException {
         final Map<String, Feature> result = new HashMap<>();
         for(final File f : this.getFeatureInputDirectory().listFiles()) {
-            if ( f.getName().endsWith(".json") && !f.getName().startsWith(".") ) {
+            if ( ( f.getName().endsWith(".json") || f.getName().endsWith(".slingosgifeature")&& !f.getName().startsWith(".") ) ) {
                 logger.info("Reading feature model {}...", f.getName());
                 try (final Reader reader = new FileReader(f)) {
                     final Feature feature = FeatureJSONReader.read(reader, f.getName());
