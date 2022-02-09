@@ -158,7 +158,7 @@ public class AemAggregator {
     /**
      * Returns the feature input directory
      *
-     * <p>If none is configured, uses the value of the <tt>featureOutputDirectory</tt> instead.</p>
+     * <p>If none is configured, uses the value of the {@code featureOutputDirectory} instead.</p>
      *
      * @return the feature input directory
      */

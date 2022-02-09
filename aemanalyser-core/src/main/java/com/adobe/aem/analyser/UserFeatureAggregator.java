@@ -27,7 +27,7 @@ public interface UserFeatureAggregator {
      * Generates a mapping of all user aggregates discovered
      *
      * <p>The key of the returned mapping is of the form <code>user-aggregated-<em>mode</em></code>,
-     * where the mode represents a valid runmode entry, such as <tt>author</tt> or <tt>publish.dev</tt>.
+     * where the mode represents a valid runmode entry, such as {@code author} or {@code publish.dev}.
      * </p>
      *
      * @param projectFeatures the project features

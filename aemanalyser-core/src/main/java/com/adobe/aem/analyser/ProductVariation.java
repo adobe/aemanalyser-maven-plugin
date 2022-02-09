@@ -14,7 +14,7 @@ package com.adobe.aem.analyser;
 /**
  * Represents a variation of the product to generate an aggregate for, such as author or publish
  *
- * <p>Implementations of this interface should implement the {@link #equals(Object)} and {@link #hashCode()}
+ * <p>Implementations of this interface should implement the {@link Object#equals(Object)} and {@link Object#hashCode()}
  * methods.</p>
  *
  */

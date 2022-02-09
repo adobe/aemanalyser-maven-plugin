@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Generates user features based on the output of the content-package-to-feature-model converter
  *
- * <p>This implementation looks for the <tt>runmode.mapping</tt> file and reads the aggregates to
+ * <p>This implementation looks for the {@code runmode.mapping} file and reads the aggregates to
  * generate from it.</p>
  *
  */
