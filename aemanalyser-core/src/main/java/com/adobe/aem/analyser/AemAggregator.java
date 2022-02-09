@@ -12,11 +12,9 @@
 package com.adobe.aem.analyser;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -24,11 +22,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.ServiceLoader;
-import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.apache.sling.feature.ArtifactId;
@@ -54,11 +51,11 @@ import org.slf4j.LoggerFactory;
  */
 public class AemAggregator {
 
-    private static final String SDK_FEATUREMODEL_AUTHOR_CLASSIFIER = "aem-author-sdk";
-    private static final String SDK_FEATUREMODEL_PUBLISH_CLASSIFIER = "aem-publish-sdk";
-    private static final String FEATUREMODEL_TYPE = "slingosgifeature";
+    static final String FEATUREMODEL_TYPE = "slingosgifeature";
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    private File featureInputDirectory;
 
     private File featureOutputDirectory;
 
@@ -67,6 +64,10 @@ public class AemAggregator {
     private ArtifactsDeployer artifactsDeployer;
 
     private FeatureProvider featureProvider;
+
+    private UserFeatureAggregator userFeatureAggregator;
+
+    private ProductFeatureGenerator productFeatureGenerator;
 
     private ArtifactId projectId;
 
@@ -120,6 +121,26 @@ public class AemAggregator {
         this.featureProvider = featureProvider;
     }
 
+    public UserFeatureAggregator getUserFeatureAggregator() {
+        if ( userFeatureAggregator == null )
+            return new RunmodeMappingUserFeatureAggregator(getFeatureInputDirectory());
+        return userFeatureAggregator;
+    }
+
+    public void setUserFeatureAggregator(UserFeatureAggregator userFeatureAggregator) {
+        this.userFeatureAggregator = userFeatureAggregator;
+    }
+
+    public ProductFeatureGenerator getProductFeatureGenerator() {
+        if ( productFeatureGenerator == null )
+            return new AemSdkProductFeatureGenerator(getFeatureProvider(), getSdkId(), getAddOnIds());
+        return productFeatureGenerator;
+    }
+
+    public void setProductFeatureGenerator(ProductFeatureGenerator productFeatureGenerator) {
+        this.productFeatureGenerator = productFeatureGenerator;
+    }
+
     /**
      * @return the projectId
      */
@@ -132,6 +153,26 @@ public class AemAggregator {
      */
     public void setProjectId(final ArtifactId projectId) {
         this.projectId = projectId;
+    }
+
+    /**
+     * Returns the feature input directory
+     *
+     * <p>If none is configured, uses the value of the <tt>featureOutputDirectory</tt> instead.</p>
+     *
+     * @return the feature input directory
+     */
+    public File getFeatureInputDirectory() {
+        if ( featureInputDirectory == null )
+            return featureOutputDirectory;
+        return featureInputDirectory;
+    }
+
+    /**
+     * @param featureInputDirectory the featureInputDirectory to set
+     */
+    public void setFeatureInputDirectory(File featureInputDirectory) {
+        this.featureInputDirectory = featureInputDirectory;
     }
 
     /**
@@ -197,9 +238,9 @@ public class AemAggregator {
         final List<Feature> userResult = this.aggregate(userAggregates, Mode.USER, projectFeatures);
 
         // Produce the product aggregates
-        final Map<String, List<Feature>> productAggregates = getProductAggregates();
+        final Map<ProductVariation, List<Feature>> productAggregates = getProductAggregates();
 
-        this.aggregate(productAggregates, Mode.PRODUCT, projectFeatures);
+        this.aggregateFeatureInfo(productAggregates, Mode.PRODUCT, projectFeatures);
 
         // Produce the final aggregates
         final Map<String, List<Feature>> finalAggregates = getFinalAggregates(userAggregates, projectFeatures);
@@ -207,44 +248,44 @@ public class AemAggregator {
         final List<Feature> finalResult = this.aggregate(finalAggregates, Mode.FINAL, projectFeatures);
 
         // find final author and publish feature and get configuration api
-        final ConfigurationApi authorApi = ConfigurationApi.getConfigurationApi(findFeature(finalResult, true));
-        final ConfigurationApi publishApi = ConfigurationApi.getConfigurationApi(findFeature(finalResult, false));
+        Map<ProductVariation, ConfigurationApi> apiMapping = new HashMap<>();
+        for ( ProductVariation variation : productAggregates.keySet()) {
+            final ConfigurationApi configApi = ConfigurationApi.getConfigurationApi(findFeature(finalResult, variation));
+            apiMapping.put(variation, configApi);
+        }
 
         // add configuration api to all user features
         for(final Feature f : userResult) {
-            if ( f.getId().getClassifier().contains("-author")) {
-                ConfigurationApi.setConfigurationApi(f, authorApi);
-            } else {
-                ConfigurationApi.setConfigurationApi(f, publishApi);
-            }
+            ProductVariation variation = getProductFeatureGenerator().getVariation(f.getId().getClassifier());
+            ConfigurationApi configApi = apiMapping.get(variation);
+            ConfigurationApi.setConfigurationApi(f, configApi);
         }
+
         final List<Feature> result = new ArrayList<>();
         result.addAll(userResult);
         result.addAll(finalResult);
         return result;
     }
 
+    // visible for testing
+    Map<String, List<Feature>> getUserAggregates(Map<String, Feature> projectFeatures) throws IOException {
+        return getUserFeatureAggregator().getUserAggregates(projectFeatures);
+    }
+
     /**
      * Find a feature, either author or publish
      * @throws IOException
      */
-    private Feature findFeature(final List<Feature> finalFeatures, final boolean isAuthor) throws IOException {
-        Feature f = null;
-        if ( isAuthor ) {
-            f = findFeatureWithClassifier(finalFeatures, "aggregated-author");
-            if ( f == null ) {
-                f = findFeatureWithClassifier(finalFeatures, "aggregated-author.prod");
-            }
-        } else {
-            f = findFeatureWithClassifier(finalFeatures, "aggregated-publish");
-            if ( f == null ) {
-                f = findFeatureWithClassifier(finalFeatures, "aggregated-publish.prod");
-            }
-        }
-        if ( f != null ) {
-            return f;
-        }
-        throw new IOException("Unable to find final author or publish feature.");
+    private Feature findFeature(final List<Feature> finalFeatures, final ProductVariation variation) throws IOException {
+        logger.info("Got final feature classifiers {}", finalFeatures.stream().map( f -> f.getId().getClassifier() ).collect(Collectors.toList()));
+        Feature f = findFeatureWithClassifier(finalFeatures, variation.getFinalAggregateName());
+        if ( f == null )
+            f = findFeatureWithClassifier(finalFeatures, variation.getFinalAggregateName()+".prod");
+
+        if ( f == null )
+            throw new IOException("Unable to find final feature for variation " + variation);
+
+        return f;
     }
 
     /**
@@ -264,8 +305,8 @@ public class AemAggregator {
 
     private Map<String, Feature> readFeatures() throws IOException {
         final Map<String, Feature> result = new HashMap<>();
-        for(final File f : this.getFeatureOutputDirectory().listFiles()) {
-            if ( f.getName().endsWith(".json") && !f.getName().startsWith(".") ) {
+        for(final File f : this.getFeatureInputDirectory().listFiles()) {
+            if ( ( f.getName().endsWith(".json") || f.getName().endsWith(".slingosgifeature")&& !f.getName().startsWith(".") ) ) {
                 logger.info("Reading feature model {}...", f.getName());
                 try (final Reader reader = new FileReader(f)) {
                     final Feature feature = FeatureJSONReader.read(reader, f.getName());
@@ -276,70 +317,8 @@ public class AemAggregator {
         return result;
     }
 
-    private Properties getRunmodeMappings() throws IOException {
-        File mappingFile = new File(this.featureOutputDirectory, "runmode.mapping");
-        if (!mappingFile.isFile())
-            throw new IOException("File generated by content package to feature model converter not found: " + mappingFile);
-
-        Properties p = new Properties();
-        try (InputStream is = new FileInputStream(mappingFile)) {
-            p.load(is);
-        }
-        return p;
-    }
-
-    Map<String, List<Feature>> getUserAggregates(final Map<String, Feature> projectFeatures)
-    throws IOException {
-        // get run modes from converter output
-        final Properties runmodes = getRunmodeMappings();
-
-        final Map<String, List<Feature>> aggregates = new HashMap<>();
-
-        Map<String, Set<String>> toCreate = getUserAggregatesToCreate(runmodes);
-        for (final Map.Entry<String, Set<String>> entry : toCreate.entrySet()) {
-            final String name = "user-aggregated-".concat(entry.getKey());
-
-            final List<Feature> list = aggregates.computeIfAbsent(name, n -> new ArrayList<>());
-            entry.getValue().forEach(n -> list.add(projectFeatures.get(n)));
-        }
-
-        return aggregates;
-    }
-
-    Map<String, Set<String>> getUserAggregatesToCreate(final Properties runmodes) throws IOException {
-        try {
-            return AemAnalyserUtil.getAggregates(runmodes);
-        } catch ( final IllegalArgumentException iae) {
-            throw new IOException(iae.getMessage());
-        }
-    }
-
-    Map<String, List<Feature>> getProductAggregates() throws IOException {
-        final Map<String, List<Feature>> aggregates = new HashMap<>();
-
-        for (boolean isAuthor : new boolean [] {true, false}) {
-            final String aggClassifier = getProductAggregateName(isAuthor);
-
-            final List<Feature> list = aggregates.computeIfAbsent(aggClassifier, n -> new ArrayList<>());
-            final Feature sdkFeature = getFeatureProvider().provide(this.getSdkId()
-                    .changeClassifier(isAuthor ? SDK_FEATUREMODEL_AUTHOR_CLASSIFIER : SDK_FEATUREMODEL_PUBLISH_CLASSIFIER)
-                    .changeType(FEATUREMODEL_TYPE));
-            if ( sdkFeature == null ) {
-                throw new IOException("Unable to find SDK feature for " + this.getSdkId().toMvnId());
-            }
-            list.add(sdkFeature);
-            if ( this.getAddOnIds() != null ) {
-                for(final ArtifactId id : this.getAddOnIds()) {
-                    final Feature feature = getFeatureProvider().provide(id.changeType(FEATUREMODEL_TYPE));
-                    if ( feature == null ) {
-                        throw new IOException("Unable to find addon feature for " + id.toMvnId());
-                    }
-                    list.add(feature);
-                }
-            }
-        }
-
-        return aggregates;
+    Map<ProductVariation, List<Feature>> getProductAggregates() throws IOException {
+        return getProductFeatureGenerator().getProductAggregates();
     }
 
     final void postProcessProductFeature(final Feature feature) {
@@ -363,20 +342,28 @@ public class AemAggregator {
         final Map<String, List<Feature>> aggregates = new HashMap<>();
 
         for (final String name : userAggregate.keySet()) {
-            final boolean isAuthor = name.startsWith("user-aggregated-author");
+            final ProductVariation variation = getProductFeatureGenerator().getVariation(name);
 
-            final String classifier = name.substring(5);
+            final String classifier = name.replaceAll("^user-", "");
             final List<Feature> list = aggregates.computeIfAbsent(classifier, n -> new ArrayList<>());
 
-            list.add(projectFeatures.get(getProductAggregateName(isAuthor)));
-            list.add(projectFeatures.get(name));
+            list.add(getNotNull(projectFeatures, variation.getProductAggregateName()));
+            list.add(getNotNull(projectFeatures, name));
         }
 
         return aggregates;
     }
 
-    private String getProductAggregateName(final boolean author) {
-        return "product-aggregated-" + (author ? "author" : "publish");
+    private static Feature getNotNull(Map<String, Feature> featureCache, String key) {
+        Feature feature = featureCache.get(key);
+        if ( feature == null )
+            throw new IllegalArgumentException("Did not find a feature with key " + key);
+        return feature;
+    }
+
+    private void aggregateFeatureInfo(Map<ProductVariation, List<Feature>> productAggregates, Mode product,
+            Map<String, Feature> projectFeatures) throws IOException {
+        aggregate(productAggregates.entrySet().stream().collect(Collectors.toMap( e -> e.getKey().getProductAggregateName(),  Map.Entry::getValue)), product, projectFeatures);
     }
 
 

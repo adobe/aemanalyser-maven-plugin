@@ -136,23 +136,25 @@ public class AemAggregatorTest {
             }
 
         });
-        final Map<String, List<Feature>> aggregates = agg.getProductAggregates();
+        final Map<ProductVariation, List<Feature>> aggregates = agg.getProductAggregates();
         assertEquals(2, aggregates.size());
 
         boolean authorFound = false;
         boolean publishFound = false;
-        for (Map.Entry<String, List<Feature>> entry : aggregates.entrySet()) {
+        for (Map.Entry<ProductVariation, List<Feature>> entry : aggregates.entrySet()) {
 
-            switch (entry.getKey()) {
+            switch (entry.getKey().getProductAggregateName()) {
             case "product-aggregated-author":
                 authorFound = true;
                 assertEquals(1, entry.getValue().size());
                 assertEquals(ArtifactId.parse("lala:hoho:slingosgifeature:aem-author-sdk:0.0.1"), entry.getValue().get(0).getId());
+                assertEquals(SdkProductVariation.AUTHOR, entry.getKey());
                 break;
             case "product-aggregated-publish":
                 publishFound = true;
                 assertEquals(1, entry.getValue().size());
                 assertEquals(ArtifactId.parse("lala:hoho:slingosgifeature:aem-publish-sdk:0.0.1"), entry.getValue().get(0).getId());
+                assertEquals(SdkProductVariation.PUBLISH, entry.getKey());
                 break;
             default:
                 fail("Unexpected classifier: " + entry.getKey());
