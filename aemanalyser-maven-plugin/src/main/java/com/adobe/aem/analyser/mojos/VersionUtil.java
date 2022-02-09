@@ -228,10 +228,8 @@ public class VersionUtil {
                 dependency.getClassifier(),
                 artifactHandlerManager.getArtifactHandler(dependency.getType()).getExtension(),
                 "RELEASE"); // this refers to the latest release version
-        
         List<RemoteRepository> repositories = getRemoteRepositoriesWithUpdatePolicy(
-        		PLUGIN_TYPE.equals(dependency.getType()) ? project.getRemotePluginRepositories() :  project.getRemoteProjectRepositories(),
-        		RepositoryPolicy.UPDATE_POLICY_ALWAYS);
+                PLUGIN_TYPE.equals(dependency.getType()) ? project.getRemotePluginRepositories() : project.getRemoteProjectRepositories(), RepositoryPolicy.UPDATE_POLICY_ALWAYS);
         VersionRequest versionRequest = new VersionRequest(artifact, repositories, null);
         try {
             VersionResult result = repoSystem.resolveVersion(repoSession, versionRequest);
@@ -240,16 +238,16 @@ public class VersionUtil {
             throw new MojoExecutionException(e.getMessage(), e);
         }
     }
-    
+
     private List<RemoteRepository> getRemoteRepositoriesWithUpdatePolicy(List<RemoteRepository> repositories, String updatePolicy) {
-    	List<RemoteRepository> newRepositories = new ArrayList<>();
-    	for (RemoteRepository repo : repositories) {
-    		RemoteRepository.Builder builder = new RemoteRepository.Builder(repo);
-    		RepositoryPolicy newPolicy = new RepositoryPolicy(repo.getPolicy(false).isEnabled(), updatePolicy, repo.getPolicy(false).getChecksumPolicy());
-    		builder.setPolicy(newPolicy);
-    		newRepositories.add(builder.build());
-    	}
-    	return newRepositories;
+        List<RemoteRepository> newRepositories = new ArrayList<>();
+        for (RemoteRepository repo : repositories) {
+            RemoteRepository.Builder builder = new RemoteRepository.Builder(repo);
+            RepositoryPolicy newPolicy = new RepositoryPolicy(repo.getPolicy(false).isEnabled(), updatePolicy, repo.getPolicy(false).getChecksumPolicy());
+            builder.setPolicy(newPolicy);
+            newRepositories.add(builder.build());
+        }
+        return newRepositories;
     }
 
     /**
