@@ -26,6 +26,8 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.VersionRequest;
 import org.eclipse.aether.resolution.VersionResolutionException;
 import org.eclipse.aether.resolution.VersionResult;
@@ -214,7 +216,7 @@ public class VersionUtil {
         return null;
     }
 
-    String getLatestVersion( final Dependency dependency )
+    String getLatestVersion(final Dependency dependency)
         throws MojoExecutionException {
 
         if ( this.isOffline ) {
@@ -226,14 +228,28 @@ public class VersionUtil {
                 dependency.getClassifier(),
                 artifactHandlerManager.getArtifactHandler(dependency.getType()).getExtension(),
                 "RELEASE"); // this refers to the latest release version
-
-        VersionRequest versionRequest = new VersionRequest(artifact, PLUGIN_TYPE.equals(dependency.getType()) ? project.getRemotePluginRepositories() :  project.getRemoteProjectRepositories(), null);
+        
+        List<RemoteRepository> repositories = getRemoteRepositoriesWithUpdatePolicy(
+        		PLUGIN_TYPE.equals(dependency.getType()) ? project.getRemotePluginRepositories() :  project.getRemoteProjectRepositories(),
+        		RepositoryPolicy.UPDATE_POLICY_ALWAYS);
+        VersionRequest versionRequest = new VersionRequest(artifact, repositories, null);
         try {
             VersionResult result = repoSystem.resolveVersion(repoSession, versionRequest);
             return result.getVersion();
         } catch (VersionResolutionException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
+    }
+    
+    private List<RemoteRepository> getRemoteRepositoriesWithUpdatePolicy(List<RemoteRepository> repositories, String updatePolicy) {
+    	List<RemoteRepository> newRepositories = new ArrayList<>();
+    	for (RemoteRepository repo : repositories) {
+    		RemoteRepository.Builder builder = new RemoteRepository.Builder(repo);
+    		RepositoryPolicy newPolicy = new RepositoryPolicy(repo.getPolicy(false).isEnabled(), updatePolicy, repo.getPolicy(false).getChecksumPolicy());
+    		builder.setPolicy(newPolicy);
+    		newRepositories.add(builder.build());
+    	}
+    	return newRepositories;
     }
 
     /**
