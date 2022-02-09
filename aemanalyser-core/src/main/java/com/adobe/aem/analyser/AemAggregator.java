@@ -277,7 +277,6 @@ public class AemAggregator {
      * @throws IOException
      */
     private Feature findFeature(final List<Feature> finalFeatures, final ProductVariation variation) throws IOException {
-        logger.info("Got final feature classifiers {}", finalFeatures.stream().map( f -> f.getId().getClassifier() ).collect(Collectors.toList()));
         Feature f = findFeatureWithClassifier(finalFeatures, variation.getFinalAggregateName());
         if ( f == null )
             f = findFeatureWithClassifier(finalFeatures, variation.getFinalAggregateName()+".prod");
