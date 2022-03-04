@@ -182,7 +182,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>org.apache.sling.repoinit.parser</artifactId>
-      <version>1.6.12</version>
+      <version>1.6.14</version>
     </dependency>
     <dependency>
       <groupId>javax.jcr</groupId>
