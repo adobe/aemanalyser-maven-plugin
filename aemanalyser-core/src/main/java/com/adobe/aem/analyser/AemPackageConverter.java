@@ -27,6 +27,7 @@ import org.apache.sling.feature.cpconverter.features.DefaultFeaturesManager;
 import org.apache.sling.feature.cpconverter.filtering.RegexBasedResourceFilter;
 import org.apache.sling.feature.cpconverter.filtering.ResourceFilter;
 import org.apache.sling.feature.cpconverter.handlers.DefaultEntryHandlersManager;
+import org.apache.sling.feature.cpconverter.index.DefaultIndexManager;
 import org.apache.sling.feature.cpconverter.shared.ConverterConstants;
 import org.apache.sling.feature.cpconverter.vltpkg.DefaultPackagesEventsEmitter;
 import org.slf4j.Logger;
@@ -134,6 +135,9 @@ public class AemPackageConverter {
                         )
                     .setAclManager(
                             new DefaultAclManager()
+                            )
+                    .setIndexManager(
+                            new DefaultIndexManager()
                             )
                     .setEmitter(DefaultPackagesEventsEmitter.open(this.featureOutputDirectory))
                     .setResourceFilter(getResourceFilter());
