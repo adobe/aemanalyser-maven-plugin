@@ -29,7 +29,7 @@ public class EnvVarAnalyserTaskTest {
         assertEquals("AEM Env Var Analyser", task.getName());
     }
 
-    @Test public void testAnalyserTask() throws Exception {
+    @Test public void testEnvPrefixes() throws Exception {
         final AnalyserTaskContext ctx = Mockito.mock(AnalyserTaskContext.class);
         final Feature f = new Feature(ArtifactId.parse("g:a:1"));
         Mockito.when(ctx.getFeature()).thenReturn(f);
@@ -53,6 +53,131 @@ public class EnvVarAnalyserTaskTest {
         Mockito.verify(ctx).getFeature();
         Mockito.verify(ctx, Mockito.times(1)).reportConfigurationError(Mockito.eq(cfg2), Mockito.anyString());
         Mockito.verify(ctx, Mockito.times(1)).reportConfigurationError(Mockito.eq(cfg3), Mockito.anyString());
+        Mockito.verifyNoMoreInteractions(ctx);
+    }
+
+    @Test public void testEnvPattern() throws Exception {
+        final AnalyserTaskContext ctx = Mockito.mock(AnalyserTaskContext.class);
+        final Feature f = new Feature(ArtifactId.parse("g:a:1"));
+        Mockito.when(ctx.getFeature()).thenReturn(f);
+
+        final Configuration cfg1 = new Configuration("c1");
+        cfg1.getProperties().put("key1", "$[env:1MY_VAR]");
+        f.getConfigurations().add(cfg1);
+
+        final AnalyserTask task = new EnvVarAnalyserTask();
+        task.execute(ctx);
+
+        Mockito.verify(ctx).getFeature();
+        Mockito.verify(ctx, Mockito.times(1)).reportConfigurationError(Mockito.eq(cfg1), Mockito.anyString());
+        Mockito.verifyNoMoreInteractions(ctx);
+    }
+
+    @Test public void testEnvSize() throws Exception {
+        final AnalyserTaskContext ctx = Mockito.mock(AnalyserTaskContext.class);
+        final Feature f = new Feature(ArtifactId.parse("g:a:1"));
+        Mockito.when(ctx.getFeature()).thenReturn(f);
+
+        final Configuration cfg1 = new Configuration("c1");
+        cfg1.getProperties().put("key1", "$[env:M]");
+        f.getConfigurations().add(cfg1);
+
+        final Configuration cfg2 = new Configuration("c2");
+        cfg2.getProperties().put("key1", "$[env:M2]");
+        f.getConfigurations().add(cfg2);
+
+        final Configuration cfg3 = new Configuration("c3");
+        // 100 characters - allowed
+        cfg3.getProperties().put("key", "$[env:M123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]");
+        f.getConfigurations().add(cfg3);
+
+        final Configuration cfg4 = new Configuration("c4");
+        // 101 characters - not allowed
+        cfg4.getProperties().put("key", "$[env:M1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890]");
+        f.getConfigurations().add(cfg4);
+
+        final AnalyserTask task = new EnvVarAnalyserTask();
+        task.execute(ctx);
+
+        Mockito.verify(ctx).getFeature();
+        Mockito.verify(ctx, Mockito.times(1)).reportConfigurationError(Mockito.eq(cfg1), Mockito.anyString());
+        Mockito.verify(ctx, Mockito.times(1)).reportConfigurationError(Mockito.eq(cfg4), Mockito.anyString());
+        Mockito.verifyNoMoreInteractions(ctx);
+    }
+
+    @Test public void testSecretPrefixes() throws Exception {
+        final AnalyserTaskContext ctx = Mockito.mock(AnalyserTaskContext.class);
+        final Feature f = new Feature(ArtifactId.parse("g:a:1"));
+        Mockito.when(ctx.getFeature()).thenReturn(f);
+
+        final Configuration cfg1 = new Configuration("c1");
+        cfg1.getProperties().put("key1", "$[secret:MY_VAR]");
+        cfg1.getProperties().put("key2", "$[secret:CONST_AEM_VAR]");
+        f.getConfigurations().add(cfg1);
+
+        final Configuration cfg2 = new Configuration("c2");
+        cfg2.getProperties().put("key", "$[secret:INTERNAL_VAR]");
+        f.getConfigurations().add(cfg2);
+
+        final Configuration cfg3 = new Configuration("c3");
+        cfg3.getProperties().put("key", new String[] {"$[secret:ADOBE_VAR]"});
+        f.getConfigurations().add(cfg3);
+
+        final AnalyserTask task = new EnvVarAnalyserTask();
+        task.execute(ctx);
+
+        Mockito.verify(ctx).getFeature();
+        Mockito.verify(ctx, Mockito.times(1)).reportConfigurationError(Mockito.eq(cfg2), Mockito.anyString());
+        Mockito.verify(ctx, Mockito.times(1)).reportConfigurationError(Mockito.eq(cfg3), Mockito.anyString());
+        Mockito.verifyNoMoreInteractions(ctx);
+    }
+
+    @Test public void testSecretPattern() throws Exception {
+        final AnalyserTaskContext ctx = Mockito.mock(AnalyserTaskContext.class);
+        final Feature f = new Feature(ArtifactId.parse("g:a:1"));
+        Mockito.when(ctx.getFeature()).thenReturn(f);
+
+        final Configuration cfg1 = new Configuration("c1");
+        cfg1.getProperties().put("key1", "$[secret:1MY_VAR]");
+        f.getConfigurations().add(cfg1);
+
+        final AnalyserTask task = new EnvVarAnalyserTask();
+        task.execute(ctx);
+
+        Mockito.verify(ctx).getFeature();
+        Mockito.verify(ctx, Mockito.times(1)).reportConfigurationError(Mockito.eq(cfg1), Mockito.anyString());
+        Mockito.verifyNoMoreInteractions(ctx);
+    }
+
+    @Test public void testSecretSize() throws Exception {
+        final AnalyserTaskContext ctx = Mockito.mock(AnalyserTaskContext.class);
+        final Feature f = new Feature(ArtifactId.parse("g:a:1"));
+        Mockito.when(ctx.getFeature()).thenReturn(f);
+
+        final Configuration cfg1 = new Configuration("c1");
+        cfg1.getProperties().put("key1", "$[secret:M]");
+        f.getConfigurations().add(cfg1);
+
+        final Configuration cfg2 = new Configuration("c2");
+        cfg2.getProperties().put("key1", "$[secret:M2]");
+        f.getConfigurations().add(cfg2);
+
+        final Configuration cfg3 = new Configuration("c3");
+        // 100 characters - allowed
+        cfg3.getProperties().put("key", "$[secret:M123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]");
+        f.getConfigurations().add(cfg3);
+
+        final Configuration cfg4 = new Configuration("c4");
+        // 101 characters - not allowed
+        cfg4.getProperties().put("key", "$[secret:M1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890]");
+        f.getConfigurations().add(cfg4);
+
+        final AnalyserTask task = new EnvVarAnalyserTask();
+        task.execute(ctx);
+
+        Mockito.verify(ctx).getFeature();
+        Mockito.verify(ctx, Mockito.times(1)).reportConfigurationError(Mockito.eq(cfg1), Mockito.anyString());
+        Mockito.verify(ctx, Mockito.times(1)).reportConfigurationError(Mockito.eq(cfg4), Mockito.anyString());
         Mockito.verifyNoMoreInteractions(ctx);
     }
 }
