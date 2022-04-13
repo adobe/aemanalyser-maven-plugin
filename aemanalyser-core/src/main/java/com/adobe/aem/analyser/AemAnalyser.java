@@ -147,7 +147,7 @@ public class AemAnalyser {
     }
     
     private Map<String, String> contentPackagesValidationDefaults() {
-        return singletonMap("disabled-validators", "jackrabbit-nodetypes");
+        return singletonMap("enabled-validators", "jackrabbit-docviewparser");
     }
     
     private Map<String, String> apiRegionsCheckOrderDefaults() {
