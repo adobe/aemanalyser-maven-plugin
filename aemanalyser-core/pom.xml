@@ -57,7 +57,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>org.apache.sling.feature.analyser</artifactId>
-      <version>1.6.0</version>
+      <version>1.6.4</version>
     </dependency>
 
     <!-- Feature Model API Regions Extension -->

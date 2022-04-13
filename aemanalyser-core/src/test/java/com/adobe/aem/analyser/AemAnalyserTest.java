@@ -66,7 +66,6 @@ public class AemAnalyserTest {
         config = analyser.getTaskConfigurations().get("content-packages-validation");
         assertNotNull(config);
         assertEquals(1, config.size());
-        assertEquals("jackrabbit-nodetypes", config.get("disabled-validators"));
     }
 
     @Test public void testSetTaskConfigurations() throws Exception {

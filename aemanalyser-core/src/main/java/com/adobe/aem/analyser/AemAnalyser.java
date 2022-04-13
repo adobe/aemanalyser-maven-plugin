@@ -61,11 +61,11 @@ public class AemAnalyser {
         + ",bundle-resources"
         + ",bundle-nativecode"
         + ",bundle-unversioned-packages"
-	+ ",artifact-rules"
+	    + ",artifact-rules"
         + ",configuration-api"
         + ",aem-env-var"
-        + ",repoinit";
-//        + ",content-packages-validation";
+        + ",repoinit"
+        + ",content-packages-validation";
 
     private static final String BUNDLE_ORIGINS = "content-package-origins";
     private static final String CONFIGURATION_ORIGINS = Configuration.CONFIGURATOR_PREFIX.concat(BUNDLE_ORIGINS);
@@ -147,7 +147,7 @@ public class AemAnalyser {
     }
     
     private Map<String, String> contentPackagesValidationDefaults() {
-        return singletonMap("disabled-validators", "jackrabbit-nodetypes");
+        return singletonMap("enabled-validators", "jackrabbit-docviewparser");
     }
     
     private Map<String, String> apiRegionsCheckOrderDefaults() {
