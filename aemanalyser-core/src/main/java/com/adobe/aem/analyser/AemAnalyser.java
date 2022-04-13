@@ -147,10 +147,7 @@ public class AemAnalyser {
     }
     
     private Map<String, String> contentPackagesValidationDefaults() {
-        final Map<String, String> config = new HashMap<>();
-        config.put("enabled-validators", "jackrabbit-docviewparser");
-        config.put("disabled-validators", "jackrabbit-nodetypes");
-        return config;
+        return singletonMap("enabled-validators", "jackrabbit-docviewparser");
     }
     
     private Map<String, String> apiRegionsCheckOrderDefaults() {
