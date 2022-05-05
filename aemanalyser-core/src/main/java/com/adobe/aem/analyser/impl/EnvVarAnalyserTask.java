@@ -38,6 +38,8 @@ public class EnvVarAnalyserTask implements AnalyserTask {
 
     private static final Pattern NAME_PATTERN = Pattern.compile("[a-zA-Z_][a-zA-Z_0-9]*");
 
+    private static final String SECRETS_PATH = "customer-secrets/";
+
     @Override
     public String getId() {
         return "aem-env-var";
@@ -63,15 +65,30 @@ public class EnvVarAnalyserTask implements AnalyserTask {
         ENV_PATTERN("Value for property '{}' uses env var not following the required naming scheme of " + NAME_PATTERN.toString()),
         ENV_SIZE("Value for property '{}' uses env var not following naming length restrictions (>= 2 and <= 100)"),
         SECRET("Value for property '{}' must not use secrets prefixed with INTERNAL_ or ADOBE_"),
+        SECRET_PATH("Value for property '{}' must not use prefix " + SECRETS_PATH + ". Please remove the prefix", false),
         SECRET_PATTERN("Value for property '{}' uses env var not following the required naming scheme of " + NAME_PATTERN.toString()),
         SECRET_SIZE("Value for property '{}' uses env var not following naming length restrictions (>= 2 and <= 100)");
 
         private final String message;
 
+        private final boolean error;
+
         private Usage(final String msg) {
-            this.message = msg;
+            this(msg, true);
         }
 
+        private Usage(final String msg, final boolean error) {
+            this.message = msg;
+            this.error = error;
+        }
+
+        /**
+         * Is this an error?
+         * @return {@code true} if error
+         */
+        public boolean isError() {
+            return this.error;
+        }
         /**
          * Return a message for that property
          * @param propertyName The property name
@@ -102,7 +119,11 @@ public class EnvVarAnalyserTask implements AnalyserTask {
             }
 
             for(final Usage u : usage) {
-                context.reportConfigurationError(cfg, u.getMessageFor(propName));                
+                if ( u.isError() ) {
+                    context.reportConfigurationError(cfg, u.getMessageFor(propName));                
+                } else {
+                    context.reportConfigurationWarning(cfg, u.getMessageFor(propName));
+                }
             }
         }
     }
@@ -131,15 +152,20 @@ public class EnvVarAnalyserTask implements AnalyserTask {
                         result.add(Usage.ENV_SIZE);
                     }
                 } else if ( TYPE_SECRET.equals(type) ) {
+                    String value = name;
+                    if ( value.startsWith(SECRETS_PATH) ) {
+                        value = value.substring(SECRETS_PATH.length());
+                        result.add(Usage.SECRET_PATH);
+                    }
                     for(final String prefix : PREFIXES) {
-                        if ( name.startsWith(prefix) ) {
+                        if ( value.startsWith(prefix) ) {
                             result.add(Usage.SECRET);
                         }
                     }    
-                    if ( !NAME_PATTERN.matcher(name).matches() ) {
+                    if ( !NAME_PATTERN.matcher(value).matches() ) {
                         result.add(Usage.SECRET_PATTERN);
                     }
-                    if ( name.length() < 2 || name.length() > 100 ) {
+                    if ( value.length() < 2 || value.length() > 100 ) {
                         result.add(Usage.SECRET_SIZE);
                     }
                 }
