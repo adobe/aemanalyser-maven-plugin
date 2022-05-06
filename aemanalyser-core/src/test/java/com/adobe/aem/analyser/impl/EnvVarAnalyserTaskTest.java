@@ -180,4 +180,21 @@ public class EnvVarAnalyserTaskTest {
         Mockito.verify(ctx, Mockito.times(1)).reportConfigurationError(Mockito.eq(cfg4), Mockito.anyString());
         Mockito.verifyNoMoreInteractions(ctx);
     }
+
+    @Test public void testSecretPath() throws Exception {
+        final AnalyserTaskContext ctx = Mockito.mock(AnalyserTaskContext.class);
+        final Feature f = new Feature(ArtifactId.parse("g:a:1"));
+        Mockito.when(ctx.getFeature()).thenReturn(f);
+
+        final Configuration cfg1 = new Configuration("c1");
+        cfg1.getProperties().put("key1", "$[secret:customer-secrets/FOO]");
+        f.getConfigurations().add(cfg1);
+
+        final AnalyserTask task = new EnvVarAnalyserTask();
+        task.execute(ctx);
+
+        Mockito.verify(ctx).getFeature();
+        Mockito.verify(ctx, Mockito.times(1)).reportConfigurationWarning(Mockito.eq(cfg1), Mockito.anyString());
+        Mockito.verifyNoMoreInteractions(ctx);
+    }
 }
