@@ -61,13 +61,13 @@ public class EnvVarAnalyserTask implements AnalyserTask {
      * Enumeration for the violations
      */
     private enum Usage {
-        ENV("Value for property '{}' must not use env vars prefixed with INTERNAL_ or ADOBE_"),
-        ENV_PATTERN("Value for property '{}' uses env var not following the required naming scheme of " + NAME_PATTERN.toString()),
-        ENV_SIZE("Value for property '{}' uses env var not following naming length restrictions (>= 2 and <= 100)"),
-        SECRET("Value for property '{}' must not use secrets prefixed with INTERNAL_ or ADOBE_"),
-        SECRET_PATH("Value for property '{}' must not use prefix " + SECRETS_PATH + ". Please remove the prefix", false),
-        SECRET_PATTERN("Value for property '{}' uses env var not following the required naming scheme of " + NAME_PATTERN.toString()),
-        SECRET_SIZE("Value for property '{}' uses env var not following naming length restrictions (>= 2 and <= 100)");
+        ENV("Value for property '{}' must not use env vars prefixed with INTERNAL_ or ADOBE_ : "),
+        ENV_PATTERN("Value for property '{}' uses env var not following the required naming scheme of " + NAME_PATTERN.toString() + " : "),
+        ENV_SIZE("Value for property '{}' uses env var not following naming length restrictions (>= 2 and <= 100) : "),
+        SECRET("Value for property '{}' must not use secrets prefixed with INTERNAL_ or ADOBE_ : "),
+        SECRET_PATH("Value for property '{}' must not use prefix " + SECRETS_PATH + ". Please remove the prefix : ", false),
+        SECRET_PATTERN("Value for property '{}' uses env var not following the required naming scheme of " + NAME_PATTERN.toString() + " : "),
+        SECRET_SIZE("Value for property '{}' uses env var not following naming length restrictions (>= 2 and <= 100) : ");
 
         private final String message;
 
@@ -94,8 +94,27 @@ public class EnvVarAnalyserTask implements AnalyserTask {
          * @param propertyName The property name
          * @return The message
          */
-        public String getMessageFor(final String propertyName) {
-            return message.replace("{}", propertyName);
+        public String getMessageFor(final String propertyName, final String value) {
+            return message.replace("{}", propertyName).concat(value);
+        }
+    }
+
+    /**
+     * Print the usage warnings and errors
+     * @param usage The usage set
+     * @param context The context
+     * @param cfg The configureation
+     * @param propName The property name
+     * @param value The property value
+     */
+    private void reportErrorOrWarning(final EnumSet<Usage> usage, 
+        final AnalyserTaskContext context, final Configuration cfg, final String propName, final String value) {
+        for(final Usage u : usage) {
+            if ( u.isError() ) {
+                context.reportConfigurationError(cfg, u.getMessageFor(propName, value));                
+            } else {
+                context.reportConfigurationWarning(cfg, u.getMessageFor(propName, value));
+            }
         }
     }
 
@@ -108,21 +127,12 @@ public class EnvVarAnalyserTask implements AnalyserTask {
         final Dictionary<String, Object> properties = cfg.getConfigurationProperties();
         for(final String propName : Collections.list(properties.keys())) {
             final Object value = properties.get(propName);
-            EnumSet<Usage> usage = EnumSet.noneOf(Usage.class);
             if (value instanceof String) {
-                usage = checkValue(value.toString());
+                reportErrorOrWarning(checkValue(value.toString()), context, cfg, propName, value.toString());
             } else if (value instanceof String[]) {
                 final String[] array = (String[]) value;
                 for(final String val : array) {
-                    usage.addAll(checkValue(val));
-                }
-            }
-
-            for(final Usage u : usage) {
-                if ( u.isError() ) {
-                    context.reportConfigurationError(cfg, u.getMessageFor(propName));                
-                } else {
-                    context.reportConfigurationWarning(cfg, u.getMessageFor(propName));
+                    reportErrorOrWarning(checkValue(val), context, cfg, propName, val);
                 }
             }
         }
