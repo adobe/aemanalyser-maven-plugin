@@ -69,7 +69,7 @@ public class EnvVarAnalyserTaskTest {
         task.execute(ctx);
 
         Mockito.verify(ctx).getFeature();
-        Mockito.verify(ctx, Mockito.times(1)).reportConfigurationError(Mockito.eq(cfg1), Mockito.anyString());
+        Mockito.verify(ctx, Mockito.times(1)).reportConfigurationWarning(Mockito.eq(cfg1), Mockito.anyString());
         Mockito.verifyNoMoreInteractions(ctx);
     }
 
@@ -145,7 +145,7 @@ public class EnvVarAnalyserTaskTest {
         task.execute(ctx);
 
         Mockito.verify(ctx).getFeature();
-        Mockito.verify(ctx, Mockito.times(1)).reportConfigurationError(Mockito.eq(cfg1), Mockito.anyString());
+        Mockito.verify(ctx, Mockito.times(1)).reportConfigurationWarning(Mockito.eq(cfg1), Mockito.anyString());
         Mockito.verifyNoMoreInteractions(ctx);
     }
 

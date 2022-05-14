@@ -62,11 +62,11 @@ public class EnvVarAnalyserTask implements AnalyserTask {
      */
     private enum Usage {
         ENV("Value for property '{}' must not use env vars prefixed with INTERNAL_ or ADOBE_ : "),
-        ENV_PATTERN("Value for property '{}' uses env var not following the required naming scheme of " + NAME_PATTERN.toString() + " : "),
+        ENV_PATTERN("Value for property '{}' uses env var not following the required naming scheme of " + NAME_PATTERN.toString() + " : ", false),
         ENV_SIZE("Value for property '{}' uses env var not following naming length restrictions (>= 2 and <= 100) : "),
         SECRET("Value for property '{}' must not use secrets prefixed with INTERNAL_ or ADOBE_ : "),
         SECRET_PATH("Value for property '{}' must not use prefix " + SECRETS_PATH + ". Please remove the prefix : ", false),
-        SECRET_PATTERN("Value for property '{}' uses env var not following the required naming scheme of " + NAME_PATTERN.toString() + " : "),
+        SECRET_PATTERN("Value for property '{}' uses env var not following the required naming scheme of " + NAME_PATTERN.toString() + " : ", false),
         SECRET_SIZE("Value for property '{}' uses env var not following naming length restrictions (>= 2 and <= 100) : ");
 
         private final String message;
