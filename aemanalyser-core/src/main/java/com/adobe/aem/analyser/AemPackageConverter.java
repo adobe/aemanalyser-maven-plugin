@@ -15,21 +15,26 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter;
 import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter.SlingInitialContentPolicy;
 import org.apache.sling.feature.cpconverter.ConverterException;
 import org.apache.sling.feature.cpconverter.accesscontrol.AclManager;
 import org.apache.sling.feature.cpconverter.accesscontrol.DefaultAclManager;
+import org.apache.sling.feature.cpconverter.artifacts.ArtifactWriter;
+import org.apache.sling.feature.cpconverter.artifacts.ArtifactsDeployer;
 import org.apache.sling.feature.cpconverter.artifacts.LocalMavenRepositoryArtifactsDeployer;
 import org.apache.sling.feature.cpconverter.features.DefaultFeaturesManager;
 import org.apache.sling.feature.cpconverter.filtering.RegexBasedResourceFilter;
 import org.apache.sling.feature.cpconverter.filtering.ResourceFilter;
 import org.apache.sling.feature.cpconverter.handlers.DefaultEntryHandlersManager;
-import org.apache.sling.feature.cpconverter.index.DefaultIndexManager;
 import org.apache.sling.feature.cpconverter.shared.ConverterConstants;
 import org.apache.sling.feature.cpconverter.vltpkg.DefaultPackagesEventsEmitter;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,7 +108,16 @@ public class AemPackageConverter {
         this.artifactIdOverride = artifactIdOverride;
     }
 
-    public void convert(final Map<String, File> contentPackages) throws IOException, ConverterException {
+    /**
+     * Convert the packages
+     *
+     * @param contentPackages The map of packages
+     * @param additionalWarnings The list to add additional warnings
+     * @param additionalErrors The list to add additional errors
+     * @throws IOException
+     * @throws ConverterException
+     */
+    public void convert(final Map<String, File> contentPackages, final List<String> additionalWarnings, final List<String> additionalErrors) throws IOException, ConverterException {
         final Map<String, String> properties = new HashMap<>();
 
         final AclManager aclManager = new DefaultAclManager(null, "system");
@@ -119,11 +133,25 @@ public class AemPackageConverter {
 
         featuresManager.setExportToAPIRegion("global");
 
+        final Map<ArtifactId, String> mutableContentPackagesWithRunMode = new HashMap<>();
+
         final File bundlesOutputDir = this.bundlesOutputDirectory != null
                 ? this.bundlesOutputDirectory : this.converterOutputDirectory;
         try (final ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(false,
                 SlingInitialContentPolicy.KEEP) ) {
             converter.setFeaturesManager(featuresManager)
+                    .setContentTypePackagePolicy(ContentPackage2FeatureModelConverter.PackagePolicy.PUT_IN_DEDICATED_FOLDER)
+                    .setUnreferencedArtifactsDeployer(new ArtifactsDeployer() {
+
+                        @Override
+                        public @NotNull String deploy(@NotNull ArtifactWriter artifactWriter, @Nullable String runmode,
+                                @NotNull ArtifactId id) throws IOException {
+                            if ( runmode != null ) {
+                                mutableContentPackagesWithRunMode.put(id, runmode);
+                            }
+                            return id.toMvnId();
+                        }
+                    })
                     .setBundlesDeployer(
                         new LocalMavenRepositoryArtifactsDeployer(
                             bundlesOutputDir
@@ -133,12 +161,6 @@ public class AemPackageConverter {
                         new DefaultEntryHandlersManager(Collections.emptyMap(), true,
                                 SlingInitialContentPolicy.KEEP, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT)
                         )
-                    .setAclManager(
-                            new DefaultAclManager()
-                            )
-                    .setIndexManager(
-                            new DefaultIndexManager()
-                            )
                     .setEmitter(DefaultPackagesEventsEmitter.open(this.featureOutputDirectory))
                     .setResourceFilter(getResourceFilter());
             logger.info("Converting packages {}", contentPackages.keySet());
@@ -147,6 +169,11 @@ public class AemPackageConverter {
             throw e;
         } catch (final Throwable t) {
             throw new IOException("Content Package Converter exception " + t.getMessage(), t);
+        }
+        if ( !mutableContentPackagesWithRunMode.isEmpty() ) {
+            for(final Map.Entry<ArtifactId, String> entry : mutableContentPackagesWithRunMode.entrySet()) {
+                additionalWarnings.add("Mutable content package ".concat(entry.getKey().toMvnId()).concat(" has invalid runmode : ").concat(entry.getValue()));
+            }
         }
     }
 

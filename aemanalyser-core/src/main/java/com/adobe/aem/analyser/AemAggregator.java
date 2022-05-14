@@ -424,7 +424,7 @@ public class AemAggregator {
             }
 
             if ( artifactsDeployer != null ) {
-                artifactsDeployer.deploy(new FileArtifactWriter(featureFile), newFeatureID);
+                artifactsDeployer.deploy(new FileArtifactWriter(featureFile), null, newFeatureID);
             }
             projectFeatures.put(aggregate.getKey(), feature);
 
