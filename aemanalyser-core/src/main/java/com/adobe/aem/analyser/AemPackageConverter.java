@@ -172,7 +172,7 @@ public class AemPackageConverter {
         }
         if ( !mutableContentPackagesWithRunMode.isEmpty() ) {
             for(final Map.Entry<ArtifactId, String> entry : mutableContentPackagesWithRunMode.entrySet()) {
-                additionalWarnings.add("Mutable content package ".concat(entry.getKey().toMvnId()).concat(" has invalid runmode : ").concat(entry.getValue()));
+                logger.info("Mutable content package {} uses runmode {}", entry.getKey().toMvnId(), entry.getValue());
             }
         }
     }
