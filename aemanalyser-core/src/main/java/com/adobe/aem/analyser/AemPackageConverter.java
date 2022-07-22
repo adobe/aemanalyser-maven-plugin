@@ -120,7 +120,7 @@ public class AemPackageConverter {
     public String getArtifactIdOverride() {
         return artifactIdOverride;
     }
-    
+
     /**
      * @param artifactIdOverride the artifactIdOverride to set
      */
@@ -150,7 +150,7 @@ public class AemPackageConverter {
             properties,
             aclManager
         );
-        
+
 
         List<Feature> features = getProductFeatureGenerator().getProductAggregates().get(SdkProductVariation.AUTHOR);
         for(Feature seedFeature: features){
@@ -165,7 +165,7 @@ public class AemPackageConverter {
         featuresManager.setAPIRegions(apiRegions);
         featuresManager.setExportToAPIRegion("global");
 
-       
+
         final File bundlesOutputDir = this.bundlesOutputDirectory != null
                 ? this.bundlesOutputDirectory : this.converterOutputDirectory;
 
