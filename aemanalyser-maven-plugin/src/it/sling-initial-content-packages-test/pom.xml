@@ -24,7 +24,7 @@ governing permissions and limitations under the License.
             <plugin>
                 <groupId>com.adobe.aem</groupId>
                 <artifactId>aemanalyser-maven-plugin</artifactId>
-                <version>1.4.7-SNAPSHOT</version>
+                <version>1.4.11-SNAPSHOT</version>
                 <executions>
                     <execution>
                         <id>aem-analyser</id>

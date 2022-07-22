@@ -13,7 +13,6 @@ package com.adobe.aem.analyser;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,7 +31,6 @@ import org.apache.sling.feature.cpconverter.ConverterException;
 import org.apache.sling.feature.cpconverter.accesscontrol.AclManager;
 import org.apache.sling.feature.cpconverter.accesscontrol.DefaultAclManager;
 import org.apache.sling.feature.cpconverter.artifacts.ArtifactWriter;
-import org.apache.sling.feature.cpconverter.artifacts.ArtifactsDeployer;
 import org.apache.sling.feature.cpconverter.artifacts.LocalMavenRepositoryArtifactsDeployer;
 import org.apache.sling.feature.cpconverter.features.DefaultFeaturesManager;
 import org.apache.sling.feature.cpconverter.filtering.RegexBasedResourceFilter;
@@ -42,8 +40,6 @@ import org.apache.sling.feature.cpconverter.handlers.slinginitialcontent.BundleS
 import org.apache.sling.feature.cpconverter.index.DefaultIndexManager;
 import org.apache.sling.feature.cpconverter.shared.ConverterConstants;
 import org.apache.sling.feature.cpconverter.vltpkg.DefaultPackagesEventsEmitter;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,10 +165,13 @@ public class AemPackageConverter {
         featuresManager.setAPIRegions(apiRegions);
         featuresManager.setExportToAPIRegion("global");
 
+       
         final File bundlesOutputDir = this.bundlesOutputDirectory != null
                 ? this.bundlesOutputDirectory : this.converterOutputDirectory;
 
         File unreferencedArtifactsOutputDirectory = mutableContentOutputDirectory != null? mutableContentOutputDirectory : new File(converterOutputDirectory, "mutable-content");
+        MutableContentPackageDeployer mutableContentPackagesDeployer = new MutableContentPackageDeployer(unreferencedArtifactsOutputDirectory);
+                
         try (final ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(false,
                 SlingInitialContentPolicy.EXTRACT_AND_REMOVE, true) ) {
             final BundleSlingInitialContentExtractor bundleSlingInitialContentExtractor = new BundleSlingInitialContentExtractor();
@@ -195,7 +194,7 @@ public class AemPackageConverter {
                             )
                     .setEmitter(DefaultPackagesEventsEmitter.open(this.featureOutputDirectory))
                     .setContentTypePackagePolicy(ContentPackage2FeatureModelConverter.PackagePolicy.PUT_IN_DEDICATED_FOLDER)
-                    .setUnreferencedArtifactsDeployer(new LocalMavenRepositoryArtifactsDeployer(unreferencedArtifactsOutputDirectory))
+                    .setUnreferencedArtifactsDeployer(mutableContentPackagesDeployer)
                     .setIndexManager(new DefaultIndexManager())
                     .setResourceFilter(getResourceFilter());
             logger.info("Converting packages {}", contentPackages.keySet());
@@ -205,6 +204,7 @@ public class AemPackageConverter {
         } catch (final Throwable t) {
             throw new IOException("Content Package Converter exception " + t.getMessage(), t);
         }
+        mutableContentPackagesDeployer.logMutableContentPackages();
     }
 
     private ResourceFilter getResourceFilter() {
@@ -263,5 +263,33 @@ public class AemPackageConverter {
 
     public void setProductFeatureGenerator(ProductFeatureGenerator generator) {
         this.generator = generator;
+    }
+    
+    class MutableContentPackageDeployer extends LocalMavenRepositoryArtifactsDeployer {
+
+        final Map<ArtifactId, String> mutableContentPackagesWithRunMode = new HashMap<>();
+        
+        public MutableContentPackageDeployer(File outputDirectory) {
+            super(outputDirectory);
+        }
+
+        @Override
+        public String deploy(ArtifactWriter artifactWriter, String runmode,
+                             ArtifactId id) throws IOException {
+            if (runmode != null) {
+                mutableContentPackagesWithRunMode.put(id, runmode);
+            }
+            return super.deploy(artifactWriter, runmode, id);
+        }
+        
+        public void logMutableContentPackages() {
+            if ( !mutableContentPackagesWithRunMode.isEmpty() ) {
+                for(final Map.Entry<ArtifactId, String> entry : mutableContentPackagesWithRunMode.entrySet()) {
+                    logger.info("Mutable content package {} uses runmode {}", entry.getKey().toMvnId(), entry.getValue());
+                }
+            }
+        }
+        
+        
     }
 }
