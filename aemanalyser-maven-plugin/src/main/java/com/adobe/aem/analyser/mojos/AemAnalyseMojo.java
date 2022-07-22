@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import com.adobe.aem.analyser.AemSdkProductFeatureGenerator;
+import com.adobe.aem.analyser.ProductFeatureGenerator;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
@@ -188,10 +190,12 @@ public class AemAnalyseMojo extends AbstractMojo {
     @Parameter( defaultValue = "${plugin}", readonly = true ) // Maven 3 only
     private PluginDescriptor plugin;
  
+    private final FeatureProvider featureProvider = this::getOrResolveFeature;
     /**
      * Artifact cache
      */
     private final Map<String, Artifact> artifactCache = new ConcurrentHashMap<>();
+    private AemSdkProductFeatureGenerator generator;
 
     /**
      * Get the output directory for the content package converter
@@ -244,7 +248,8 @@ public class AemAnalyseMojo extends AbstractMojo {
 
         final ArtifactId sdkId = versionUtil.getSDKArtifactId(this.sdkArtifactId, this.sdkVersion, this.useDependencyVersions);
         final List<ArtifactId> addons = versionUtil.discoverAddons(this.addons, this.useDependencyVersions);
-
+        generator = new AemSdkProductFeatureGenerator(featureProvider, sdkId, addons);
+                
         // log warnings at start and end
         for(final String msg : versionUtil.getVersionWarnings()) {
             this.getLog().warn(msg);
@@ -274,7 +279,8 @@ public class AemAnalyseMojo extends AbstractMojo {
         converter.setArtifactIdOverride(new ArtifactId(project.getGroupId(), project.getArtifactId(), project.getVersion(), null, "slingosgifeature").toMvnId());
         converter.setConverterOutputDirectory(getConversionOutputDir());
         converter.setFeatureOutputDirectory(getGeneratedFeaturesDir());
-    
+        converter.setProductFeatureGenerator(generator);
+        
         final Map<String, File> packages = new LinkedHashMap<>();
         for(final Artifact contentPackage: getContentPackages()) {
             final File source = contentPackage.getFile();
@@ -379,16 +385,12 @@ public class AemAnalyseMojo extends AbstractMojo {
             final AemAggregator a = new AemAggregator();
             a.setFeatureOutputDirectory(getGeneratedFeaturesDir());
             a.setArtifactProvider(artifactProvider);
-            a.setFeatureProvider(new FeatureProvider() {
-                @Override
-                public Feature provide(final ArtifactId id) {
-                    return getOrResolveFeature(id);
-                }
-            });
+            a.setFeatureProvider(featureProvider);
             a.setProjectId(new ArtifactId(project.getGroupId(), project.getArtifactId(), project.getVersion(), null, null));
             a.setSdkId(sdkId);
             a.setAddOnIds(addons);
-            
+            a.setProductFeatureGenerator(generator);
+
             return a.aggregate();
         
         } catch (final IOException e) {
