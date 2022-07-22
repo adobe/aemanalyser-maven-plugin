@@ -31,6 +31,8 @@ import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter
 import org.apache.sling.feature.cpconverter.ConverterException;
 import org.apache.sling.feature.cpconverter.accesscontrol.AclManager;
 import org.apache.sling.feature.cpconverter.accesscontrol.DefaultAclManager;
+import org.apache.sling.feature.cpconverter.artifacts.ArtifactWriter;
+import org.apache.sling.feature.cpconverter.artifacts.ArtifactsDeployer;
 import org.apache.sling.feature.cpconverter.artifacts.LocalMavenRepositoryArtifactsDeployer;
 import org.apache.sling.feature.cpconverter.features.DefaultFeaturesManager;
 import org.apache.sling.feature.cpconverter.filtering.RegexBasedResourceFilter;
@@ -41,6 +43,7 @@ import org.apache.sling.feature.cpconverter.index.DefaultIndexManager;
 import org.apache.sling.feature.cpconverter.shared.ConverterConstants;
 import org.apache.sling.feature.cpconverter.vltpkg.DefaultPackagesEventsEmitter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,7 +132,16 @@ public class AemPackageConverter {
         this.artifactIdOverride = artifactIdOverride;
     }
 
-    public void convert(final Map<String, File> contentPackages) throws IOException, ConverterException {
+    /**
+     * Convert the packages
+     *
+     * @param contentPackages The map of packages
+     * @param additionalWarnings The list to add additional warnings
+     * @param additionalErrors The list to add additional errors
+     * @throws IOException
+     * @throws ConverterException
+     */
+    public void convert(final Map<String, File> contentPackages, final List<String> additionalWarnings, final List<String> additionalErrors) throws IOException, ConverterException {
         final Map<String, String> properties = new HashMap<>();
 
         final AclManager aclManager = new DefaultAclManager(null, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT);
