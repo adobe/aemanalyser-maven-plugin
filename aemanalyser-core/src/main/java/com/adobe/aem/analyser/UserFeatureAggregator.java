@@ -34,6 +34,6 @@ public interface UserFeatureAggregator {
      * @return a mapping of user aggregates
      * @throws IOException in case of IO errors
      */
-    Map<String, List<Feature>> getUserAggregates(final Map<String, Feature> projectFeatures)
+    Map<String, List<Feature>> getUserAggregates(final Map<String, Feature> projectFeatures, final ServiceType[] runmodes)
             throws IOException;
 }

@@ -28,7 +28,7 @@ public interface ProductFeatureGenerator {
      * @return a mapping of product aggregates
      * @throws IOException in case of IO errors
      */
-    Map<ProductVariation, List<Feature>> getProductAggregates() throws IOException;
+    Map<ProductVariation, List<Feature>> getProductAggregates(ServiceType[] runmodes) throws IOException;
 
     /**
      * Returns a variation matching the specified user aggregate name

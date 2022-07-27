@@ -75,6 +75,8 @@ public class AemAggregator {
 
     private List<ArtifactId> addOnIds;
 
+    private ServiceType[] runmodes = ServiceType.values();
+
     /**
      * @return the artifactProvider
      */
@@ -190,6 +192,20 @@ public class AemAggregator {
     }
 
     /**
+     * @return the runmodes
+     */
+    public ServiceType[] getRunmodes() {
+        return runmodes;
+    }
+
+    /**
+     * @param rm the runmode(s) to set
+     */
+    public void setRunmodes(ServiceType ... rm) {
+        runmodes = rm;
+    }
+
+    /**
      * @return the sdkId
      */
     public ArtifactId getSdkId() {
@@ -269,7 +285,7 @@ public class AemAggregator {
 
     // visible for testing
     Map<String, List<Feature>> getUserAggregates(Map<String, Feature> projectFeatures) throws IOException {
-        return getUserFeatureAggregator().getUserAggregates(projectFeatures);
+        return getUserFeatureAggregator().getUserAggregates(projectFeatures, runmodes);
     }
 
     /**
@@ -317,7 +333,9 @@ public class AemAggregator {
     }
 
     Map<ProductVariation, List<Feature>> getProductAggregates() throws IOException {
-        return getProductFeatureGenerator().getProductAggregates();
+        Map<ProductVariation, List<Feature>> res = getProductFeatureGenerator().getProductAggregates(runmodes);
+
+        return res;
     }
 
     final void postProcessProductFeature(final Feature feature) {

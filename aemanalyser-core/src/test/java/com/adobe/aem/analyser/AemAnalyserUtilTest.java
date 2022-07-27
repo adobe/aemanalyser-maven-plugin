@@ -25,7 +25,7 @@ import java.util.Set;
 import org.junit.Test;
 
 public class AemAnalyserUtilTest {
-    
+
     @Test
     public void testInvalidModes() {
         assertEquals("author.dev", AemAnalyserUtil.getValidRunMode("dev.author"));
@@ -87,7 +87,7 @@ public class AemAnalyserUtilTest {
         p.put("dev.foo", "myproj.dev-foo.json");
         p.put("foo.dev", "myproj.foo-dev.json");
 
-        Map<String, Set<String>> aggs = AemAnalyserUtil.getAggregates(p);
+        Map<String, Set<String>> aggs = AemAnalyserUtil.getAggregates(p, ServiceType.values());
 
         assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-author.json")),
                 aggs.get("author"));
@@ -118,6 +118,6 @@ public class AemAnalyserUtilTest {
         p.put("(default)", "myproj.all.json");
         p.put("dev.author", "dev-author.json");
 
-        AemAnalyserUtil.getAggregates(p);
+        AemAnalyserUtil.getAggregates(p, ServiceType.values());
     }
 }
