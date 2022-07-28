@@ -43,7 +43,7 @@ public class AemAnalyserUtil {
         "author", "author.dev", "author.stage", "author.prod");
     static final List<String> PUBLISH_USED_MODES = Arrays.asList(
         "publish", "publish.dev", "publish.stage", "publish.prod");
-    static final List<String> USED_MODES = Stream.concat(
+    static final List<String> ALL_USED_MODES = Stream.concat(
         AUTHOR_USED_MODES.stream(), PUBLISH_USED_MODES.stream()).collect(Collectors.toList());
 
     /** Default runmode */
@@ -63,7 +63,7 @@ public class AemAnalyserUtil {
             }
         }
 
-        return USED_MODES;
+        return ALL_USED_MODES;
     }
 
     /**
