@@ -112,6 +112,17 @@ public class AemPackageConverter {
      * Convert the packages
      *
      * @param contentPackages The map of packages
+     * @throws IOException
+     * @throws ConverterException
+     */
+    public void convert(final Map<String, File> contentPackages) throws IOException, ConverterException {
+        convert(contentPackages, Collections.emptyList(), Collections.emptyList());
+    }
+
+    /**
+     * Convert the packages
+     *
+     * @param contentPackages The map of packages
      * @param additionalWarnings The list to add additional warnings
      * @param additionalErrors The list to add additional errors
      * @throws IOException
