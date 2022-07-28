@@ -13,8 +13,8 @@ package com.adobe.aem.analyser;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,15 +40,15 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
     }
 
     @Override
-    public Map<ProductVariation, List<Feature>> getProductAggregates(ServiceType[] runmodes) throws IOException {
+    public Map<ProductVariation, List<Feature>> getProductAggregates(EnumSet<ServiceType> serviceTypes) throws IOException {
         final Map<ProductVariation, List<Feature>> aggregates = new HashMap<>();
 
-        List<String> rml = Arrays.asList(runmodes).stream()
+        List<String> stl = serviceTypes.stream()
             .map(ServiceType::toString)
             .collect(Collectors.toList());
 
         for ( SdkProductVariation variation : SdkProductVariation.values() ) {
-            if (!rml.contains(variation.toString()))
+            if (!stl.contains(variation.toString()))
                 continue;
 
             final List<Feature> list = aggregates.computeIfAbsent(variation, n -> new ArrayList<>());

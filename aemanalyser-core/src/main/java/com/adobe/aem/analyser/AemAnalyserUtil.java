@@ -12,7 +12,7 @@
 package com.adobe.aem.analyser;
 
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,15 +49,13 @@ public class AemAnalyserUtil {
     /** Default runmode */
     private static final String DEFAULT_MODE = "(default)";
 
-    static List<String> getUsedModes(ServiceType[] runmodes) {
-        Set<ServiceType> rm = new HashSet<>(Arrays.asList(runmodes));
-
-        if (rm.size() == 0) {
-            return Collections.emptyList();
+    static List<String> getUsedModes(EnumSet<ServiceType> st) {
+        if (st.size() == 0) {
+            throw new IllegalStateException("No service type specified");
         }
 
-        if (rm.size() == 1) {
-            switch(rm.iterator().next()) {
+        if (st.size() == 1) {
+            switch(st.iterator().next()) {
                 case AUTHOR: return AUTHOR_USED_MODES;
                 case PUBLISH: return PUBLISH_USED_MODES;
             }
@@ -79,8 +77,8 @@ public class AemAnalyserUtil {
      * @param mode The runmode
      * @return {@code true} if mode is used
      */
-    public static boolean isRunModeUsed(final String mode, ServiceType[] runmodes) {
-        return getUsedModes(runmodes).contains(mode);
+    public static boolean isRunModeUsed(final String mode, EnumSet <ServiceType> serviceTypes) {
+        return getUsedModes(serviceTypes).contains(mode);
     }
 
     /**
@@ -90,19 +88,19 @@ public class AemAnalyserUtil {
      * @throws IllegalArgumentException If an invalid runmode is used
      */
     public static Map<String, Set<String>> getAggregates(final Properties runmodeProps) {
-        return getAggregates(runmodeProps, ServiceType.values());
+        return getAggregates(runmodeProps, EnumSet.allOf(ServiceType.class));
     }
 
     /**
      * Calculate the aggregates based on the runmode mappings
      * @param runmodeProps The runmode mappings
-     * @param runmodes The runmodes to calculate the aggregates for.
+     * @param serviceTypes The service types to calculate the aggregates for.
      * @return The aggregates
      * @throws IllegalArgumentException If an invalid runmode is used
      */
-    public static Map<String, Set<String>> getAggregates(final Properties runmodeProps, ServiceType[] runmodes) {
+    public static Map<String, Set<String>> getAggregates(final Properties runmodeProps, EnumSet<ServiceType> serviceTypes) {
         final Map<String, Set<String>> allModels = new HashMap<>();
-        for(final String mode : getUsedModes(runmodes)) {
+        for(final String mode : getUsedModes(serviceTypes)) {
             allModels.put(mode, new HashSet<>());
         }
 

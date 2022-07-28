@@ -12,6 +12,7 @@
 package com.adobe.aem.analyser;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -31,9 +32,10 @@ public interface UserFeatureAggregator {
      * </p>
      *
      * @param projectFeatures the project features
+     * @param serviceTypes the service types to consider
      * @return a mapping of user aggregates
      * @throws IOException in case of IO errors
      */
-    Map<String, List<Feature>> getUserAggregates(final Map<String, Feature> projectFeatures, final ServiceType[] runmodes)
+    Map<String, List<Feature>> getUserAggregates(final Map<String, Feature> projectFeatures, final EnumSet<ServiceType> serviceTypes)
             throws IOException;
 }

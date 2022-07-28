@@ -15,6 +15,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +33,7 @@ public class AemSdkProductFeatureGeneratorTest {
         ArtifactId sdkID = ArtifactId.fromMvnId("foo:bar:123");
         AemSdkProductFeatureGenerator pg = new AemSdkProductFeatureGenerator(fp, sdkID, Collections.emptyList());
 
-        Map<ProductVariation, List<Feature>> res = pg.getProductAggregates(new ServiceType[] {ServiceType.AUTHOR});
+        Map<ProductVariation, List<Feature>> res = pg.getProductAggregates(EnumSet.of(ServiceType.AUTHOR));
         assertEquals(1, res.size());
         List<Feature> fl = res.get(SdkProductVariation.AUTHOR);
         assertEquals(1, fl.size());
@@ -48,7 +49,7 @@ public class AemSdkProductFeatureGeneratorTest {
         ArtifactId addonID = ArtifactId.fromMvnId("my:testaddon:999");
         AemSdkProductFeatureGenerator pg = new AemSdkProductFeatureGenerator(fp, sdkID, Collections.singletonList(addonID));
 
-        Map<ProductVariation, List<Feature>> res = pg.getProductAggregates(ServiceType.values());
+        Map<ProductVariation, List<Feature>> res = pg.getProductAggregates(EnumSet.allOf(ServiceType.class));
         assertEquals(2, res.size());
         List<Feature> fla = res.get(SdkProductVariation.AUTHOR);
         assertEquals(2, fla.size());

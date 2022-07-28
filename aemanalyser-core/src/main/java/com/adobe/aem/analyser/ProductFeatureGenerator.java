@@ -12,6 +12,7 @@
 package com.adobe.aem.analyser;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -25,10 +26,11 @@ public interface ProductFeatureGenerator {
     /**
      * Returns a mapping of product aggregates
      *
+     * @param serviceTypes the service types to consider
      * @return a mapping of product aggregates
      * @throws IOException in case of IO errors
      */
-    Map<ProductVariation, List<Feature>> getProductAggregates(ServiceType[] runmodes) throws IOException;
+    Map<ProductVariation, List<Feature>> getProductAggregates(EnumSet<ServiceType> serviceTypes) throws IOException;
 
     /**
      * Returns a variation matching the specified user aggregate name

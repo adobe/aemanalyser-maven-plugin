@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,7 @@ public class RunmodeMappingUserFeatureAggregatorTest {
         Map<String, Feature> pf = new HashMap<>();
         ArtifactId fid = ArtifactId.fromMvnId("blah:blah:1");
         pf.put("blah", new Feature(fid));
-        Map<String, List<Feature>> agg = fa.getUserAggregates(pf, new ServiceType[] {ServiceType.PUBLISH});
+        Map<String, List<Feature>> agg = fa.getUserAggregates(pf, EnumSet.of(ServiceType.PUBLISH));
 
         assertEquals(1, agg.size());
         List<Feature> f = agg.get("user-aggregated-publish");
