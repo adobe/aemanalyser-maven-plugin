@@ -156,9 +156,12 @@ public class AemPackageConverter {
         for(Feature seedFeature: features){
              
             //temporary mock until SDK is re-released
-            Extension extension = new Extension(ExtensionType.TEXT, "extracted-repo-namespaces", ExtensionState.REQUIRED);
-            extension.setText("register namespace (cq) http://www.day.com/jcr/cq/1.0\nregister namespace (granite) http://www.adobe.com/jcr/granite/1.0");
+            Extension extension = new Extension(ExtensionType.TEXT, "repoinit", ExtensionState.REQUIRED);
+            extension.setText("register namespace (cq) http://www.day.com/jcr/cq/1.0\nregister namespace (granite) http://www.adobe.com/jcr/granite/1.0\nregister namespace (wcmio) http://wcm.io/ns");
             
+            // todo: hardregister namespaces after we use the definitive one. they are not in the product feature SDK
+            //         String namespaces = "\nregister namespace (granite) http://www.adobe.com/jcr/granite/1.0\n" +
+            //                            "register namespace (wcmio) http://wcm.io/ns";
             seedFeature.getExtensions().add(extension);
             featuresManager.addSeed(seedFeature);
         }
