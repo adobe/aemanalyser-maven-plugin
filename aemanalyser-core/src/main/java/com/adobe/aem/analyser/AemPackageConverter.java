@@ -134,6 +134,7 @@ public class AemPackageConverter {
 
         final File bundlesOutputDir = this.bundlesOutputDirectory != null
                 ? this.bundlesOutputDirectory : this.converterOutputDirectory;
+        final LocalMavenRepositoryArtifactsDeployer deployer = new LocalMavenRepositoryArtifactsDeployer(bundlesOutputDir);
         try (final ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(false,
                 SlingInitialContentPolicy.KEEP) ) {
             converter.setFeaturesManager(featuresManager)
@@ -146,14 +147,10 @@ public class AemPackageConverter {
                             if ( runmode != null ) {
                                 mutableContentPackagesWithRunMode.put(id, runmode);
                             }
-                            return id.toMvnId();
+                            return deployer.deploy(artifactWriter, runmode, id);
                         }
                     })
-                    .setBundlesDeployer(
-                        new LocalMavenRepositoryArtifactsDeployer(
-                            bundlesOutputDir
-                        )
-                    )
+                    .setBundlesDeployer(deployer)
                     .setEntryHandlersManager(
                         new DefaultEntryHandlersManager(Collections.emptyMap(), true,
                                 SlingInitialContentPolicy.KEEP, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT)
