@@ -15,7 +15,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.sling.feature.ArtifactId;
@@ -116,19 +115,6 @@ public class AemPackageConverter {
      * @throws ConverterException When a problem happens during the CP Converter execution
      */
     public void convert(final Map<String, File> contentPackages) throws IOException, ConverterException {
-        convert(contentPackages, Collections.emptyList(), Collections.emptyList());
-    }
-
-    /**
-     * Convert the packages
-     *
-     * @param contentPackages The map of packages
-     * @param additionalWarnings The list to add additional warnings
-     * @param additionalErrors The list to add additional errors
-     * @throws IOException When a problem happens with IO
-     * @throws ConverterException When a problem happens during the CP Converter execution
-     */
-    public void convert(final Map<String, File> contentPackages, final List<String> additionalWarnings, final List<String> additionalErrors) throws IOException, ConverterException {
         final Map<String, String> properties = new HashMap<>();
 
         final AclManager aclManager = new DefaultAclManager(null, "system");
