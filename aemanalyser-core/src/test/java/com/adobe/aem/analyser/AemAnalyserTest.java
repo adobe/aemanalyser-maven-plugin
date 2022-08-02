@@ -65,7 +65,7 @@ public class AemAnalyserTest {
         // check validation config
         config = analyser.getTaskConfigurations().get("content-packages-validation");
         assertNotNull(config);
-        assertEquals(2, config.size());
+        assertEquals(1, config.size());
     }
 
     @Test public void testSetTaskConfigurations() throws Exception {
