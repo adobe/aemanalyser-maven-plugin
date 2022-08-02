@@ -75,6 +75,7 @@ public class AemAnalyserUtil {
     /**
      * Check if run mode is used
      * @param mode The runmode
+     * @param serviceTypes The service types to consider
      * @return {@code true} if mode is used
      */
     public static boolean isRunModeUsed(final String mode, EnumSet <ServiceType> serviceTypes) {
