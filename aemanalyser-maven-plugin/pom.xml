@@ -84,8 +84,10 @@ governing permissions and limitations under the License.
                     <exclude>org.apache.geronimo.specs:geronimo-json_1.0_spec</exclude><!-- relocated in newer versions to geronimo-json_1.1_spec -->
                     <exclude>org.mockito:mockito-core</exclude><!-- incorrect scope in commons.osgi -->
                     <exclude>org.osgi:org.osgi.service.event</exclude><!-- transitive dependency of commons.osgi, not used -->
-                    <exclude>org.apache.sling:org.apache.sling.jcr.contentloader</exclude><!-- lots of transitive dependencies which are not relevant 
-                      in this context -->
+                    <exclude>org.osgi:org.osgi.service.cm</exclude><!-- transitive dependency of org.apache.felix.configadmin.plugin.interpolation, not used -->
+                    <exclude>org.osgi:org.osgi.service.configurator</exclude><!-- transitive dependency of org.apache.felix.cm.json, not used -->
+                    <exclude>org.apache.sling:org.apache.sling.jcr.contentloader</exclude><!-- lots of transitive dependencies which are not relevant in this context -->
+                    <exclude>org.apache.felix:org.apache.felix.configadmin</exclude><!-- lots of transitive dependencies which are not relevant in this context -->
                     <!-- no annotations are evaluated at run time -->
                     <exclude>org.jetbrains:annotations</exclude>
                     <exclude>org.eclipse.jdt:org.eclipse.jdt.annotation</exclude>
