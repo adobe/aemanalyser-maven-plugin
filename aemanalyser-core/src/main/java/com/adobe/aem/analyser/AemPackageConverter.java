@@ -54,20 +54,12 @@ public class AemPackageConverter {
     private File bundlesOutputDirectory;
 
     private File mutableContentOutputDirectory;
-    
+
     private File converterOutputDirectory;
 
     private String artifactIdOverride;
 
-
-    private ArtifactId sdkId;
-
-    private List<ArtifactId> addOnIds;
-    
     private final List<String> apiRegions = Arrays.asList("com.adobe.aem.deprecated");
-    private ProductFeatureGenerator generator;
-    private FeatureProvider featureProvider;
-
     /**
      * @return the featureOutputDirectory
      */
