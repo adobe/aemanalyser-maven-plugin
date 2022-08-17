@@ -14,6 +14,7 @@ package com.adobe.aem.analyser;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -76,6 +77,10 @@ public class AemPackageConverter {
 
     public void setMutableContentOutputDirectory(File mutableContentOutputDirectory) {
         this.mutableContentOutputDirectory = mutableContentOutputDirectory;
+    }
+    
+    public void addToApiRegions(Collection<String> apiRegions){
+        this.apiRegions.addAll(apiRegions);
     }
 
     /**
