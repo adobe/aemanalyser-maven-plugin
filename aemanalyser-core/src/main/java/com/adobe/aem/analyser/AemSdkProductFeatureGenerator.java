@@ -14,9 +14,11 @@ package com.adobe.aem.analyser;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
@@ -30,7 +32,6 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
     private final FeatureProvider featureProvider;
     private final ArtifactId sdkId;
     private final List<ArtifactId> addOnIds;
-    private final Map<ProductVariation, List<Feature>> aggregates = new HashMap<>();
 
     public AemSdkProductFeatureGenerator(FeatureProvider featureProvider, ArtifactId sdkId, List<ArtifactId> addOnIds) {
         this.featureProvider = featureProvider;
@@ -39,25 +40,31 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
     }
 
     @Override
-    public Map<ProductVariation, List<Feature>> getProductAggregates() throws IOException {
-        
-        if(aggregates.isEmpty()){
-            for ( SdkProductVariation variation : SdkProductVariation.values() ) {
-                final List<Feature> list = aggregates.computeIfAbsent(variation, n -> new ArrayList<>());
-                final Feature sdkFeature = featureProvider.provide(sdkId
-                        .changeClassifier(variation.getSdkClassifier())
-                        .changeType(AemAggregator.FEATUREMODEL_TYPE));
-                if ( sdkFeature == null ) {
-                    throw new IOException("Unable to find SDK feature for " + sdkId.toMvnId());
+    public Map<ProductVariation, List<Feature>> getProductAggregates(EnumSet<ServiceType> serviceTypes) throws IOException {
+        final Map<ProductVariation, List<Feature>> aggregates = new HashMap<>();
+
+        List<String> stl = serviceTypes.stream()
+                .map(ServiceType::toString)
+                .collect(Collectors.toList());
+
+        for ( SdkProductVariation variation : SdkProductVariation.values() ) {
+            if (!stl.contains(variation.toString()))
+                continue;
+
+            final List<Feature> list = aggregates.computeIfAbsent(variation, n -> new ArrayList<>());
+            final Feature sdkFeature = featureProvider.provide(sdkId
+                    .changeClassifier(variation.getSdkClassifier())
+                    .changeType(AemAggregator.FEATUREMODEL_TYPE));
+            if ( sdkFeature == null ) {
+                throw new IOException("Unable to find SDK feature for " + sdkId.toMvnId());
+            }
+            list.add(sdkFeature);
+            for(final ArtifactId id : addOnIds) {
+                final Feature feature = featureProvider.provide(id.changeType(AemAggregator.FEATUREMODEL_TYPE));
+                if ( feature == null ) {
+                    throw new IOException("Unable to find addon feature for " + id.toMvnId());
                 }
-                list.add(sdkFeature);
-                for(final ArtifactId id : addOnIds) {
-                    final Feature feature = featureProvider.provide(id.changeType(AemAggregator.FEATUREMODEL_TYPE));
-                    if ( feature == null ) {
-                        throw new IOException("Unable to find addon feature for " + id.toMvnId());
-                    }
-                    list.add(feature);
-                }
+                list.add(feature);
             }
         }
 

@@ -12,12 +12,16 @@
 package com.adobe.aem.analyser;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.LoggerFactory;
 
@@ -35,11 +39,30 @@ public class AemAnalyserUtil {
     }
 
     /** Used run modes */
-    static final List<String> USED_MODES = Arrays.asList("author", "author.dev", "author.stage",
-        "author.prod", "publish", "publish.dev", "publish.stage", "publish.prod");
+    static final List<String> AUTHOR_USED_MODES = Arrays.asList(
+        "author", "author.dev", "author.stage", "author.prod");
+    static final List<String> PUBLISH_USED_MODES = Arrays.asList(
+        "publish", "publish.dev", "publish.stage", "publish.prod");
+    static final List<String> ALL_USED_MODES = Stream.concat(
+        AUTHOR_USED_MODES.stream(), PUBLISH_USED_MODES.stream()).collect(Collectors.toList());
 
     /** Default runmode */
     private static final String DEFAULT_MODE = "(default)";
+
+    static List<String> getUsedModes(EnumSet<ServiceType> st) {
+        if (st.size() == 0) {
+            throw new IllegalStateException("No service type specified");
+        }
+
+        if (st.size() == 1) {
+            switch(st.iterator().next()) {
+                case AUTHOR: return AUTHOR_USED_MODES;
+                case PUBLISH: return PUBLISH_USED_MODES;
+            }
+        }
+
+        return ALL_USED_MODES;
+    }
 
     /**
      * Check if a runmode is invalid
@@ -52,57 +75,69 @@ public class AemAnalyserUtil {
     /**
      * Check if run mode is used
      * @param mode The runmode
+     * @param serviceTypes The service types to consider
      * @return {@code true} if mode is used
      */
-    public static boolean isRunModeUsed(final String mode) {
-        return USED_MODES.contains(mode);
+    public static boolean isRunModeUsed(final String mode, EnumSet <ServiceType> serviceTypes) {
+        return getUsedModes(serviceTypes).contains(mode);
     }
 
     /**
      * Calculate the aggregates based on the runmode mappings
-     * @param runmodes The runmode mappings
+     * @param runmodeProps The runmode mappings
      * @return The aggregates
      * @throws IllegalArgumentException If an invalid runmode is used
      */
-    public static Map<String, Set<String>> getAggregates(final Properties runmodes) {
+    public static Map<String, Set<String>> getAggregates(final Properties runmodeProps) {
+        return getAggregates(runmodeProps, EnumSet.allOf(ServiceType.class));
+    }
+
+    /**
+     * Calculate the aggregates based on the runmode mappings
+     * @param runmodeProps The runmode mappings
+     * @param serviceTypes The service types to calculate the aggregates for.
+     * @return The aggregates
+     * @throws IllegalArgumentException If an invalid runmode is used
+     */
+    public static Map<String, Set<String>> getAggregates(final Properties runmodeProps, EnumSet<ServiceType> serviceTypes) {
         final Map<String, Set<String>> allModels = new HashMap<>();
-        for(final String mode : USED_MODES) {
+        for(final String mode : getUsedModes(serviceTypes)) {
             allModels.put(mode, new HashSet<>());
         }
 
-        final Object defaultFm = runmodes.remove(DEFAULT_MODE);
+        final Object defaultFm = runmodeProps.remove(DEFAULT_MODE);
         if (defaultFm != null ) {
             for(final String pck : defaultFm.toString().split(",")) {
                 allModels.values().stream().forEach(s -> s.add(pck));
             }
         }
 
-        for (final String mode : runmodes.stringPropertyNames()) {
+        for (final String mode : runmodeProps.stringPropertyNames()) {
             Set<String> models = allModels.get(mode);
             boolean valid = false;
             if ( models != null ) {
-                for(final String pck : runmodes.getProperty(mode).split(",")) {
+                for(final String pck : runmodeProps.getProperty(mode).split(",")) {
                     models.add(pck);
                 }
                 for (final String ap : new String [] {".dev", ".stage", ".prod"}) {
                     final String key = mode.concat(ap);
                     models = allModels.get(key);
                     if ( models != null ) {
-                        for(final String pck : runmodes.getProperty(mode).split(",")) {
+                        for(final String pck : runmodeProps.getProperty(mode).split(",")) {
                             models.add(pck);
                         }
                     }
                 }
-                valid = true;                
+                valid = true;
             } else {
                 for (final String ap : new String [] {"author.", "publish."}) {
                     final String key = ap.concat(mode);
                     models = allModels.get(key);
                     if ( models != null ) {
-                        for(final String pck : runmodes.getProperty(mode).split(",")) {
+                        for(final String pck : runmodeProps.getProperty(mode).split(",")) {
                             models.add(pck);
                         }
-                        valid = true;                
+                        valid = true;
                     }
                 }
             }
@@ -125,7 +160,7 @@ public class AemAnalyserUtil {
         for (String ap : new String [] {"author", "publish"}) {
             for (String env : new String [] {".dev", ".stage", ".prod"}) {
                 String mode = ap + env;
-                if (allModels.get(ap).equals(allModels.get(mode))) {
+                if (Objects.equals(allModels.get(ap), allModels.get(mode))) {
                     allModels.remove(mode);
                 }
             }

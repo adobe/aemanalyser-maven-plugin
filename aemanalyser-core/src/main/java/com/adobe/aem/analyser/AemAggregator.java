@@ -18,7 +18,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +76,8 @@ public class AemAggregator {
     private ArtifactId sdkId;
 
     private List<ArtifactId> addOnIds;
+
+    private EnumSet<ServiceType> serviceTypes = EnumSet.allOf(ServiceType.class);
 
     /**
      * @return the artifactProvider
@@ -190,6 +194,20 @@ public class AemAggregator {
     }
 
     /**
+     * @return the runmodes
+     */
+    public EnumSet<ServiceType> getServiceTypes() {
+        return serviceTypes;
+    }
+
+    /**
+     * @param rm the runmode(s) to set
+     */
+    public void setServiceTypes(ServiceType ... rm) {
+        serviceTypes = EnumSet.copyOf(Arrays.asList(rm));
+    }
+
+    /**
      * @return the sdkId
      */
     public ArtifactId getSdkId() {
@@ -269,7 +287,7 @@ public class AemAggregator {
 
     // visible for testing
     Map<String, List<Feature>> getUserAggregates(Map<String, Feature> projectFeatures) throws IOException {
-        return getUserFeatureAggregator().getUserAggregates(projectFeatures);
+        return getUserFeatureAggregator().getUserAggregates(projectFeatures, serviceTypes);
     }
 
     /**
@@ -317,7 +335,9 @@ public class AemAggregator {
     }
 
     Map<ProductVariation, List<Feature>> getProductAggregates() throws IOException {
-        return getProductFeatureGenerator().getProductAggregates();
+        Map<ProductVariation, List<Feature>> res = getProductFeatureGenerator().getProductAggregates(serviceTypes);
+
+        return res;
     }
 
     final void postProcessProductFeature(final Feature feature) {

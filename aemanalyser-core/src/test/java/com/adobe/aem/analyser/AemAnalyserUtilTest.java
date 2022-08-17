@@ -12,10 +12,13 @@
 package com.adobe.aem.analyser;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,7 +28,7 @@ import java.util.Set;
 import org.junit.Test;
 
 public class AemAnalyserUtilTest {
-    
+
     @Test
     public void testInvalidModes() {
         assertEquals("author.dev", AemAnalyserUtil.getValidRunMode("dev.author"));
@@ -87,7 +90,7 @@ public class AemAnalyserUtilTest {
         p.put("dev.foo", "myproj.dev-foo.json");
         p.put("foo.dev", "myproj.foo-dev.json");
 
-        Map<String, Set<String>> aggs = AemAnalyserUtil.getAggregates(p);
+        Map<String, Set<String>> aggs = AemAnalyserUtil.getAggregates(p, EnumSet.allOf(ServiceType.class));
 
         assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-author.json")),
                 aggs.get("author"));
@@ -104,6 +107,34 @@ public class AemAnalyserUtilTest {
         assertEquals(6, aggs.size());
     }
 
+    @Test
+    public void testGetAggregatesAuthorOnly() throws Exception {
+        Properties p = new Properties();
+
+        p.put("prod", "myproj.all-prod.json");
+        p.put("stage", "myproj.all-stage.json");
+        p.put("publish.stage", "myproj.all-publish.stage.json");
+        p.put("publish", "myproj.all-publish.json");
+        p.put("author", "myproj.all-author.json");
+        p.put("publish.prod", "myproj.all-publish.prod.json");
+        p.put("publish.dev", "myproj.all-publish.dev.json");
+        p.put("(default)", "myproj.all.json");
+        p.put("author.foo", "myproj.foo-author.json");
+        p.put("foo.author", "myproj.author-foo.json");
+        p.put("dev.foo", "myproj.dev-foo.json");
+        p.put("foo.dev", "myproj.foo-dev.json");
+
+        Map<String, Set<String>> aggs = AemAnalyserUtil.getAggregates(p, EnumSet.of(ServiceType.AUTHOR));
+
+        assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-author.json")),
+                aggs.get("author"));
+        assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-author.json", "myproj.all-prod.json")),
+                aggs.get("author.prod"));
+        assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-author.json", "myproj.all-stage.json")),
+                aggs.get("author.stage"));
+        assertEquals(3, aggs.size());
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void testGetAggregatesInvalid() throws Exception {
         Properties p = new Properties();
@@ -118,6 +149,38 @@ public class AemAnalyserUtilTest {
         p.put("(default)", "myproj.all.json");
         p.put("dev.author", "dev-author.json");
 
-        AemAnalyserUtil.getAggregates(p);
+        AemAnalyserUtil.getAggregates(p, EnumSet.allOf(ServiceType.class));
+    }
+
+    @Test
+    public void testGetUsedModes() {
+
+        assertEquals(AemAnalyserUtil.AUTHOR_USED_MODES,
+            AemAnalyserUtil.getUsedModes(EnumSet.of(ServiceType.AUTHOR)));
+        assertEquals(AemAnalyserUtil.PUBLISH_USED_MODES,
+            AemAnalyserUtil.getUsedModes(EnumSet.of(ServiceType.PUBLISH)));
+        assertEquals(AemAnalyserUtil.ALL_USED_MODES,
+            AemAnalyserUtil.getUsedModes(EnumSet.of(ServiceType.PUBLISH, ServiceType.AUTHOR)));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testGetUsedModesNone() {
+        AemAnalyserUtil.getUsedModes(EnumSet.noneOf(ServiceType.class));
+    }
+
+    @Test
+    public void testIsRunmodeUsed() {
+        assertTrue(AemAnalyserUtil.isRunModeUsed("author", EnumSet.of(ServiceType.PUBLISH, ServiceType.AUTHOR)));
+        assertTrue(AemAnalyserUtil.isRunModeUsed("author", EnumSet.of(ServiceType.AUTHOR)));
+        assertTrue(AemAnalyserUtil.isRunModeUsed("author.dev", EnumSet.of(ServiceType.AUTHOR)));
+        assertTrue(AemAnalyserUtil.isRunModeUsed("author.stage", EnumSet.of(ServiceType.AUTHOR)));
+        assertTrue(AemAnalyserUtil.isRunModeUsed("author.prod", EnumSet.of(ServiceType.AUTHOR)));
+        assertFalse(AemAnalyserUtil.isRunModeUsed("publish", EnumSet.of(ServiceType.AUTHOR)));
+        assertTrue(AemAnalyserUtil.isRunModeUsed("publish", EnumSet.of(ServiceType.PUBLISH, ServiceType.AUTHOR)));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testNoRunModeUsed() {
+        AemAnalyserUtil.isRunModeUsed("author", EnumSet.noneOf(ServiceType.class));
     }
 }

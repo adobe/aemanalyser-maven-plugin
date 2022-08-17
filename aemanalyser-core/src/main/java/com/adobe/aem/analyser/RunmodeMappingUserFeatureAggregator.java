@@ -16,6 +16,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,13 +44,14 @@ public class RunmodeMappingUserFeatureAggregator implements UserFeatureAggregato
     }
 
     @Override
-    public Map<String, List<Feature>> getUserAggregates(Map<String, Feature> projectFeatures) throws IOException {
+    public Map<String, List<Feature>> getUserAggregates(Map<String, Feature> projectFeatures, EnumSet<ServiceType> serviceTypes)
+            throws IOException {
         // get run modes from converter output
-        final Properties runmodes = getRunmodeMappings();
+        final Properties runmodeProps = getRunmodeMappings();
 
         final Map<String, List<Feature>> aggregates = new HashMap<>();
 
-        Map<String, Set<String>> toCreate = getUserAggregatesToCreate(runmodes);
+        Map<String, Set<String>> toCreate = getUserAggregatesToCreate(runmodeProps, serviceTypes);
         for (final Map.Entry<String, Set<String>> entry : toCreate.entrySet()) {
             final String name = "user-aggregated-".concat(entry.getKey());
 
@@ -74,13 +76,12 @@ public class RunmodeMappingUserFeatureAggregator implements UserFeatureAggregato
         return p;
     }
 
-    private Map<String, Set<String>> getUserAggregatesToCreate(final Properties runmodes) throws IOException {
+    private Map<String, Set<String>> getUserAggregatesToCreate(final Properties runmodeProps, final EnumSet<ServiceType> serviceTypes)
+            throws IOException {
         try {
-            return AemAnalyserUtil.getAggregates(runmodes);
+            return AemAnalyserUtil.getAggregates(runmodeProps, serviceTypes);
         } catch ( final IllegalArgumentException iae) {
             throw new IOException(iae.getMessage());
         }
     }
-
-
 }

@@ -21,11 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.sling.feature.ArtifactId;
-import org.apache.sling.feature.Extension;
-import org.apache.sling.feature.ExtensionState;
-import org.apache.sling.feature.ExtensionType;
-import org.apache.sling.feature.Feature;
-import org.apache.sling.feature.builder.FeatureProvider;
 import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter;
 import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter.SlingInitialContentPolicy;
 import org.apache.sling.feature.cpconverter.ConverterException;
@@ -129,12 +124,10 @@ public class AemPackageConverter {
      * Convert the packages
      *
      * @param contentPackages The map of packages
-     * @param additionalWarnings The list to add additional warnings
-     * @param additionalErrors The list to add additional errors
-     * @throws IOException
-     * @throws ConverterException
+     * @throws IOException When a problem happens with IO
+     * @throws ConverterException When a problem happens during the CP Converter execution
      */
-    public void convert(final Map<String, File> contentPackages, final List<String> additionalWarnings, final List<String> additionalErrors) throws IOException, ConverterException {
+    public void convert(final Map<String, File> contentPackages) throws IOException, ConverterException {
         final Map<String, String> properties = new HashMap<>();
 
         final AclManager aclManager = new DefaultAclManager(null, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT);

@@ -145,11 +145,11 @@ public class AemAnalyser {
         config.put("warningPackages", "*");
         return config;
     }
-    
+
     private Map<String, String> contentPackagesValidationDefaults() {
         return singletonMap("enabled-validators", "jackrabbit-docviewparser");
     }
-    
+
     private Map<String, String> apiRegionsCheckOrderDefaults() {
         return singletonMap("order", "global,com.adobe.aem.deprecated,com.adobe.aem.internal");
     }
@@ -310,7 +310,7 @@ public class AemAnalyser {
     private static final List<String> KEYS = new ArrayList<>();
     static {
         KEYS.add(KEY_AUTHOR_AND_PUBLISH);
-        for(final String k : AemAnalyserUtil.USED_MODES) {
+        for(final String k : AemAnalyserUtil.ALL_USED_MODES) {
             KEYS.add(PREFIX.concat(k));
         }
     }

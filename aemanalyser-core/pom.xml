@@ -21,7 +21,7 @@ governing permissions and limitations under the License.
   </parent>
 
   <artifactId>aemanalyser-core</artifactId>
-  <version>1.1.17-SNAPSHOT</version>
+  <version>1.2.5-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>AEM Analyser Core</name>
@@ -65,7 +65,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>org.apache.sling.feature.extension.apiregions</artifactId>
-      <version>1.6.0</version>
+      <version>1.6.2</version>
     </dependency>
 
     <!-- Content Package to Feature Model Converter-->

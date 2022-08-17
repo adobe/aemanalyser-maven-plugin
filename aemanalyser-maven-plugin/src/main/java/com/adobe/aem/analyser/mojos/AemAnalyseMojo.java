@@ -292,7 +292,7 @@ public class AemAnalyseMojo extends AbstractMojo {
             packages.put(contentPackage.getId().toString(), source);
         }
         try {
-            converter.convert(packages, additionalWarnings, additionalErrors);
+            converter.convert(packages);
         } catch ( final ConverterException ce) {
             getLog().error(ce.getMessage());
             throw new MojoExecutionException(ce.getMessage());
