@@ -151,20 +151,6 @@ public class AemPackageConverter {
             aclManager
         );
 
-
-        List<Feature> features = getProductFeatureGenerator().getProductAggregates().get(SdkProductVariation.AUTHOR);
-        for(Feature seedFeature: features){
-             
-            //temporary mock until SDK is re-released
-            Extension extension = new Extension(ExtensionType.TEXT, "repoinit", ExtensionState.REQUIRED);
-            extension.setText("register namespace (cq) http://www.day.com/jcr/cq/1.0\nregister namespace (granite) http://www.adobe.com/jcr/granite/1.0\nregister namespace (wcmio) http://wcm.io/ns");
-            
-            // todo: hardregister namespaces after we use the definitive one. they are not in the product feature SDK
-            //         String namespaces = "\nregister namespace (granite) http://www.adobe.com/jcr/granite/1.0\n" +
-            //                            "register namespace (wcmio) http://wcm.io/ns";
-            seedFeature.getExtensions().add(extension);
-            featuresManager.addSeed(seedFeature);
-        }
         featuresManager.setAPIRegions(apiRegions);
         featuresManager.setExportToAPIRegion("global");
 
@@ -217,57 +203,7 @@ public class AemPackageConverter {
         return filter;
     }
 
-    private ProductFeatureGenerator getProductFeatureGenerator(){
-        if(generator == null){
-            generator = new AemSdkProductFeatureGenerator(getFeatureProvider(), getSdkId(), getAddOnIds());
-        }
-        return generator;
-    }
 
-    /**
-     * @return the sdkId
-     */
-    public ArtifactId getSdkId() {
-        return sdkId;
-    }
-
-    /**
-     * @param sdkId the sdkId to set
-     */
-    public void setSdkId(final ArtifactId sdkId) {
-        this.sdkId = sdkId;
-    }
-
-    /**
-     * @return the addOnIds
-     */
-    public List<ArtifactId> getAddOnIds() {
-        return addOnIds;
-    }
-
-    /**
-     * @param addOnIds the addOnIds to set
-     */
-    public void setAddOnIds(final List<ArtifactId> addOnIds) {
-        this.addOnIds = addOnIds;
-    }
-
-
-    /**
-     * @param featureProvider the featureProvider to set
-     */
-    public void setFeatureProvider(final FeatureProvider featureProvider) {
-        this.featureProvider = featureProvider;
-    }
-
-    public FeatureProvider getFeatureProvider() {
-        return featureProvider;
-    }
-
-    public void setProductFeatureGenerator(ProductFeatureGenerator generator) {
-        this.generator = generator;
-    }
-    
     class MutableContentPackageDeployer extends LocalMavenRepositoryArtifactsDeployer {
 
         final Map<ArtifactId, String> mutableContentPackagesWithRunMode = new HashMap<>();
