@@ -73,7 +73,7 @@ public class AemAnalyseMojo extends AbstractMojo {
      */
     @Parameter(property = "sdkArtifactId")
     String sdkArtifactId;
-
+    
     /**
      * The version of the sdk api. Can be used to specify the exact version to be used. Otherwise the
      * plugin detects the version to use.
@@ -93,12 +93,12 @@ public class AemAnalyseMojo extends AbstractMojo {
      */
     @Parameter
     List<Addon> addons;
-
+    
     /**
      * The analyser tasks run by the analyser on the final aggregates
      */
     @Parameter(defaultValue = AemAnalyser.DEFAULT_TASKS,
-            property = "analyserTasks")
+        property = "analyserTasks")
     List<String> analyserTasks;
 
     /**
@@ -112,7 +112,7 @@ public class AemAnalyseMojo extends AbstractMojo {
      * The analyser tasks run by the analyser on the user aggregates
      */
     @Parameter(defaultValue = AemAnalyser.DEFAULT_USER_TASKS,
-            property = "analyserUserTasks")
+        property = "analyserUserTasks")
     List<String> analyserUserTasks;
 
     /**
@@ -187,7 +187,7 @@ public class AemAnalyseMojo extends AbstractMojo {
 
     @Parameter( defaultValue = "${plugin}", readonly = true ) // Maven 3 only
     private PluginDescriptor plugin;
-
+ 
     /**
      * Artifact cache
      */
@@ -279,7 +279,7 @@ public class AemAnalyseMojo extends AbstractMojo {
         converter.setArtifactIdOverride(new ArtifactId(project.getGroupId(), project.getArtifactId(), project.getVersion(), null, "slingosgifeature").toMvnId());
         converter.setConverterOutputDirectory(getConversionOutputDir());
         converter.setFeatureOutputDirectory(getGeneratedFeaturesDir());
-
+    
         final Map<String, File> packages = new LinkedHashMap<>();
         for(final Artifact contentPackage: getContentPackages()) {
             final File source = contentPackage.getFile();
@@ -307,7 +307,7 @@ public class AemAnalyseMojo extends AbstractMojo {
                 return contentPackageFiles.stream()
                         .map(this::contentPackageFileToArtifact)
                         .collect(Collectors.toList());
-
+                        
             } else if (classifier != null) {
                 // look for attached artifact with given classifier
                 for (Artifact artifact : project.getAttachedArtifacts()) {
@@ -330,7 +330,7 @@ public class AemAnalyseMojo extends AbstractMojo {
                     final Artifact artifact = getOrResolveArtifact(new ArtifactId(d.getGroupId(), d.getArtifactId(), d.getVersion(), d.getClassifier(), d.getType()));
                     result.add(artifact);
                 }
-            }
+            }    
             if (result.isEmpty()) {
                 throw new MojoExecutionException("No content packages found for project.");
             }
@@ -393,9 +393,9 @@ public class AemAnalyseMojo extends AbstractMojo {
             a.setProjectId(new ArtifactId(project.getGroupId(), project.getArtifactId(), project.getVersion(), null, null));
             a.setSdkId(sdkId);
             a.setAddOnIds(addons);
-
+            
             return a.aggregate();
-
+        
         } catch (final IOException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
@@ -403,7 +403,7 @@ public class AemAnalyseMojo extends AbstractMojo {
 
     /**
      * Analyse the features
-     *
+     * 
      * @param features The features
      * @param additionalWarnings List of additional warnings, might be empty
      * @param additionalErrors List of additional errors, might be empty
@@ -411,10 +411,10 @@ public class AemAnalyseMojo extends AbstractMojo {
      * @throws MojoFailureException If the analysis fails
      * @throws MojoExecutionException If something goes wrong
      */
-    void analyseFeatures(final List<Feature> features,
-                         final List<String> additionalWarnings,
-                         final List<String> additionalErrors,
-                         final ArtifactProvider artifactProvider) throws MojoFailureException, MojoExecutionException {
+    void analyseFeatures(final List<Feature> features, 
+            final List<String> additionalWarnings, 
+            final List<String> additionalErrors, 
+            final ArtifactProvider artifactProvider) throws MojoFailureException, MojoExecutionException {
         boolean hasErrors = false;
         try {
             final AemAnalyser analyser = new AemAnalyser();
@@ -424,7 +424,7 @@ public class AemAnalyseMojo extends AbstractMojo {
             analyser.setTaskConfigurations(this.getAnalyserTaskConfigurations());
 
             final AemAnalyserResult result = analyser.analyse(features);
-
+            
             // print additional warnings first
             for(final String msg : additionalWarnings) {
                 if ( strictValidation ) {
@@ -456,10 +456,10 @@ public class AemAnalyseMojo extends AbstractMojo {
         if (hasErrors) {
             if ( failOnAnalyserErrors ) {
                 throw new MojoFailureException(
-                        "One or more feature analyser(s) detected feature error(s), please read the plugin log for more details");
+                    "One or more feature analyser(s) detected feature error(s), please read the plugin log for more details");
             }
             getLog().warn("Errors found during analyser run, but this plugin is configured to ignore errors and continue the build!");
-        }
+        }        
     }
 
     /**
@@ -550,10 +550,10 @@ public class AemAnalyseMojo extends AbstractMojo {
         if (artifacts != null) {
             for(final Artifact artifact : artifacts) {
                 if ( artifact.getGroupId().equals(id.getGroupId())
-                        && artifact.getArtifactId().equals(id.getArtifactId())
-                        && artifact.getVersion().equals(id.getVersion())
-                        && artifact.getType().equals(id.getType())
-                        && ((id.getClassifier() == null && artifact.getClassifier() == null) || (id.getClassifier() != null && id.getClassifier().equals(artifact.getClassifier()))) ) {
+                   && artifact.getArtifactId().equals(id.getArtifactId())
+                   && artifact.getVersion().equals(id.getVersion())
+                   && artifact.getType().equals(id.getType())
+                   && ((id.getClassifier() == null && artifact.getClassifier() == null) || (id.getClassifier() != null && id.getClassifier().equals(artifact.getClassifier()))) ) {
                     return artifact.getFile() == null ? null : artifact;
                 }
             }
@@ -589,7 +589,7 @@ public class AemAnalyseMojo extends AbstractMojo {
 
         return result;
     }
-
+    
     /**
      * Get a resolved feature
      *
