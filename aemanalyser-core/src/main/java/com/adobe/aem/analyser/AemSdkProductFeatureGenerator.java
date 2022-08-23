@@ -44,8 +44,8 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
         final Map<ProductVariation, List<Feature>> aggregates = new HashMap<>();
 
         List<String> stl = serviceTypes.stream()
-                .map(ServiceType::toString)
-                .collect(Collectors.toList());
+            .map(ServiceType::toString)
+            .collect(Collectors.toList());
 
         for ( SdkProductVariation variation : SdkProductVariation.values() ) {
             if (!stl.contains(variation.toString()))
