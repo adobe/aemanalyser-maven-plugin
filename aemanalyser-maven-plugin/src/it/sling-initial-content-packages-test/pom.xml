@@ -22,9 +22,9 @@ governing permissions and limitations under the License.
     <build>
         <plugins>
             <plugin>
-                <groupId>com.adobe.aem</groupId>
-                <artifactId>aemanalyser-maven-plugin</artifactId>
-                <version>1.4.11-SNAPSHOT</version>
+                <groupId>@project.groupId@</groupId>
+                <artifactId>@project.artifactId@</artifactId>
+                <version>@project.version@</version>
                 <executions>
                     <execution>
                         <id>aem-analyser</id>
