@@ -212,10 +212,8 @@ public class AemPackageConverter {
         }
         
         public void logMutableContentPackages() {
-            if ( !mutableContentPackagesWithRunMode.isEmpty() ) {
-                for(final Map.Entry<ArtifactId, String> entry : mutableContentPackagesWithRunMode.entrySet()) {
-                    logger.info("Mutable content package {} uses runmode {}", entry.getKey().toMvnId(), entry.getValue());
-                }
+            for(final Map.Entry<ArtifactId, String> entry : mutableContentPackagesWithRunMode.entrySet()) {
+                logger.info("Mutable content package {} uses runmode {}", entry.getKey().toMvnId(), entry.getValue());
             }
         }
         
