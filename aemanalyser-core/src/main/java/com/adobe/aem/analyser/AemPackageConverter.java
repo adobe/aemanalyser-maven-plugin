@@ -13,8 +13,11 @@ package com.adobe.aem.analyser;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.sling.feature.ArtifactId;
@@ -24,16 +27,15 @@ import org.apache.sling.feature.cpconverter.ConverterException;
 import org.apache.sling.feature.cpconverter.accesscontrol.AclManager;
 import org.apache.sling.feature.cpconverter.accesscontrol.DefaultAclManager;
 import org.apache.sling.feature.cpconverter.artifacts.ArtifactWriter;
-import org.apache.sling.feature.cpconverter.artifacts.ArtifactsDeployer;
 import org.apache.sling.feature.cpconverter.artifacts.LocalMavenRepositoryArtifactsDeployer;
 import org.apache.sling.feature.cpconverter.features.DefaultFeaturesManager;
 import org.apache.sling.feature.cpconverter.filtering.RegexBasedResourceFilter;
 import org.apache.sling.feature.cpconverter.filtering.ResourceFilter;
 import org.apache.sling.feature.cpconverter.handlers.DefaultEntryHandlersManager;
+import org.apache.sling.feature.cpconverter.handlers.slinginitialcontent.BundleSlingInitialContentExtractor;
+import org.apache.sling.feature.cpconverter.index.DefaultIndexManager;
 import org.apache.sling.feature.cpconverter.shared.ConverterConstants;
 import org.apache.sling.feature.cpconverter.vltpkg.DefaultPackagesEventsEmitter;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,10 +49,13 @@ public class AemPackageConverter {
 
     private File bundlesOutputDirectory;
 
+    private File mutableContentOutputDirectory;
+
     private File converterOutputDirectory;
 
     private String artifactIdOverride;
 
+    private final List<String> apiRegions = Arrays.asList("com.adobe.aem.deprecated");
     /**
      * @return the featureOutputDirectory
      */
@@ -63,6 +68,14 @@ public class AemPackageConverter {
      */
     public void setFeatureOutputDirectory(File featureOutputDirectory) {
         this.featureOutputDirectory = featureOutputDirectory;
+    }
+
+    public void setMutableContentOutputDirectory(File mutableContentOutputDirectory) {
+        this.mutableContentOutputDirectory = mutableContentOutputDirectory;
+    }
+    
+    public void addToApiRegions(Collection<String> apiRegions){
+        this.apiRegions.addAll(apiRegions);
     }
 
     /**
@@ -117,7 +130,7 @@ public class AemPackageConverter {
     public void convert(final Map<String, File> contentPackages) throws IOException, ConverterException {
         final Map<String, String> properties = new HashMap<>();
 
-        final AclManager aclManager = new DefaultAclManager(null, "system");
+        final AclManager aclManager = new DefaultAclManager(null, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT);
         final DefaultFeaturesManager featuresManager = new DefaultFeaturesManager(
             false,
             20,
@@ -128,34 +141,40 @@ public class AemPackageConverter {
             aclManager
         );
 
+        featuresManager.setAPIRegions(apiRegions);
         featuresManager.setExportToAPIRegion("global");
 
-        final Map<ArtifactId, String> mutableContentPackagesWithRunMode = new HashMap<>();
 
         final File bundlesOutputDir = this.bundlesOutputDirectory != null
                 ? this.bundlesOutputDirectory : this.converterOutputDirectory;
-        final LocalMavenRepositoryArtifactsDeployer deployer = new LocalMavenRepositoryArtifactsDeployer(bundlesOutputDir);
-        try (final ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(false,
-                SlingInitialContentPolicy.KEEP) ) {
-            converter.setFeaturesManager(featuresManager)
-                    .setContentTypePackagePolicy(ContentPackage2FeatureModelConverter.PackagePolicy.PUT_IN_DEDICATED_FOLDER)
-                    .setUnreferencedArtifactsDeployer(new ArtifactsDeployer() {
 
-                        @Override
-                        public @NotNull String deploy(@NotNull ArtifactWriter artifactWriter, @Nullable String runmode,
-                                @NotNull ArtifactId id) throws IOException {
-                            if ( runmode != null ) {
-                                mutableContentPackagesWithRunMode.put(id, runmode);
-                            }
-                            return deployer.deploy(artifactWriter, runmode, id);
-                        }
-                    })
-                    .setBundlesDeployer(deployer)
+        File unreferencedArtifactsOutputDirectory = mutableContentOutputDirectory != null? mutableContentOutputDirectory : new File(converterOutputDirectory, "mutable-content");
+        MutableContentPackageDeployer mutableContentPackagesDeployer = new MutableContentPackageDeployer(unreferencedArtifactsOutputDirectory);
+                
+        try (final ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(false,
+                SlingInitialContentPolicy.EXTRACT_AND_REMOVE, true) ) {
+            final BundleSlingInitialContentExtractor bundleSlingInitialContentExtractor = new BundleSlingInitialContentExtractor();
+            converter.setFeaturesManager(featuresManager)
+                    .setBundlesDeployer(
+                        new LocalMavenRepositoryArtifactsDeployer(
+                            bundlesOutputDir
+                        )
+                    )
+                    .setBundleSlingInitialContentExtractor(bundleSlingInitialContentExtractor)
                     .setEntryHandlersManager(
                         new DefaultEntryHandlersManager(Collections.emptyMap(), true,
-                                SlingInitialContentPolicy.KEEP, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT)
+                                SlingInitialContentPolicy.EXTRACT_AND_REMOVE, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT)
                         )
+                    .setAclManager(
+                            new DefaultAclManager()
+                            )
+                    .setIndexManager(
+                            new DefaultIndexManager()
+                            )
                     .setEmitter(DefaultPackagesEventsEmitter.open(this.featureOutputDirectory))
+                    .setContentTypePackagePolicy(ContentPackage2FeatureModelConverter.PackagePolicy.PUT_IN_DEDICATED_FOLDER)
+                    .setUnreferencedArtifactsDeployer(mutableContentPackagesDeployer)
+                    .setIndexManager(new DefaultIndexManager())
                     .setResourceFilter(getResourceFilter());
             logger.info("Converting packages {}", contentPackages.keySet());
             converter.convert(contentPackages.values().toArray(new File[contentPackages.size()]));
@@ -164,11 +183,7 @@ public class AemPackageConverter {
         } catch (final Throwable t) {
             throw new IOException("Content Package Converter exception " + t.getMessage(), t);
         }
-        if ( !mutableContentPackagesWithRunMode.isEmpty() ) {
-            for(final Map.Entry<ArtifactId, String> entry : mutableContentPackagesWithRunMode.entrySet()) {
-                logger.info("Mutable content package {} uses runmode {}", entry.getKey().toMvnId(), entry.getValue());
-            }
-        }
+        mutableContentPackagesDeployer.logMutableContentPackages();
     }
 
     private ResourceFilter getResourceFilter() {
@@ -176,5 +191,32 @@ public class AemPackageConverter {
         filter.addFilteringPattern(FILTER);
 
         return filter;
+    }
+
+
+    class MutableContentPackageDeployer extends LocalMavenRepositoryArtifactsDeployer {
+
+        final Map<ArtifactId, String> mutableContentPackagesWithRunMode = new HashMap<>();
+        
+        public MutableContentPackageDeployer(File outputDirectory) {
+            super(outputDirectory);
+        }
+
+        @Override
+        public String deploy(ArtifactWriter artifactWriter, String runmode,
+                             ArtifactId id) throws IOException {
+            if (runmode != null) {
+                mutableContentPackagesWithRunMode.put(id, runmode);
+            }
+            return super.deploy(artifactWriter, runmode, id);
+        }
+        
+        public void logMutableContentPackages() {
+            for(final Map.Entry<ArtifactId, String> entry : mutableContentPackagesWithRunMode.entrySet()) {
+                logger.info("Mutable content package {} uses runmode {}", entry.getKey().toMvnId(), entry.getValue());
+            }
+        }
+        
+        
     }
 }
