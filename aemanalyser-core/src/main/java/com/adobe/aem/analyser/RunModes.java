@@ -9,7 +9,7 @@
   OF ANY KIND, either express or implied. See the License for the specific language
   governing permissions and limitations under the License.
 */
-package com.adobe.aem.analyser.tasks;
+package com.adobe.aem.analyser;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,8 +18,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.adobe.aem.analyser.ServiceType;
-
+/**
+ * Utility class to handle run modes
+ */
 public class RunModes {
 
     /** The map of invalid runmodes and the valid one to use. */
@@ -36,13 +37,15 @@ public class RunModes {
     /** Allowed global run modes */
     static final List<String> GLOBAL_RUN_MODES = Arrays.asList("dev", "prod", "stage");
     /** Allowed author run modes */
+    static final List<String> AUTHOR_USED_MODES = Arrays.asList(
+        "author", "author.dev", "author.stage", "author.prod");
     static final List<String> AUTHOR_RUN_MODES = Stream.concat(
-        GLOBAL_RUN_MODES.stream(), Arrays.asList(
-            "author", "author.dev", "author.stage", "author.prod").stream()).collect(Collectors.toList());
+        GLOBAL_RUN_MODES.stream(), AUTHOR_USED_MODES.stream()).collect(Collectors.toList());
     /** Allowed publish run modes */
+    static final List<String> PUBLISH_USED_MODES = Arrays.asList(
+        "publish", "publish.dev", "publish.stage", "publish.prod");
     static final List<String> PUBLISH_RUN_MODES = Stream.concat(
-        GLOBAL_RUN_MODES.stream(), Arrays.asList(
-            "publish", "publish.dev", "publish.stage", "publish.prod").stream()).collect(Collectors.toList());
+        GLOBAL_RUN_MODES.stream(), PUBLISH_USED_MODES.stream()).collect(Collectors.toList());
     /** All alowed run modes */
     static final List<String> ALL_RUN_MODES = Stream.concat(
         AUTHOR_RUN_MODES.stream(), PUBLISH_RUN_MODES.stream()).collect(Collectors.toList());

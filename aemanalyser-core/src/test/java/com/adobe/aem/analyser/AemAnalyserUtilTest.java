@@ -155,9 +155,9 @@ public class AemAnalyserUtilTest {
     @Test
     public void testGetUsedModes() {
 
-        assertEquals(AemAnalyserUtil.AUTHOR_USED_MODES,
+        assertEquals(RunModes.AUTHOR_USED_MODES,
             AemAnalyserUtil.getUsedModes(EnumSet.of(ServiceType.AUTHOR)));
-        assertEquals(AemAnalyserUtil.PUBLISH_USED_MODES,
+        assertEquals(RunModes.PUBLISH_USED_MODES,
             AemAnalyserUtil.getUsedModes(EnumSet.of(ServiceType.PUBLISH)));
         assertEquals(AemAnalyserUtil.ALL_USED_MODES,
             AemAnalyserUtil.getUsedModes(EnumSet.of(ServiceType.PUBLISH, ServiceType.AUTHOR)));

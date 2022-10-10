@@ -33,6 +33,7 @@ import org.apache.sling.feature.extension.apiregions.api.config.validation.Prope
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.adobe.aem.analyser.RunModes;
 import com.adobe.aem.analyser.ServiceType;
 
 public class ConfigurationsTask {

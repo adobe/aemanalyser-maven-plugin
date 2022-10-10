@@ -11,7 +11,6 @@
 */
 package com.adobe.aem.analyser;
 
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,24 +26,9 @@ import org.slf4j.LoggerFactory;
 
 public class AemAnalyserUtil {
 
-    /** The map of invalid runmodes and the valid one to use. */
-    private static final Map<String, String> INVALID_MODES = new HashMap<>();
-    static {
-        INVALID_MODES.put("dev.author", "author.dev");
-        INVALID_MODES.put("stage.author", "author.stage");
-        INVALID_MODES.put("prod.author", "author.dev");
-        INVALID_MODES.put("dev.publish", "publish.dev");
-        INVALID_MODES.put("stage.publish", "publish.stage");
-        INVALID_MODES.put("prod.publish", "publish.prod");
-    }
-
     /** Used run modes */
-    static final List<String> AUTHOR_USED_MODES = Arrays.asList(
-        "author", "author.dev", "author.stage", "author.prod");
-    static final List<String> PUBLISH_USED_MODES = Arrays.asList(
-        "publish", "publish.dev", "publish.stage", "publish.prod");
     static final List<String> ALL_USED_MODES = Stream.concat(
-        AUTHOR_USED_MODES.stream(), PUBLISH_USED_MODES.stream()).collect(Collectors.toList());
+        RunModes.AUTHOR_USED_MODES.stream(), RunModes.PUBLISH_USED_MODES.stream()).collect(Collectors.toList());
 
     /** Default runmode */
     private static final String DEFAULT_MODE = "(default)";
@@ -56,8 +40,8 @@ public class AemAnalyserUtil {
 
         if (st.size() == 1) {
             switch(st.iterator().next()) {
-                case AUTHOR: return AUTHOR_USED_MODES;
-                case PUBLISH: return PUBLISH_USED_MODES;
+                case AUTHOR: return RunModes.AUTHOR_USED_MODES;
+                case PUBLISH: return RunModes.PUBLISH_USED_MODES;
             }
         }
 
@@ -67,9 +51,10 @@ public class AemAnalyserUtil {
     /**
      * Check if a runmode is invalid
      * @return {@code null} if is valid, the correct runmode if invalid
+     * @deprecated Use {@link RunModes#checkIfRunModeIsSpecifiedInWrongOrder(String)}
      */
     static String getValidRunMode(final String mode) {
-        return INVALID_MODES.get(mode);
+        return RunModes.checkIfRunModeIsSpecifiedInWrongOrder(mode);
     }
 
     /**
