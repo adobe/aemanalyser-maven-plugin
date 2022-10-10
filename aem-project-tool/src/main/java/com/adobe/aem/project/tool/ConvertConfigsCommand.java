@@ -61,7 +61,7 @@ public class ConvertConfigsCommand extends AbstractCommand {
             if ( file.getType() != ConfigurationFileType.JSON ) {
                 final Dictionary<String, Object> properties = file.readConfiguration();
                 if ( properties == null ) {
-                    throw new IOException("Unable to read configuration " + file.getSource());
+                    continue;
                 }
                 File directory = file.getSource().getParentFile();
                 if ( this.enforceConfigurationBelowConfigFolder && file.getLevel() > 1 ) {
@@ -70,15 +70,31 @@ public class ConvertConfigsCommand extends AbstractCommand {
                     }
                 }
                 final File outFile = new File(directory, file.getFileName());
-                logger.info("Writing configuration " + outFile.getAbsolutePath());
+                logger.info("Writing configuration {} to {}", file.getPid(), outFile.getAbsolutePath());
                 if ( !this.isDryRun() ) {
                     try ( final Writer writer = new FileWriter(file.getSource())) {
                         Configurations.buildWriter().build(writer).writeConfiguration(properties);
                     }
                 }
-                logger.info("Deleting old configuration " + file.getSource());
+                logger.info("Deleting old configuration {}", file.getSource());
                 if ( !this.isDryRun() ) {
                     file.getSource().delete();
+                }
+            } else {
+                if ( this.enforceConfigurationBelowConfigFolder && file.getLevel() > 1 ) {
+                    File directory = file.getSource().getParentFile();
+                    for(int i = 2; i <= file.getLevel(); i++) {
+                        directory = directory.getParentFile();
+                    }
+                    final File outFile = new File(directory, file.getFileName());
+                    logger.info("Moving configuration from {} to {}", file.getSource(), outFile);
+                    if ( !this.isDryRun() ) {
+                        final Dictionary<String, Object> properties = file.readConfiguration();
+                        try ( final Writer writer = new FileWriter(file.getSource())) {
+                            Configurations.buildWriter().build(writer).writeConfiguration(properties);
+                        }
+                        file.getSource().delete();                            
+                    }
                 }
             }
         }

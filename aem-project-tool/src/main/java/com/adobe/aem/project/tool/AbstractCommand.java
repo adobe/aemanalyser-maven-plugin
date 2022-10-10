@@ -65,14 +65,26 @@ public abstract class AbstractCommand {
     }
 
     public List<ArtifactId> getAddons() throws IOException {
-/*
         final List<ArtifactId> addons = new ArrayList<>();
         for(final ArtifactId id : Constants.DEFAULT_ADDONS) {
-            addons.add(this.getLatestVersion(id));
+            String key = id.getArtifactId();
+            if ( key.endsWith("-api") ) {
+                key = key.substring(0, key.length() - 4);
+            }
+            String addonArg = this.parser.arguments.get("addons");
+            if ( addonArg != null ) {
+                boolean found = false;
+                for(final String val : addonArg.split(",")) {
+                    if ( val.trim().equals(key) ) {
+                        found = true;
+                    }
+                }
+                if ( found ) {
+                    addons.add(this.getLatestVersion(id));
+                }
+            }
         }
         return addons;
-*/
-        return Collections.emptyList();
     }
 
     public ArtifactId getProjectId() {
