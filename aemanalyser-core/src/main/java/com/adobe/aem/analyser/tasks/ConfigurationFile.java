@@ -120,20 +120,6 @@ public final class ConfigurationFile {
         return id;
     }
 
-    public String getFileName() {
-        final String extension;
-        if ( this.getType() == ConfigurationFileType.CONFIGADMIN ) {
-            extension = ".config";
-        } else if ( this.getType() == ConfigurationFileType.JSON ) {
-            extension = ".cfg.json";
-        } else if ( this.getType() == ConfigurationFileType.XML ) {
-            extension = ".xml";
-        } else {
-            extension = ".properties";
-        }
-        return this.getPid().concat(extension);
-    }
-
     public Dictionary<String, Object> readConfiguration() throws IOException {
         try ( final InputStream input = new FileInputStream(this.getSource()) ) {
             if ( this.getType() == ConfigurationFileType.CONFIGADMIN ) {

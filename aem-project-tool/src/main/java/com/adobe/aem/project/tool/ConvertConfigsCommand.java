@@ -15,11 +15,17 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.felix.cm.json.Configurations;
+import org.apache.sling.feature.Configuration;
+import org.apache.sling.feature.Feature;
 
+import com.adobe.aem.analyser.RunModes;
+import com.adobe.aem.analyser.ServiceType;
 import com.adobe.aem.analyser.tasks.ConfigurationFile;
 import com.adobe.aem.analyser.tasks.ConfigurationFileType;
 import com.adobe.aem.analyser.tasks.ConfigurationsTask;
@@ -33,9 +39,12 @@ public class ConvertConfigsCommand extends AbstractCommand {
 
     private boolean enforceConfigurationBelowConfigFolder;
 
+    private boolean removeDefaultValues;
+
     @Override
     public void validate() {
         this.enforceConfigurationBelowConfigFolder = this.parser.getBooleanArgument("enforceConfigurationBelowConfigFolder", true);
+        this.removeDefaultValues = this.parser.getBooleanArgument("removeDefaultValues", true);
         this.repositoryRootDirectory = new File(this.parser.arguments.getOrDefault("repositoryRootDirectory", "src/main/content/jcr_root"));
         if ( !this.repositoryRootDirectory.exists() || !this.repositoryRootDirectory.isDirectory() ) {
             throw new IllegalArgumentException("Directory does not exist " + this.repositoryRootDirectory);
@@ -58,47 +67,88 @@ public class ConvertConfigsCommand extends AbstractCommand {
             logger.info("Dry run enabled, no changes are performed!");
         }
         for(final ConfigurationFile file : files) {
-            if ( file.getType() != ConfigurationFileType.JSON ) {
-                final Dictionary<String, Object> properties = file.readConfiguration();
-                if ( properties == null ) {
-                    continue;
-                }
-                File directory = file.getSource().getParentFile();
-                if ( this.enforceConfigurationBelowConfigFolder && file.getLevel() > 1 ) {
-                    for(int i = 2; i <= file.getLevel(); i++) {
-                        directory = directory.getParentFile();
-                    }
-                }
-                final File outFile = new File(directory, file.getFileName());
-                logger.info("Writing configuration {} to {}", file.getPid(), outFile.getAbsolutePath());
-                if ( !this.isDryRun() ) {
-                    try ( final Writer writer = new FileWriter(file.getSource())) {
-                        Configurations.buildWriter().build(writer).writeConfiguration(properties);
-                    }
-                }
-                logger.info("Deleting old configuration {}", file.getSource());
-                if ( !this.isDryRun() ) {
-                    file.getSource().delete();
-                }
-            } else {
-                if ( this.enforceConfigurationBelowConfigFolder && file.getLevel() > 1 ) {
-                    File directory = file.getSource().getParentFile();
-                    for(int i = 2; i <= file.getLevel(); i++) {
-                        directory = directory.getParentFile();
-                    }
-                    final File outFile = new File(directory, file.getFileName());
-                    logger.info("Moving configuration from {} to {}", file.getSource(), outFile);
-                    if ( !this.isDryRun() ) {
-                        final Dictionary<String, Object> properties = file.readConfiguration();
-                        try ( final Writer writer = new FileWriter(file.getSource())) {
-                            Configurations.buildWriter().build(writer).writeConfiguration(properties);
-                        }
-                        file.getSource().delete();                            
-                    }
-                }
+            final Dictionary<String, Object> properties = file.readConfiguration();
+            if ( properties != null ) {
+                convertConfiguration(context, file, properties);
             }
         }
 
         return null;
+    }
+
+    private void convertConfiguration(final TaskContext context, final ConfigurationFile file, final Dictionary<String, Object> properties) throws IOException {
+        final boolean move = this.enforceConfigurationBelowConfigFolder && file.getLevel() > 1 ;
+        File directory = file.getSource().getParentFile();
+        if ( move ) {
+            for(int i = 2; i <= file.getLevel(); i++) {
+                directory = directory.getParentFile();
+            }
+        }
+        final boolean convert = file.getType() != ConfigurationFileType.JSON;
+        boolean removed = false;
+        if ( this.removeDefaultValues ) {
+            final boolean isAuthor = RunModes.matchesRunMode(ServiceType.AUTHOR, file.getRunMode());
+            final boolean isPublish = RunModes.matchesRunMode(ServiceType.PUBLISH, file.getRunMode());
+            removed = removeDefaults(isAuthor ? context.getProductFeatures().get(ServiceType.AUTHOR) : null,
+                isPublish ? context.getProductFeatures().get(ServiceType.PUBLISH) : null,
+                file.getPid(), properties);
+        }
+        final File outFile = new File(directory, file.getPid().concat(".cfg.json"));
+        if ( convert ) {
+            logger.info("Converting configuration from {} to {}", context.getRelativePath(file.getSource()), context.getRelativePath(outFile));
+        } else if ( move ) {
+            logger.info("Moving configuration from {} to {}", context.getRelativePath(file.getSource()), context.getRelativePath(outFile));
+        }
+        if ( removed ) {
+            logger.info("Removing default configurations from {}", context.getRelativePath(outFile));
+        }
+        if ( !this.isDryRun() && (convert || move || removed )) {
+            try ( final Writer writer = new FileWriter(outFile)) {
+                Configurations.buildWriter().build(writer).writeConfiguration(properties);
+            }
+            if ( convert || move ) {
+                logger.debug("Deleting old configuration {}", file.getSource());
+                file.getSource().delete();    
+            }
+        }
+    }
+
+    private boolean removeDefaults(final Feature feature1, final Feature feature2, final String pid, final Dictionary<String, Object> properties) {
+        final Configuration cfg1 = feature1 == null ? null : feature1.getConfigurations().getConfiguration(pid);
+        final Configuration cfg2 = feature2 == null ? null : feature2.getConfigurations().getConfiguration(pid);
+        // no product config found
+        if ( cfg1 == null && cfg2 == null ) {
+            return false;
+        }
+        // both features, but only one configuratiuon
+        if ( cfg1 == null || cfg2 == null && feature1 != null && feature2 != null) {
+            return false;
+        }
+        boolean changed = false;
+        if ( cfg1 != null ) {
+            for(final String name : Collections.list(cfg1.getConfigurationProperties().keys())) {
+                final Object val = cfg1.getProperties().get(name);
+                if ( cfg2 == null || Objects.deepEquals(val, cfg2.getProperties().get(name)) ) {
+                    if ( Objects.deepEquals(properties.get(name), val) ) {
+                        if ( properties.remove(name) != null ) {
+                            changed = true;
+                        }
+                    }
+                }
+            }    
+        }
+        if ( cfg2 != null ) {
+            for(final String name : Collections.list(cfg2.getConfigurationProperties().keys())) {
+                final Object val = cfg2.getProperties().get(name);
+                if ( cfg1 == null || Objects.deepEquals(val, cfg1.getProperties().get(name)) ) {
+                    if ( Objects.deepEquals(properties.get(name), val) ) {
+                        if ( properties.remove(name) != null ) {
+                            changed = true;
+                        }
+                    }
+                }
+            }    
+        }
+        return changed;
     }
 }
