@@ -62,6 +62,7 @@ public class AemAnalyserUtil {
      * @param mode The runmode
      * @param serviceTypes The service types to consider
      * @return {@code true} if mode is used
+     * @deprecated Use {@link RunModes#matchesRunMode(ServiceType, String)} - which has a different semantics!
      */
     public static boolean isRunModeUsed(final String mode, EnumSet <ServiceType> serviceTypes) {
         return getUsedModes(serviceTypes).contains(mode);
