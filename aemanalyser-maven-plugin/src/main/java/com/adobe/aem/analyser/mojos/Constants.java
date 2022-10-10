@@ -11,26 +11,7 @@
 */
 package com.adobe.aem.analyser.mojos;
 
-import java.util.Arrays;
-import java.util.List;
-
-public abstract class Constants {
-    
-    /** The group id for the SDK */
-    public static final String SDK_GROUP_ID = "com.adobe.aem";
-
-    /** The artifact id for the SDK */
-    public static final String SDK_ARTIFACT_ID = "aem-sdk-api";
-    
-    /** The artifact id for the prerelease SDK */
-    public static final String SDK_PRERELEASE_ARTIFACT_ID = "aem-prerelease-sdk-api";
-
-    /** The default addons */
-    public static final List<Addon> DEFAULT_ADDONS =
-            Arrays.asList(
-                    new Addon("com.adobe.aem", "aem-forms-sdk-api", "aem-forms-sdk"),
-                    new Addon("com.adobe.aem", "aem-cif-sdk-api", "aem-cif-sdk"));
-
+public abstract class Constants extends com.adobe.aem.analyser.Constants {
 
     /** Name of the env var to check. */
     public static final String SKIP_ENV_VAR = "CM_PROGRAM_ID";

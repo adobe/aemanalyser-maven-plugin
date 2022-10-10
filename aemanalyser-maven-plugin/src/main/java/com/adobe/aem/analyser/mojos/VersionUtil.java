@@ -75,6 +75,20 @@ public class VersionUtil {
         return this.versionWarnings;
     }
 
+    private List<Addon> getAdons(final List<Addon> providedAddons) {
+        if ( providedAddons == null ) {
+            final List<Addon> addons = new ArrayList<>();
+            for(final ArtifactId id : Constants.DEFAULT_ADDONS) {
+                final Addon a = new Addon();
+                a.groupId = id.getGroupId();
+                a.artifactId = id.getArtifactId();
+                a.classifier = id.getClassifier();
+                addons.add(a);
+            }
+            return addons;
+        }
+        return providedAddons;
+    }
     /**
      * Get the list of addons
      * @param addons Configured add ons
@@ -83,7 +97,7 @@ public class VersionUtil {
      */
     List<ArtifactId> discoverAddons(final List<Addon> addons, final boolean useDependencyVersions) throws MojoExecutionException {
         final List<ArtifactId> result = new ArrayList<>();
-        for (Addon addon : addons == null ? Constants.DEFAULT_ADDONS : addons) {
+        for (Addon addon : getAdons(addons)) {
             ArtifactId addonSDK = getArtifactIdFromDependencies(addon.groupId, addon.artifactId);
 
             if (addonSDK != null ) {
