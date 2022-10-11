@@ -24,14 +24,14 @@ import org.apache.felix.cm.json.Configurations;
 import org.apache.sling.feature.Configuration;
 import org.apache.sling.feature.Feature;
 
-import com.adobe.aem.analyser.RunModes;
-import com.adobe.aem.analyser.ServiceType;
 import com.adobe.aem.analyser.tasks.ConfigurationFile;
 import com.adobe.aem.analyser.tasks.ConfigurationFileType;
 import com.adobe.aem.analyser.tasks.ConfigurationsTask;
 import com.adobe.aem.analyser.tasks.ConfigurationsTaskConfig;
 import com.adobe.aem.analyser.tasks.TaskContext;
 import com.adobe.aem.analyser.tasks.TaskResult;
+import com.adobe.aem.project.RunModes;
+import com.adobe.aem.project.ServiceType;
 
 public class ConvertConfigsCommand extends AbstractCommand {
 
@@ -77,6 +77,12 @@ public class ConvertConfigsCommand extends AbstractCommand {
     }
 
     private void convertConfiguration(final TaskContext context, final ConfigurationFile file, final Dictionary<String, Object> properties) throws IOException {
+        final boolean isAuthor = RunModes.matchesRunModeIncludingSDK(ServiceType.AUTHOR, file.getRunMode());
+        final boolean isPublish = RunModes.matchesRunModeIncludingSDK(ServiceType.PUBLISH, file.getRunMode());
+        if ( !isAuthor && !isPublish ) {
+            // unknown run mode
+            return;
+        }
         final boolean move = this.enforceConfigurationBelowConfigFolder && file.getLevel() > 1 ;
         File directory = file.getSource().getParentFile();
         if ( move ) {
@@ -85,28 +91,31 @@ public class ConvertConfigsCommand extends AbstractCommand {
             }
         }
         final boolean convert = file.getType() != ConfigurationFileType.JSON;
-        boolean removed = false;
+        boolean removedProperties = false;
         if ( this.removeDefaultValues ) {
-            final boolean isAuthor = RunModes.matchesRunMode(ServiceType.AUTHOR, file.getRunMode());
-            final boolean isPublish = RunModes.matchesRunMode(ServiceType.PUBLISH, file.getRunMode());
-            removed = removeDefaults(isAuthor ? context.getProductFeatures().get(ServiceType.AUTHOR) : null,
+            removedProperties = removeDefaults(isAuthor ? context.getProductFeatures().get(ServiceType.AUTHOR) : null,
                 isPublish ? context.getProductFeatures().get(ServiceType.PUBLISH) : null,
                 file.getPid(), properties);
         }
+        boolean remove = properties.isEmpty();
         final File outFile = new File(directory, file.getPid().concat(".cfg.json"));
-        if ( convert ) {
+        if ( remove ) {
+            logger.info("Removing empty configuration from {}", context.getRelativePath(file.getSource()));
+        } else if ( convert ) {
             logger.info("Converting configuration from {} to {}", context.getRelativePath(file.getSource()), context.getRelativePath(outFile));
         } else if ( move ) {
             logger.info("Moving configuration from {} to {}", context.getRelativePath(file.getSource()), context.getRelativePath(outFile));
         }
-        if ( removed ) {
+        if ( !remove && removedProperties ) {
             logger.info("Removing default configurations from {}", context.getRelativePath(outFile));
         }
-        if ( !this.isDryRun() && (convert || move || removed )) {
-            try ( final Writer writer = new FileWriter(outFile)) {
-                Configurations.buildWriter().build(writer).writeConfiguration(properties);
+        if ( !this.isDryRun() && (convert || move || removedProperties || remove )) {
+            if ( !remove ) {
+                try ( final Writer writer = new FileWriter(outFile)) {
+                    Configurations.buildWriter().build(writer).writeConfiguration(properties);
+                }    
             }
-            if ( convert || move ) {
+            if ( convert || move || remove ) {
                 logger.debug("Deleting old configuration {}", file.getSource());
                 file.getSource().delete();    
             }

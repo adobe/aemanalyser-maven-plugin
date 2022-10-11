@@ -27,6 +27,9 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import com.adobe.aem.project.RunModes;
+import com.adobe.aem.project.ServiceType;
+
 public class AemAnalyserUtilTest {
 
     @Test
@@ -155,9 +158,9 @@ public class AemAnalyserUtilTest {
     @Test
     public void testGetUsedModes() {
 
-        assertEquals(RunModes.AUTHOR_USED_MODES,
+        assertEquals(RunModes.AUTHOR_ONLY_MODES,
             AemAnalyserUtil.getUsedModes(EnumSet.of(ServiceType.AUTHOR)));
-        assertEquals(RunModes.PUBLISH_USED_MODES,
+        assertEquals(RunModes.PUBLISH_ONLY_MODES,
             AemAnalyserUtil.getUsedModes(EnumSet.of(ServiceType.PUBLISH)));
         assertEquals(AemAnalyserUtil.ALL_USED_MODES,
             AemAnalyserUtil.getUsedModes(EnumSet.of(ServiceType.PUBLISH, ServiceType.AUTHOR)));

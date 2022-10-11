@@ -9,13 +9,14 @@
   OF ANY KIND, either express or implied. See the License for the specific language
   governing permissions and limitations under the License.
 */
-package com.adobe.aem.analyser;
+package com.adobe.aem.project;
 
-public enum ServiceType {
-    AUTHOR,
-    PUBLISH;
+public enum EnvironmentType {
+    DEV,
+    STAGE,
+    PROD;
 
     public String asString() {
-        return toString().toLowerCase();
+        return name().toLowerCase();
     }
 }

@@ -17,6 +17,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
@@ -26,7 +27,7 @@ import org.apache.sling.feature.builder.FeatureProvider;
 
 import com.adobe.aem.analyser.AemSdkProductFeatureGenerator;
 import com.adobe.aem.analyser.ProductVariation;
-import com.adobe.aem.analyser.ServiceType;
+import com.adobe.aem.project.ServiceType;
 
 public class TaskContext {
 
@@ -41,15 +42,26 @@ public class TaskContext {
     private final ArtifactId projectId;
     private Map<ServiceType, Feature> productFeatures;
 
+    /**
+     * Create a new context
+     * @param projectDirectory
+     * @param projectId
+     * @param sdkId
+     * @param addons
+     * @param provider
+     * @throws NullPointerException If any of the arguments is {@code null}
+     */
     public TaskContext(
               final File projectDirectory,
               final ArtifactId projectId,
               final ArtifactId sdkId, 
               final List<ArtifactId> addons, 
               final FeatureProvider provider) {
-        if ( projectDirectory == null || projectId == null || sdkId == null || addons == null || provider == null ) {
-            throw new IllegalArgumentException();
-        }
+        Objects.requireNonNull(projectDirectory);
+        Objects.requireNonNull(projectId);
+        Objects.requireNonNull(sdkId);
+        Objects.requireNonNull(addons);
+        Objects.requireNonNull(provider);
         this.projectDirectory = projectDirectory;
         this.provider = provider;
         this.sdkId = sdkId;

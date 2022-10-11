@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +60,10 @@ public abstract class AbstractCommand {
     }
 
     public ArtifactId getSdkId() throws IOException {
-        return getLatestVersion(new ArtifactId(Constants.SDK_GROUP_ID, Constants.SDK_ARTIFACT_ID, "1", null, null));
+        final String sdkVersion = this.parser.arguments.get("sdkVersion");
+        return getLatestVersion(new ArtifactId(Constants.SDK_GROUP_ID, 
+            this.parser.options.contains("aemPrerelease") ? Constants.SDK_PRERELEASE_ARTIFACT_ID : Constants.SDK_ARTIFACT_ID,
+            "1", null, null), sdkVersion);
     }
 
     public List<ArtifactId> getAddons() throws IOException {
@@ -73,14 +75,21 @@ public abstract class AbstractCommand {
             }
             String addonArg = this.parser.arguments.get("addons");
             if ( addonArg != null ) {
-                boolean found = false;
                 for(final String val : addonArg.split(",")) {
-                    if ( val.trim().equals(key) ) {
-                        found = true;
+                    final String name;
+                    final String version;
+                    int pos = val.indexOf(":");
+                    if ( pos == -1 ) {
+                        name = val.trim();
+                        version = null;
+                    } else {
+                        name = val.substring(0, pos).trim();
+                        version = val.substring(pos + 1).trim();
                     }
-                }
-                if ( found ) {
-                    addons.add(this.getLatestVersion(id));
+                    if ( name.equals(key) ) {
+                        addons.add(this.getLatestVersion(id, version));
+                        break;
+                    }
                 }
             }
         }
@@ -97,7 +106,10 @@ public abstract class AbstractCommand {
         return artifactManager.toFeatureProvider();
     }
 
-    protected ArtifactId getLatestVersion(final ArtifactId id) throws IOException {
+    protected ArtifactId getLatestVersion(final ArtifactId id, final String specifiedVersion) throws IOException {
+        if ( specifiedVersion != null ) {
+            return id.changeVersion(specifiedVersion);
+        }
         ArtifactId result = VERSION_CACHE.get(id);
         if ( result == null ) {
             final String metadataUrl = "https://repo.maven.apache.org/maven2/"

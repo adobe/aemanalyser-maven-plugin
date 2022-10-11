@@ -29,6 +29,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.adobe.aem.project.ServiceType;
+
 public class RunmodeMappingUserFeatureAggregatorTest {
     public @Rule TemporaryFolder tempDir = new TemporaryFolder();
 

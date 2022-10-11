@@ -27,6 +27,8 @@ import org.apache.sling.feature.Feature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.adobe.aem.project.ServiceType;
+
 /**
  * Generates user features based on the output of the content-package-to-feature-model converter
  *

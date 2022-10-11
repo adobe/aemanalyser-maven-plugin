@@ -14,7 +14,6 @@ package com.adobe.aem.analyser;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
@@ -24,24 +23,28 @@ import java.util.stream.Stream;
 
 import org.slf4j.LoggerFactory;
 
+import com.adobe.aem.project.EnvironmentType;
+import com.adobe.aem.project.RunModes;
+import com.adobe.aem.project.ServiceType;
+
 public class AemAnalyserUtil {
 
     /** Used run modes */
-    static final List<String> ALL_USED_MODES = Stream.concat(
-        RunModes.AUTHOR_USED_MODES.stream(), RunModes.PUBLISH_USED_MODES.stream()).collect(Collectors.toList());
+    static final Set<String> ALL_USED_MODES = Stream.concat(
+        RunModes.AUTHOR_ONLY_MODES.stream(), RunModes.PUBLISH_ONLY_MODES.stream()).collect(Collectors.toSet());
 
     /** Default runmode */
     private static final String DEFAULT_MODE = "(default)";
 
-    static List<String> getUsedModes(EnumSet<ServiceType> st) {
+    static Set<String> getUsedModes(EnumSet<ServiceType> st) {
         if (st.size() == 0) {
             throw new IllegalStateException("No service type specified");
         }
 
         if (st.size() == 1) {
             switch(st.iterator().next()) {
-                case AUTHOR: return RunModes.AUTHOR_USED_MODES;
-                case PUBLISH: return RunModes.PUBLISH_USED_MODES;
+                case AUTHOR: return RunModes.AUTHOR_ONLY_MODES;
+                case PUBLISH: return RunModes.PUBLISH_ONLY_MODES;
             }
         }
 
@@ -105,8 +108,8 @@ public class AemAnalyserUtil {
                 for(final String pck : runmodeProps.getProperty(mode).split(",")) {
                     models.add(pck);
                 }
-                for (final String ap : new String [] {".dev", ".stage", ".prod"}) {
-                    final String key = mode.concat(ap);
+                for (final EnvironmentType ap : EnvironmentType.values()) {
+                    final String key = mode.concat(".").concat(ap.asString());
                     models = allModels.get(key);
                     if ( models != null ) {
                         for(final String pck : runmodeProps.getProperty(mode).split(",")) {
@@ -116,8 +119,8 @@ public class AemAnalyserUtil {
                 }
                 valid = true;
             } else {
-                for (final String ap : new String [] {"author.", "publish."}) {
-                    final String key = ap.concat(mode);
+                for (final ServiceType ap : ServiceType.values()) {
+                    final String key = ap.asString().concat(".").concat(mode);
                     models = allModels.get(key);
                     if ( models != null ) {
                         for(final String pck : runmodeProps.getProperty(mode).split(",")) {
@@ -143,10 +146,10 @@ public class AemAnalyserUtil {
 
     static void pruneModels(final Map<String, Set<String>> allModels) {
         // Remove specialised models that don't add anything
-        for (String ap : new String [] {"author", "publish"}) {
-            for (String env : new String [] {".dev", ".stage", ".prod"}) {
-                String mode = ap + env;
-                if (Objects.equals(allModels.get(ap), allModels.get(mode))) {
+        for (ServiceType ap : ServiceType.values()) {
+            for (EnvironmentType env : EnvironmentType.values()) {
+                String mode = ap.asString().concat(".").concat(env.asString());
+                if (Objects.equals(allModels.get(ap.asString()), allModels.get(mode))) {
                     allModels.remove(mode);
                 }
             }
@@ -155,15 +158,16 @@ public class AemAnalyserUtil {
         // If specialised models exist for all environments, remove the generic model, as
         // a specialised model is then always used
         publish:
-        for (String ap : new String [] {"author", "publish"}) {
-            for (String env : new String [] {".dev", ".stage", ".prod"}) {
-                if (!allModels.containsKey(ap + env)) {
+        for (ServiceType ap : ServiceType.values()) {
+            for (EnvironmentType env : EnvironmentType.values()) {
+                String mode = ap.asString().concat(".").concat(env.asString());
+                if (!allModels.containsKey(mode)) {
                     continue publish;
                 }
             }
 
             // Found specialised models for all, remove the generic one
-            allModels.remove(ap);
+            allModels.remove(ap.asString());
         }
     }
 }

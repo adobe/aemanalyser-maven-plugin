@@ -19,6 +19,7 @@ import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Configuration;
@@ -33,8 +34,8 @@ import org.apache.sling.feature.extension.apiregions.api.config.validation.Prope
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.adobe.aem.analyser.RunModes;
-import com.adobe.aem.analyser.ServiceType;
+import com.adobe.aem.project.RunModes;
+import com.adobe.aem.project.ServiceType;
 
 public class ConfigurationsTask {
 
@@ -44,10 +45,15 @@ public class ConfigurationsTask {
 
     private final TaskContext context;
 
+    /**
+     * Create new task
+     * @param context
+     * @param config
+     * @throws NullPointerException If any of the arguments is {@code null}
+     */
     public ConfigurationsTask(final TaskContext context, final ConfigurationsTaskConfig config) {
-        if ( context == null || config == null ) {
-            throw new IllegalArgumentException();
-        }
+        Objects.requireNonNull(context);
+        Objects.requireNonNull(config);
         this.taskConfig = config;
         this.context = context;
     }
@@ -182,7 +188,7 @@ public class ConfigurationsTask {
     }
 
     private boolean checkRunMode(final ConfigurationFile file, final TaskResult result) throws IOException {
-        final boolean validRunMode = RunModes.isRunModeAllowed(file.getRunMode());
+        final boolean validRunMode = RunModes.isRunModeAllowedIncludingSDK(file.getRunMode());
         if ( !validRunMode ) {
             final String validMode = RunModes.checkIfRunModeIsSpecifiedInWrongOrder(file.getRunMode());
             if ( validMode != null ) {
