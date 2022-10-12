@@ -48,6 +48,8 @@ import org.apache.sling.feature.io.json.FeatureJSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.adobe.aem.project.ServiceType;
+
 /**
  * Create all the aggregates
  */

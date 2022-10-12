@@ -24,6 +24,8 @@ import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.FeatureProvider;
 
+import com.adobe.aem.project.ServiceType;
+
 /**
  * Generates product features based on the AEM SDK and configured add-on ids
  */

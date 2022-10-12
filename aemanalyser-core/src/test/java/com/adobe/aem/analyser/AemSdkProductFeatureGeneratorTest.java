@@ -24,6 +24,8 @@ import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.FeatureProvider;
 import org.junit.Test;
 
+import com.adobe.aem.project.ServiceType;
+
 public class AemSdkProductFeatureGeneratorTest {
 
     @Test

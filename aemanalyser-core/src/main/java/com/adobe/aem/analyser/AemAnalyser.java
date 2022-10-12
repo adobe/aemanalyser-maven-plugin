@@ -42,6 +42,8 @@ import org.apache.sling.feature.scanner.Scanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.adobe.aem.project.EnvironmentType;
+
 public class AemAnalyser {
 
     /**
@@ -323,10 +325,15 @@ public class AemAnalyser {
     private List<String> getTierMessages(final Map<String, List<String>> messages, final String tier) {
         List<String> msgs = messages.get(tier);
         if ( msgs == null ) {
-            msgs = new ArrayList<>();
-            msgs.addAll(messages.getOrDefault(tier.concat(".dev"), Collections.emptyList()));
-            msgs.retainAll(messages.getOrDefault(tier.concat(".stage"), Collections.emptyList()));
-            msgs.retainAll(messages.getOrDefault(tier.concat(".prod"), Collections.emptyList()));
+            for(final EnvironmentType env : EnvironmentType.values()) {
+                final String key = tier.concat(".").concat(env.asString());
+                if ( msgs == null ) {
+                    msgs = new ArrayList<>();
+                    msgs.addAll(messages.getOrDefault(key, Collections.emptyList()));
+                } else {
+                    msgs.retainAll(messages.getOrDefault(key, Collections.emptyList()));
+                }
+            }
             messages.put(tier, msgs);
         }
         return msgs;

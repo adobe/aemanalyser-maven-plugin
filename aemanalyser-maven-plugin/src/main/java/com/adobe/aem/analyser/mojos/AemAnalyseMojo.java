@@ -12,13 +12,10 @@
 package com.adobe.aem.analyser.mojos;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,24 +25,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.ArtifactHandler;
-import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
-import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugin.descriptor.PluginDescriptor;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.MavenProject;
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.ArtifactProvider;
@@ -53,47 +42,14 @@ import org.apache.sling.feature.builder.FeatureProvider;
 import org.apache.sling.feature.cpconverter.ConverterException;
 import org.apache.sling.feature.io.artifacts.ArtifactManager;
 import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
-import org.apache.sling.feature.io.json.FeatureJSONReader;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.resolution.ArtifactRequest;
-import org.eclipse.aether.resolution.ArtifactResolutionException;
-import org.eclipse.aether.resolution.ArtifactResult;
 
 import com.adobe.aem.analyser.AemAggregator;
 import com.adobe.aem.analyser.AemAnalyser;
 import com.adobe.aem.analyser.AemAnalyserResult;
 import com.adobe.aem.analyser.AemPackageConverter;
 
-public class AemAnalyseMojo extends AbstractMojo {
+public class AemAnalyseMojo extends AbstractAnalyseMojo {
 
-    /**
-     * The artifact id of the sdk api jar. The artifact id is automatically detected by this plugin,
-     * by using this configuration the auto detection can be disabled
-     */
-    @Parameter(property = "sdkArtifactId")
-    String sdkArtifactId;
-    
-    /**
-     * The version of the sdk api. Can be used to specify the exact version to be used. Otherwise the
-     * plugin detects the version to use.
-     */
-    @Parameter(required = false, property = "sdkVersion")
-    String sdkVersion;
-
-    /**
-     * Use dependency versions. If this is enabled, the version for the SDK and the Add-ons is taken
-     * from the project dependencies. By default, the latest version is used.
-     */
-    @Parameter(required = false, defaultValue = "false", property = "sdkUseDependency")
-    boolean useDependencyVersions;
-
-    /**
-     * The list of add ons.
-     */
-    @Parameter
-    List<Addon> addons;
-    
     /**
      * The analyser tasks run by the analyser on the final aggregates
      */
@@ -129,18 +85,6 @@ public class AemAnalyseMojo extends AbstractMojo {
     Map<String, Properties> analyserTaskConfigurations;
 
     /**
-     * Skip the execution
-     */
-    @Parameter(defaultValue = "false", property = "aem.analyser.skip")
-    boolean skip;
-
-    /**
-     * Fail on analyser errors?
-     */
-    @Parameter(defaultValue = "true", property = "failon.analyser.errors")
-    private boolean failOnAnalyserErrors;
-
-    /**
      * Only analyze the package attached to the project with the given classifier.
      */
     @Parameter(property = "aem.analyser.classifier")
@@ -153,45 +97,6 @@ public class AemAnalyseMojo extends AbstractMojo {
      */
     @Parameter
     private List<File> contentPackageFiles;
-
-    /**
-     * If enabled, all analyser warnings will be turned into errors and fail the build.
-     * @since 1.0.12
-     */
-    @Parameter(defaultValue = "false", property = "aem.analyser.strict")
-    private boolean strictValidation;
-
-    /**
-     * The maven project
-     */
-    @Parameter(property = "project", readonly = true, required = true)
-    protected MavenProject project;
-
-    /**
-     * The artifact manager to resolve artifacts
-     */
-    @Component
-    protected ArtifactHandlerManager artifactHandlerManager;
-
-    /**
-     * The maven session
-     */
-    @Parameter(property = "session", readonly = true, required = true)
-    protected MavenSession mavenSession;
-
-    @Component
-    private RepositorySystem repoSystem;
-
-    @Parameter(defaultValue = "${repositorySystemSession}", readonly = true, required = true)
-    private RepositorySystemSession repoSession;
-
-    @Parameter( defaultValue = "${plugin}", readonly = true ) // Maven 3 only
-    private PluginDescriptor plugin;
- 
-    /**
-     * Artifact cache
-     */
-    private final Map<String, Artifact> artifactCache = new ConcurrentHashMap<>();
 
     /**
      * Get the output directory for the content package converter
@@ -210,51 +115,15 @@ public class AemAnalyseMojo extends AbstractMojo {
     }
 
     /**
-     * Detect if the execution should be skipped
-     * @return {@code true} if execution should be skipped
-     */
-    boolean skipRun() {
-        // check env var
-        final String skipVar = System.getenv(Constants.SKIP_ENV_VAR);
-        boolean skipExecution = skipVar != null && skipVar.length() > 0;
-        if ( skipExecution ) {
-            getLog().info("Skipping AEM analyser plugin as variable " + Constants.SKIP_ENV_VAR + " is set.");
-        } else if ( this.skip ) {
-            skipExecution = true;
-            getLog().info("Skipping AEM analyser plugin as configured.");
-        }
-
-        return skipExecution;
-    }
-
-    /**
      * Execute the plugin
      */
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        if (this.skipRun()) {
-            return;
-        }
-
-        final VersionUtil versionUtil = new VersionUtil(this.getLog(), this.project, artifactHandlerManager,
-                this.repoSystem, this.repoSession,
-                this.mavenSession.isOffline());
-
-        versionUtil.checkPluginVersion(this.plugin.getGroupId(), this.plugin.getArtifactId(), this.plugin.getVersion());
-
-        final ArtifactId sdkId = versionUtil.getSDKArtifactId(this.sdkArtifactId, this.sdkVersion, this.useDependencyVersions);
-        final List<ArtifactId> addons = versionUtil.discoverAddons(this.addons, this.useDependencyVersions);
-
-        // log warnings at start and end
-        for(final String msg : versionUtil.getVersionWarnings()) {
-            this.getLog().warn(msg);
-        }
-
-        // warnings and errors not generated by the analysers
+    public AemAnalyserResult doExecute(final ArtifactId sdkId, 
+        final List<ArtifactId> addons) 
+    throws MojoExecutionException, MojoFailureException {
         final List<String> additionalWarnings = new ArrayList<>();
-        additionalWarnings.addAll(versionUtil.getVersionWarnings());
         final List<String> additionalErrors = new ArrayList<>();
-
+        
         // 1. Phase : convert content packages
         this.convertContentPackages(additionalWarnings, additionalErrors);
 
@@ -264,7 +133,10 @@ public class AemAnalyseMojo extends AbstractMojo {
             final List<Feature> features = this.aggregateFeatureModels(sdkId, addons, compositeArtifactProvider);
 
             // 3. Phase : analyse features
-            this.analyseFeatures(features, additionalWarnings, additionalErrors, compositeArtifactProvider);
+            final AemAnalyserResult result = this.analyseFeatures(features, additionalWarnings, additionalErrors, compositeArtifactProvider);
+            additionalWarnings.stream().forEach(msg -> result.getWarnings().add(msg));
+            additionalErrors.stream().forEach(msg -> result.getErrors().add(msg));
+            return result;
         } catch (IOException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
@@ -411,11 +283,10 @@ public class AemAnalyseMojo extends AbstractMojo {
      * @throws MojoFailureException If the analysis fails
      * @throws MojoExecutionException If something goes wrong
      */
-    void analyseFeatures(final List<Feature> features, 
+    AemAnalyserResult analyseFeatures(final List<Feature> features, 
             final List<String> additionalWarnings, 
             final List<String> additionalErrors, 
             final ArtifactProvider artifactProvider) throws MojoFailureException, MojoExecutionException {
-        boolean hasErrors = false;
         try {
             final AemAnalyser analyser = new AemAnalyser();
             analyser.setArtifactProvider(artifactProvider);
@@ -423,43 +294,12 @@ public class AemAnalyseMojo extends AbstractMojo {
             analyser.setIncludedUserTasks(this.getAnalyserUserTasks());
             analyser.setTaskConfigurations(this.getAnalyserTaskConfigurations());
 
-            final AemAnalyserResult result = analyser.analyse(features);
+            return analyser.analyse(features);
             
-            // print additional warnings first
-            for(final String msg : additionalWarnings) {
-                if ( strictValidation ) {
-                    getLog().error(msg);
-                } else {
-                    getLog().warn(msg);
-                }
-            }
-            // now analyser warnings
-            for(final String msg : result.getWarnings()) {
-                if ( strictValidation ) {
-                    getLog().error(msg);
-                } else {
-                    getLog().warn(msg);
-                }
-            }
-            // print additional errors, next
-            additionalErrors.stream().forEach(msg -> getLog().error(msg));
-
-            // finally, analyser errors
-            result.getErrors().stream().forEach(msg -> getLog().error(msg));
-            hasErrors = result.hasErrors() || !additionalErrors.isEmpty() || (strictValidation && (result.hasWarnings() || !additionalWarnings.isEmpty()));
-
         } catch ( final Exception e) {
             throw new MojoExecutionException("A fatal error occurred while analysing the features, see error cause:",
                     e);
         }
-
-        if (hasErrors) {
-            if ( failOnAnalyserErrors ) {
-                throw new MojoFailureException(
-                    "One or more feature analyser(s) detected feature error(s), please read the plugin log for more details");
-            }
-            getLog().warn("Errors found during analyser run, but this plugin is configured to ignore errors and continue the build!");
-        }        
     }
 
     /**
@@ -538,71 +378,5 @@ public class AemAnalyseMojo extends AbstractMojo {
         amcfg.setRepositoryUrls(new String[] { getConversionOutputDir().toURI().toURL().toString() });
 
         return ArtifactManager.getArtifactManager(amcfg);
-    }
-
-    /**
-     * Find the artifact in the collection
-     * @param id The artifact id
-     * @param artifacts The collection
-     * @return The artifact or {@code null}
-     */
-    private static Artifact findArtifact(final ArtifactId id, final Collection<Artifact> artifacts) {
-        if (artifacts != null) {
-            for(final Artifact artifact : artifacts) {
-                if ( artifact.getGroupId().equals(id.getGroupId())
-                   && artifact.getArtifactId().equals(id.getArtifactId())
-                   && artifact.getVersion().equals(id.getVersion())
-                   && artifact.getType().equals(id.getType())
-                   && ((id.getClassifier() == null && artifact.getClassifier() == null) || (id.getClassifier() != null && id.getClassifier().equals(artifact.getClassifier()))) ) {
-                    return artifact.getFile() == null ? null : artifact;
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Get a resolved Artifact from the coordinates provided
-     *
-     * @param id The ID of the artifact to get/resolve.
-     * @return the artifact, which has been resolved.
-     * @throws RuntimeException if the artifact can't be resolved
-     */
-    Artifact getOrResolveArtifact(final ArtifactId id) {
-        Artifact result = this.artifactCache.get(id.toMvnId());
-        if ( result == null ) {
-            result = findArtifact(id, project.getAttachedArtifacts());
-            if ( result == null ) {
-                result = findArtifact(id, project.getArtifacts());
-                if ( result == null ) {
-                    ArtifactRequest req = new ArtifactRequest(new org.eclipse.aether.artifact.DefaultArtifact(id.toMvnId()), project.getRemoteProjectRepositories(), null);
-                    try {
-                        ArtifactResult resolutionResult = repoSystem.resolveArtifact(repoSession, req);
-                        result = RepositoryUtils.toArtifact(resolutionResult.getArtifact());
-                    } catch (ArtifactResolutionException e) {
-                        throw new RuntimeException("Unable to get artifact for " + id.toMvnId(), e);
-                    }
-                }
-            }
-            this.artifactCache.put(id.toMvnId(), result);
-        }
-
-        return result;
-    }
-    
-    /**
-     * Get a resolved feature
-     *
-     * @param id The artifact id of the feature
-     * @return The feature
-     * @throws RuntimeException if the feature can't be resolved
-     */
-    Feature getOrResolveFeature(final ArtifactId id) {
-        final File artFile = getOrResolveArtifact(id).getFile();
-        try (final Reader reader = new FileReader(artFile)) {
-            return FeatureJSONReader.read(reader, artFile.getAbsolutePath());
-        } catch (final IOException ioe) {
-            throw new RuntimeException("Unable to read feature file " + artFile + " for " + id.toMvnId(), ioe);
-        }
     }
 }

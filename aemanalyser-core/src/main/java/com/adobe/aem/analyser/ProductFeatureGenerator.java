@@ -18,6 +18,8 @@ import java.util.Map;
 
 import org.apache.sling.feature.Feature;
 
+import com.adobe.aem.project.ServiceType;
+
 /**
  * Generates product aggregates
  */
