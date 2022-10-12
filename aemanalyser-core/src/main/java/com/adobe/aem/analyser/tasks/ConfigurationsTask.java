@@ -215,7 +215,7 @@ public class ConfigurationsTask {
      * @param features The features map for author and publish
      * @throws IOException
      */
-    public void analyseConfigFile(final ConfigurationFile file, 
+    private void analyseConfigFile(final ConfigurationFile file, 
             final TaskResult result,
             final Map<ServiceType, ConfigurationApi> productApis,
             final Feature customFeature,
