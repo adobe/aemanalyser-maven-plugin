@@ -34,6 +34,7 @@ import org.apache.sling.feature.extension.apiregions.api.config.validation.Prope
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.adobe.aem.analyser.tasks.ConfigurationFile.Location;
 import com.adobe.aem.project.RunModes;
 import com.adobe.aem.project.ServiceType;
 
@@ -70,9 +71,11 @@ public class ConfigurationsTask {
         if ( directory.exists() ) {
             this.context.checkProjectFile(directory);
             logger.debug("Scanning {}", this.context.getRelativePath(directory));
-            final File apps = new File(directory, "apps");
-            if ( apps.exists() ) {
-                scanRepositoryForConfigFolders(result, apps);
+            for(final String rootDir : new String[] {"libs", "apps"}) {
+                final File dir = new File(directory, rootDir);
+                if ( dir.exists() ) {
+                    scanRepositoryForConfigFolders(result, dir, "apps".equals(rootDir) ? Location.APPS : Location.LIBS);
+                }    
             }
         } else {
             logger.debug("Configured repository directory does not exist: {}", directory.getAbsolutePath());
@@ -127,17 +130,18 @@ public class ConfigurationsTask {
      * Scan the repository for config folders
      * @param configFiles The list of files
      * @param dir Directory
+     * @param location The location
      * @throws IOException
      */
-    private void scanRepositoryForConfigFolders(final List<ConfigurationFile> configFiles, final File dir) throws IOException {
+    private void scanRepositoryForConfigFolders(final List<ConfigurationFile> configFiles, final File dir, final Location location) throws IOException {
         logger.debug("Scanning for configuration folders in {}", this.context.getRelativePath(dir));
         for(final File f : dir.listFiles()) {
             if ( f.isDirectory() ) {
                 final String runMode = isConfigFolder(f);
                 if ( runMode != null ) {
-                    scanConfigurationFolder(configFiles, f, runMode, 1);
+                    scanConfigurationFolder(configFiles, f, runMode, location, 1);
                 } else {
-                    scanRepositoryForConfigFolders(configFiles, f);
+                    scanRepositoryForConfigFolders(configFiles, f, location);
                 }
             }
         }
@@ -148,18 +152,19 @@ public class ConfigurationsTask {
      * @param configFiles The configurations
      * @param dir The folder
      * @param runMode The run mode
+     * @param location The location
      * @param level The level
      * @throws IOException
      */
-    private void scanConfigurationFolder(final List<ConfigurationFile> configFiles, final File dir, final String runMode, final int level) throws IOException {
+    private void scanConfigurationFolder(final List<ConfigurationFile> configFiles, final File dir, final String runMode, final Location location, final int level) throws IOException {
         logger.debug("Scanning for configurations in {}", this.context.getRelativePath(dir));
         for(final File f : dir.listFiles()) {
             if ( f.isDirectory() ) {
-                scanConfigurationFolder(configFiles, f, runMode, level+1);
+                scanConfigurationFolder(configFiles, f, runMode, location, level+1);
             } else {
                 final ConfigurationFileType type = ConfigurationFileType.fromFileName(f.getName());
                 if ( type != null ) {
-                    final ConfigurationFile file = new ConfigurationFile(f, type);
+                    final ConfigurationFile file = new ConfigurationFile(location, f, type);
                     file.setLevel(level);
                     file.setRunMode(runMode.isEmpty() ? null : runMode);
                     configFiles.add(file);
@@ -218,6 +223,10 @@ public class ConfigurationsTask {
         if ( taskConfig.isEnforceRepositoryConfigurationBelowConfigFolder() && file.getLevel() > 1 ) {
             result.getErrors().add(context.newAnnotation(file.getSource(), 
                 "Configuration must be directly inside a configuration folder and not in a sub folder."));
+        }
+        if ( file.getLocation() == Location.LIBS) {
+            result.getErrors().add(context.newAnnotation(file.getSource(), 
+                "Configuration must be inside the apps folder (not libs)."));
         }
         if ( checkRunMode(file, result) ) {
             final Dictionary<String, Object> properties = file.readConfiguration();

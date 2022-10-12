@@ -46,19 +46,33 @@ import org.xml.sax.helpers.DefaultHandler;
  * A configuration file
  */
 public final class ConfigurationFile {
-    
+
+    public enum Location {
+        APPS,
+        LIBS;
+    }
+
     private String runMode;
     private int level = -1;
     private final File source;
     private final ConfigurationFileType type;
+    private final Location location;
 
-    public ConfigurationFile(final File source) {
-        this(source, ConfigurationFileType.fromFileName(source.getName()));
+    public ConfigurationFile(final Location l, final File source) {
+        this(l, source, ConfigurationFileType.fromFileName(source.getName()));
     }
 
-    public ConfigurationFile(final File source, final ConfigurationFileType type) {
+    public ConfigurationFile(final Location l, final File source, final ConfigurationFileType type) {
+        this.location = l;
         this.source = source;
         this.type = type;
+    }
+
+    /**
+     * @return the location
+     */
+    public Location getLocation() {
+        return location;
     }
 
     /**

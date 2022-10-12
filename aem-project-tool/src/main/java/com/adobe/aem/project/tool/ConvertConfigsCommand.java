@@ -30,6 +30,7 @@ import com.adobe.aem.analyser.tasks.ConfigurationsTask;
 import com.adobe.aem.analyser.tasks.ConfigurationsTaskConfig;
 import com.adobe.aem.analyser.tasks.TaskContext;
 import com.adobe.aem.analyser.tasks.TaskResult;
+import com.adobe.aem.analyser.tasks.ConfigurationFile.Location;
 import com.adobe.aem.project.RunModes;
 import com.adobe.aem.project.ServiceType;
 
@@ -90,6 +91,11 @@ public class ConvertConfigsCommand extends AbstractCommand {
                 directory = directory.getParentFile();
             }
         }
+        if ( file.getLocation() == Location.LIBS ) {
+            final String path = directory.getAbsolutePath();
+            final int lastPos = path.lastIndexOf(File.separator.concat("libs").concat(File.separator));
+            directory = new File(path.substring(0, lastPos + 1).concat("apps").concat(path.substring(lastPos + 5)));
+        }
         final boolean convert = file.getType() != ConfigurationFileType.JSON;
         boolean removedProperties = false;
         if ( this.removeDefaultValues ) {
@@ -111,6 +117,7 @@ public class ConvertConfigsCommand extends AbstractCommand {
         }
         if ( !this.isDryRun() && (convert || move || removedProperties || remove )) {
             if ( !remove ) {
+                directory.mkdirs();
                 try ( final Writer writer = new FileWriter(outFile)) {
                     Configurations.buildWriter().build(writer).writeConfiguration(properties);
                 }    
