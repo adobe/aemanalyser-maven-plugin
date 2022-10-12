@@ -162,12 +162,14 @@ public class ConfigurationsTask {
             if ( f.isDirectory() ) {
                 scanConfigurationFolder(configFiles, f, runMode, location, level+1);
             } else {
-                final ConfigurationFileType type = ConfigurationFileType.fromFileName(f.getName());
-                if ( type != null ) {
-                    final ConfigurationFile file = new ConfigurationFile(location, f, type);
-                    file.setLevel(level);
-                    file.setRunMode(runMode.isEmpty() ? null : runMode);
-                    configFiles.add(file);
+                if ( !f.getName().startsWith(".") ) {
+                    final ConfigurationFileType type = ConfigurationFileType.fromFileName(f.getName());
+                    if ( type != null ) {
+                        final ConfigurationFile file = new ConfigurationFile(location, f, type);
+                        file.setLevel(level);
+                        file.setRunMode(runMode.isEmpty() ? null : runMode);
+                        configFiles.add(file);
+                    }    
                 }
             }
         }
