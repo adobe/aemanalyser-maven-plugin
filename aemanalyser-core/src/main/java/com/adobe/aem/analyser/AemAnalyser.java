@@ -59,8 +59,8 @@ public class AemAnalyser {
     /**
      * These tasks are executed on the user aggregates (before the product is merged in)
      */
-    public static final String DEFAULT_USER_TASKS = "bundle-content"
-        + ",bundle-resources"
+    public static final String DEFAULT_USER_TASKS =
+          "bundle-resources"
         + ",bundle-nativecode"
         + ",bundle-unversioned-packages"
 	    + ",artifact-rules"
