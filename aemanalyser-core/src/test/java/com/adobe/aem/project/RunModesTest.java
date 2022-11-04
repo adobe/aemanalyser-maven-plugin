@@ -21,13 +21,17 @@ import org.junit.Test;
 public class RunModesTest {
 
     @Test public void testINVALID_MODES() {
-        assertEquals(6, RunModes.INVALID_MODES.size());
+        assertEquals(10, RunModes.INVALID_MODES.size());
         assertEquals("author.dev", RunModes.INVALID_MODES.get("dev.author"));
         assertEquals("author.stage", RunModes.INVALID_MODES.get("stage.author"));
         assertEquals("author.prod", RunModes.INVALID_MODES.get("prod.author"));
         assertEquals("publish.dev", RunModes.INVALID_MODES.get("dev.publish"));
         assertEquals("publish.stage", RunModes.INVALID_MODES.get("stage.publish"));
         assertEquals("publish.prod", RunModes.INVALID_MODES.get("prod.publish"));
+        assertEquals("author.sdk", RunModes.INVALID_MODES.get("sdk.author"));
+        assertEquals("author.rde", RunModes.INVALID_MODES.get("rde.author"));
+        assertEquals("publish.sdk", RunModes.INVALID_MODES.get("sdk.publish"));
+        assertEquals("publish.rde", RunModes.INVALID_MODES.get("rde.publish"));
     }
 
     @Test public void testGLOBAL_RUN_MODES() {
@@ -95,6 +99,15 @@ public class RunModesTest {
         assertTrue(RunModes.isRunModeAllowed("author.dev"));
         assertTrue(RunModes.isRunModeAllowed("publish.stage"));
         assertFalse(RunModes.isRunModeAllowed("foo"));
+        assertFalse(RunModes.isRunModeAllowed("sdk"));
+    }
+
+    @Test public void testIsRunModeAllowedIncludingSDK() {
+        assertTrue(RunModes.isRunModeAllowedIncludingSDK("dev"));
+        assertTrue(RunModes.isRunModeAllowedIncludingSDK("author.dev"));
+        assertTrue(RunModes.isRunModeAllowedIncludingSDK("publish.stage"));
+        assertFalse(RunModes.isRunModeAllowedIncludingSDK("foo"));
+        assertTrue(RunModes.isRunModeAllowedIncludingSDK("sdk"));
     }
 
     @Test public void testCheckIfRunModeIsSpecifiedInWrongOrder() {

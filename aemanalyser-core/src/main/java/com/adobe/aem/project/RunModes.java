@@ -27,19 +27,22 @@ import java.util.stream.Stream;
 public class RunModes {
 
     /** The map of invalid runmodes and the valid one to use. */
-    static final Map<String, String> INVALID_MODES = new HashMap<>();
+    static final Map<String, String> INVALID_MODES;
     static {
-        for(final EnvironmentType env : EnvironmentType.values()) {
-            for(final ServiceType service : ServiceType.values()) {
-                INVALID_MODES.put(env.asString().concat(".").concat(service.asString()), service.asString().concat(".").concat(env.asString()));
+        final Set<String> sdk = new HashSet<>();
+        final Map<String, String> invalid = new HashMap<>();
+        for(final ServiceType service : ServiceType.values()) {
+            for(final EnvironmentType env : EnvironmentType.values()) {
+                invalid.put(env.asString().concat(".").concat(service.asString()), service.asString().concat(".").concat(env.asString()));
+            }
+            for(final SDKType env : SDKType.values()) {
+                invalid.put(env.asString().concat(".").concat(service.asString()), service.asString().concat(".").concat(env.asString()));
+                sdk.add(service.asString().concat(".").concat(env.asString()));
+                sdk.add(env.asString());
             }
         }
-        final Set<String> sdk = new HashSet<>();
-        for(final ServiceType service : ServiceType.values()) {
-           sdk.add(service.asString().concat(".sdk"));
-        }
-        sdk.add("sdk");
         SDK_ONLY_MODES = Collections.unmodifiableSet(sdk);
+        INVALID_MODES = Collections.unmodifiableMap(invalid);
     }
 
     /** 
