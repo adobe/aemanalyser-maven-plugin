@@ -48,8 +48,8 @@ public class ConfigurationsTask {
 
     /**
      * Create new task
-     * @param context
-     * @param config
+     * @param context The task context
+     * @param config The task config
      * @throws NullPointerException If any of the arguments is {@code null}
      */
     public ConfigurationsTask(final TaskContext context, final ConfigurationsTaskConfig config) {
