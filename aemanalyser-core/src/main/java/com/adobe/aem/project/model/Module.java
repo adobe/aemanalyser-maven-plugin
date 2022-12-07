@@ -11,11 +11,45 @@
 */
 package com.adobe.aem.project.model;
 
-public class Module {
+import java.io.File;
+import java.io.Serializable;
+
+import com.adobe.aem.project.ServiceType;
+
+public class Module implements Serializable {
 
     private String name;
 
     private ModuleType type;
+
+    private final File directory;
+
+    private String mvnId;
+
+    public Module(final File directory) {
+        this.directory = directory;
+    }
+
+    public File getDirectory() {
+        return this.directory;
+    }
+
+    public ServiceType getServiceType() {
+        if ( this.directory.getName().contains("_author_") ) {
+            return ServiceType.AUTHOR;
+        } else if ( this.directory.getName().contains("_publish_") ) {
+            return ServiceType.PUBLISH;
+        }
+        return null;
+    }
+
+    public String getMvnId() {
+        return mvnId;
+    }
+
+    public void setMvnId(String mvnId) {
+        this.mvnId = mvnId;
+    }
 
     public String getName() {
         return name;

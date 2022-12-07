@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.Serializable;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.util.Collections;
@@ -32,7 +33,7 @@ import com.adobe.aem.project.EnvironmentType;
 import com.adobe.aem.project.SDKType;
 import com.adobe.aem.project.ServiceType;
 
-public class Application {
+public class Application implements Serializable {
 
     public static final String CFG_SOURCE = Configuration.CONFIGURATOR_PREFIX.concat("source");
 

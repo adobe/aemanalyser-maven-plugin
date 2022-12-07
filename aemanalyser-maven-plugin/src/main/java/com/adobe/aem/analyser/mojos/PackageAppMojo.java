@@ -17,8 +17,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
-
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
@@ -40,6 +41,8 @@ import com.adobe.aem.project.EnvironmentType;
 import com.adobe.aem.project.SDKType;
 import com.adobe.aem.project.ServiceType;
 import com.adobe.aem.project.model.Application;
+import com.adobe.aem.project.model.Module;
+import com.adobe.aem.project.model.Project;
 
 @Mojo(name = "package-app", 
     defaultPhase = LifecyclePhase.PACKAGE,
@@ -54,11 +57,23 @@ public class PackageAppMojo extends AbstractAemMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        getLog().warn("*********************************************************************************************");
         getLog().warn("THIS MOJO IS IN ALPHA STATE. USE WITH CAUTION AT YOUR OWN RISK");
         getLog().warn("THE FUNCTIONALITY MIGHT CHANGE OR BREAK WITHOUT PRIOR NOTICE");
+        getLog().warn("*********************************************************************************************");
         new File(this.project.getBuild().getDirectory()).mkdirs();
 
-        final Application app = new Application(this.project.getBasedir());
+        Project pr = DependencyLifecycleParticipant.getProject(this.project);
+        if ( pr == null ) {
+            pr = new Project(this.project.getBasedir().getParentFile());
+            pr.scan();
+        }
+        final Application app;
+        if ( pr.getApplication() == null || !pr.getApplication().getDirectory().getAbsolutePath().equals(this.project.getBasedir().getAbsolutePath())) {
+            app = new Application(this.project.getBasedir());
+        } else {
+            app = pr.getApplication();
+        }
 
         final File buildDirectory = new File(this.project.getBuild().getDirectory());
         final File buildFile = new File(buildDirectory, this.project.getBuild().getFinalName().concat(".zip"));
@@ -80,13 +95,21 @@ public class PackageAppMojo extends AbstractAemMojo {
             this.addFile(defFile, "META-INF/vault/definition/" + defFile.getName());
             this.addFile(propsFile, "META-INF/vault/" + propsFile.getName());
     
-            this.processArtifacts(app.getBundles(null), null);
-            this.processArtifacts(app.getBundles(ServiceType.AUTHOR), ServiceType.AUTHOR.asString());
-            this.processArtifacts(app.getBundles(ServiceType.PUBLISH), ServiceType.PUBLISH.asString());
+            final Map<ArtifactId, ServiceType> moduleIds = new HashMap<>();
+            for(final Module m : pr.getModules()) {
+                if ( m.getMvnId() != null) {
+                    final ArtifactId id = ArtifactId.fromMvnId(m.getMvnId());
+                    final Artifact a = new Artifact(id);
+                    this.processArtifact(moduleIds, a, m.getServiceType());
+                }
+            }
+            this.processArtifacts(moduleIds, app.getBundles(null), null);
+            this.processArtifacts(moduleIds, app.getBundles(ServiceType.AUTHOR), ServiceType.AUTHOR);
+            this.processArtifacts(moduleIds, app.getBundles(ServiceType.PUBLISH), ServiceType.PUBLISH);
 
-            this.processArtifacts(app.getContentPackages(null), null);
-            this.processArtifacts(app.getContentPackages(ServiceType.AUTHOR), ServiceType.AUTHOR.asString());
-            this.processArtifacts(app.getContentPackages(ServiceType.PUBLISH), ServiceType.PUBLISH.asString());
+            this.processArtifacts(moduleIds, app.getContentPackages(null), null);
+            this.processArtifacts(moduleIds, app.getContentPackages(ServiceType.AUTHOR), ServiceType.AUTHOR);
+            this.processArtifacts(moduleIds, app.getContentPackages(ServiceType.PUBLISH), ServiceType.PUBLISH);
 
             this.processConfigurations(app.getConfigurations(null, null, null), null);
             this.processConfigurations(app.getConfigurations(null, SDKType.RDE, null), SDKType.RDE.asString());
@@ -149,14 +172,30 @@ public class PackageAppMojo extends AbstractAemMojo {
         }
     }
 
-    private void processArtifacts(final Artifacts artifacts, final String runmode) throws MojoExecutionException {
+    private void processArtifacts(final Map<ArtifactId, ServiceType> moduleIds, final Artifacts artifacts, final ServiceType serviceType) throws MojoExecutionException {
         if ( artifacts != null ) {
             for(final Artifact a : artifacts) {
-                final String path = this.getArtifactPath(runmode, a);
-                final File file = this.getOrResolveArtifact(a.getId()).getFile();
-                this.addFile(file, path);
+                processArtifact(moduleIds, a, serviceType);
             }
         }
+    }
+
+    private void processArtifact(final Map<ArtifactId, ServiceType> moduleIds, final Artifact a, ServiceType serviceType) throws MojoExecutionException {
+        if ( moduleIds.containsKey(a.getId()) ) {
+            if ( moduleIds.get(a.getId()) == serviceType ) {
+                return;
+            }
+            if ( moduleIds.get(a.getId()) == null ) {
+                return;
+            }
+            if ( serviceType != null ) {
+                serviceType = null;
+            }
+        }
+        moduleIds.put(a.getId(), serviceType);
+        final String path = this.getArtifactPath(serviceType == null ? null : serviceType.asString(), a);
+        final File file = this.getOrResolveArtifact(a.getId()).getFile();
+        this.addFile(file, path);
     }
 
     private String getPackageId() {

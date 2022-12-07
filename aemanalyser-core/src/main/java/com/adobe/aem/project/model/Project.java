@@ -12,10 +12,11 @@
 package com.adobe.aem.project.model;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Project {
+public class Project implements Serializable {
 
     private final List<Module> modules = new ArrayList<>();
 
@@ -35,6 +36,14 @@ public class Project {
             if ( f.isDirectory() ) {
                 if ( "application".equals(f.getName()) ) {
                     this.setApplication(new Application(f));
+                } else if ( f.getName().startsWith("bundle_") ) {
+                    final Module m = new Module(f);
+                    m.setType(ModuleType.BUNDLE);
+                    this.getModules().add(m);
+                } else if ( f.getName().startsWith("content_") ) {
+                    final Module m = new Module(f);
+                    m.setType(ModuleType.CONTENT);
+                    this.getModules().add(m);
                 }
             }
         }

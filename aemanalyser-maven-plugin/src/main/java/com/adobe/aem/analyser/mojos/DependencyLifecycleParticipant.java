@@ -11,14 +11,25 @@
 */
 package com.adobe.aem.analyser.mojos;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Exclusion;
+import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.project.MavenProject;
 import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
@@ -26,9 +37,12 @@ import org.apache.sling.feature.Artifacts;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.Logger;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 import com.adobe.aem.project.ServiceType;
 import com.adobe.aem.project.model.Application;
+import com.adobe.aem.project.model.Module;
+import com.adobe.aem.project.model.ModuleType;
 import com.adobe.aem.project.model.Project;
 
 /**
@@ -42,6 +56,8 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
      */
     private static final String PLUGIN_ID = "com.adobe.aem:aemanalyser-maven-plugin";
 
+    private static final String SCOPE_PROVIDED = "provided";
+
     @Requirement
     private Logger logger;
 
@@ -49,57 +65,131 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
     public void afterProjectsRead(final MavenSession session) throws MavenExecutionException {
         logger.debug("Searching for project using plugin '" + PLUGIN_ID + "'...");
 
+        final List<MavenProject> apps = new ArrayList<>();
         for (final MavenProject project : session.getProjects()) {
             final Plugin plugin = project.getPlugin(PLUGIN_ID);
-            if (plugin != null) {
-                logger.debug("Found project " + project.getId() + " using " + PLUGIN_ID);
-                if ( "aemapp".equals(project.getPackaging()) ) {
-                    logger.info("Found application project " + project.getId() + " using " + PLUGIN_ID);
-                    final Project p = new Project(project.getBasedir().getParentFile());
-                    p.scan();
-                    final Application app = p.getApplication();
-
-                    logger.info("Adding dependencies...");
-                    try {
-                        addArtifacts(project, app.getBundles(null));
-                    } catch ( final IOException ioe) {
-                        // we ignore this
-                    }
-                    try {
-                        addArtifacts(project, app.getBundles(ServiceType.AUTHOR));
-                    } catch ( final IOException ioe) {
-                        // we ignore this
-                    }
-                    try {
-                        addArtifacts(project, app.getBundles(ServiceType.PUBLISH));
-                    } catch ( final IOException ioe) {
-                        // we ignore this
-                    }
-                    try {
-                        addArtifacts(project, app.getContentPackages(null));
-                    } catch ( final IOException ioe) {
-                        // we ignore this
-                    }
-                    try {
-                        addArtifacts(project, app.getContentPackages(ServiceType.AUTHOR));
-                    } catch ( final IOException ioe) {
-                        // we ignore this
-                    }
-                    try {
-                        addArtifacts(project, app.getContentPackages(ServiceType.PUBLISH));
-                    } catch ( final IOException ioe) {
-                        // we ignore this
-                    }
-                    logger.debug("Done adding dependencies");
-                }
+            if (plugin != null && "aemapp".equals(project.getPackaging()) ) {
+                apps.add(project);
             }
         }
+        for(final MavenProject project : apps) {
+            processProject(project, session);
+        }
+    }
+
+    private void processProject(final MavenProject mavenProject, final MavenSession session) {
+        logger.debug("Found application project " + mavenProject.getId());
+        final Project project = new Project(mavenProject.getBasedir().getParentFile());
+        project.scan();
+        final Application app = project.getApplication();
+        // sanity check
+        if ( app == null || !app.getDirectory().getAbsolutePath().equals(mavenProject.getBasedir().getAbsolutePath())) {
+            logger.debug("Skipping project due to setup mismatch");
+            return;
+        }
+
+        for(final Module m : project.getModules()) {
+            if ( m.getType() != ModuleType.BUNDLE && m.getType() != ModuleType.CONTENT ) {
+                continue;
+            }
+            // check whether module is in the current build
+            MavenProject found = null;
+            for(final MavenProject p : session.getProjects()) {
+                if ( p.getBasedir().getAbsolutePath().equals(m.getDirectory().getAbsolutePath()) ) {
+                     found = p;
+                     break;
+                }
+            }
+            if ( found == null ) {
+                final File pomFile = new File(m.getDirectory(), "pom.xml");
+                if ( pomFile.exists() ) {
+                    final MavenXpp3Reader reader = new MavenXpp3Reader();
+                    try ( final Reader r = new FileReader(pomFile) ) {
+                        final Model model = reader.read(r);
+                        String groupId = model.getGroupId();
+                        if ( groupId == null && model.getParent() != null ) {
+                            groupId = model.getParent().getGroupId();
+                        }
+                        String version = model.getVersion();
+                        if ( version == null && model.getParent() != null ) {
+                            version = model.getParent().getVersion();
+                        }
+                        if ( groupId != null && model.getArtifactId() != null && version != null ) {
+                            final ArtifactId id = new ArtifactId(groupId, model.getArtifactId(), version, null, 
+                                m.getType() == ModuleType.BUNDLE ? null : "zip");
+                            m.setMvnId(id.toMvnId());
+                            addDependency(mavenProject, id, SCOPE_PROVIDED);    
+                        } 
+                    } catch ( IOException | XmlPullParserException ignore) {
+                        // ignore this
+                    }
+                }
+            } else {
+                final ArtifactId id = new ArtifactId(found.getGroupId(), found.getArtifactId(), found.getVersion(), null, 
+                    m.getType() == ModuleType.BUNDLE ? null : "zip");
+                m.setMvnId(id.toMvnId());
+                addDependency(mavenProject, id, SCOPE_PROVIDED);
+            }
+        }
+        try ( final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+              final ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+            oos.writeObject(project);
+            oos.flush();
+            mavenProject.setContextValue(PLUGIN_ID, baos.toByteArray());
+        } catch ( final IOException ignore) {
+            // we ignore this
+        }
+        logger.debug("Adding dependencies...");
+        try {
+            addArtifacts(mavenProject, app.getBundles(null));
+        } catch ( final IOException ioe) {
+            // we ignore this
+        }
+        try {
+            addArtifacts(mavenProject, app.getBundles(ServiceType.AUTHOR));
+        } catch ( final IOException ioe) {
+            // we ignore this
+        }
+        try {
+            addArtifacts(mavenProject, app.getBundles(ServiceType.PUBLISH));
+        } catch ( final IOException ioe) {
+            // we ignore this
+        }
+        try {
+            addArtifacts(mavenProject, app.getContentPackages(null));
+        } catch ( final IOException ioe) {
+            // we ignore this
+        }
+        try {
+            addArtifacts(mavenProject, app.getContentPackages(ServiceType.AUTHOR));
+        } catch ( final IOException ioe) {
+            // we ignore this
+        }
+        try {
+            addArtifacts(mavenProject, app.getContentPackages(ServiceType.PUBLISH));
+        } catch ( final IOException ioe) {
+            // we ignore this
+        }
+        logger.debug("Done adding dependencies");
+    }
+
+    public static Project getProject(final MavenProject mavenProject) {
+        final byte[] data = (byte[]) mavenProject.getContextValue(PLUGIN_ID);
+        if ( data != null ) {
+            try ( final ByteArrayInputStream bais = new ByteArrayInputStream(data);
+                  final ObjectInputStream ois = new ObjectInputStream(bais)) {
+                return (Project) ois.readObject();
+            } catch ( final IOException | ClassNotFoundException ignore) {
+                // we ignore this
+            }
+        }
+        return null;
     }
 
     private void addArtifacts(final MavenProject project, final Artifacts artifacts) {
         if ( artifacts != null ) {
             for(final Artifact a : artifacts) {
-                this.addDependency(project, a.getId(), "provided");
+                this.addDependency(project, a.getId(), SCOPE_PROVIDED);
             }
         }        
     }
@@ -121,7 +211,7 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
              && id.getArtifactId().equals(project.getArtifactId())
              && id.getVersion().equals(project.getVersion()) ) {
             // skip artifact from the same project
-            logger.info("- skipping dependency " + id.toMvnId());
+            logger.debug("- skipping dependency " + id.toMvnId());
         } else {
 
 			boolean found = false;
