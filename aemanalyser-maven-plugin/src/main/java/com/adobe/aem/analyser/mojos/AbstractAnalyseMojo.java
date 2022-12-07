@@ -11,41 +11,21 @@
 */
 package com.adobe.aem.analyser.mojos;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.maven.RepositoryUtils;
-import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.MavenProject;
 import org.apache.sling.feature.ArtifactId;
-import org.apache.sling.feature.Feature;
-import org.apache.sling.feature.io.json.FeatureJSONReader;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.resolution.ArtifactRequest;
-import org.eclipse.aether.resolution.ArtifactResolutionException;
-import org.eclipse.aether.resolution.ArtifactResult;
-
 import com.adobe.aem.analyser.AemAnalyserResult;
 
 /**
  * Abstract base class for all analyse mojos
  */
-public abstract class AbstractAnalyseMojo extends AbstractMojo {
+public abstract class AbstractAnalyseMojo extends AbstractAemMojo {
 
     /**
      * The artifact id of the sdk api jar. The artifact id is automatically detected by this plugin,
@@ -94,12 +74,6 @@ public abstract class AbstractAnalyseMojo extends AbstractMojo {
     private boolean strictValidation;
 
     /**
-     * The maven project
-     */
-    @Parameter(property = "project", readonly = true, required = true)
-    protected MavenProject project;
-
-    /**
      * The artifact manager to resolve artifacts
      */
     @Component
@@ -111,19 +85,8 @@ public abstract class AbstractAnalyseMojo extends AbstractMojo {
     @Parameter(property = "session", readonly = true, required = true)
     protected MavenSession mavenSession;
 
-    @Component
-    private RepositorySystem repoSystem;
-
-    @Parameter(defaultValue = "${repositorySystemSession}", readonly = true, required = true)
-    private RepositorySystemSession repoSession;
-
     @Parameter( defaultValue = "${plugin}", readonly = true ) // Maven 3 only
-    private PluginDescriptor plugin;
-
-    /**
-     * Artifact cache
-     */
-    private final Map<String, Artifact> artifactCache = new ConcurrentHashMap<>();
+    protected PluginDescriptor plugin;
 
     /**
      * Detect if the execution should be skipped
@@ -189,70 +152,4 @@ public abstract class AbstractAnalyseMojo extends AbstractMojo {
     protected abstract AemAnalyserResult doExecute(final ArtifactId sdkId, 
         final List<ArtifactId> addons) 
         throws MojoExecutionException, MojoFailureException;
-
-        /**
-     * Find the artifact in the collection
-     * @param id The artifact id
-     * @param artifacts The collection
-     * @return The artifact or {@code null}
-     */
-    private static Artifact findArtifact(final ArtifactId id, final Collection<Artifact> artifacts) {
-        if (artifacts != null) {
-            for(final Artifact artifact : artifacts) {
-                if ( artifact.getGroupId().equals(id.getGroupId())
-                   && artifact.getArtifactId().equals(id.getArtifactId())
-                   && artifact.getVersion().equals(id.getVersion())
-                   && artifact.getType().equals(id.getType())
-                   && ((id.getClassifier() == null && artifact.getClassifier() == null) || (id.getClassifier() != null && id.getClassifier().equals(artifact.getClassifier()))) ) {
-                    return artifact.getFile() == null ? null : artifact;
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Get a resolved Artifact from the coordinates provided
-     *
-     * @param id The ID of the artifact to get/resolve.
-     * @return the artifact, which has been resolved.
-     * @throws RuntimeException if the artifact can't be resolved
-     */
-    Artifact getOrResolveArtifact(final ArtifactId id) {
-        Artifact result = this.artifactCache.get(id.toMvnId());
-        if ( result == null ) {
-            result = findArtifact(id, project.getAttachedArtifacts());
-            if ( result == null ) {
-                result = findArtifact(id, project.getArtifacts());
-                if ( result == null ) {
-                    ArtifactRequest req = new ArtifactRequest(new org.eclipse.aether.artifact.DefaultArtifact(id.toMvnId()), project.getRemoteProjectRepositories(), null);
-                    try {
-                        ArtifactResult resolutionResult = repoSystem.resolveArtifact(repoSession, req);
-                        result = RepositoryUtils.toArtifact(resolutionResult.getArtifact());
-                    } catch (ArtifactResolutionException e) {
-                        throw new RuntimeException("Unable to get artifact for " + id.toMvnId(), e);
-                    }
-                }
-            }
-            this.artifactCache.put(id.toMvnId(), result);
-        }
-
-        return result;
-    }
-    
-    /**
-     * Get a resolved feature
-     *
-     * @param id The artifact id of the feature
-     * @return The feature
-     * @throws RuntimeException if the feature can't be resolved
-     */
-    Feature getOrResolveFeature(final ArtifactId id) {
-        final File artFile = getOrResolveArtifact(id).getFile();
-        try (final Reader reader = new FileReader(artFile)) {
-            return FeatureJSONReader.read(reader, artFile.getAbsolutePath());
-        } catch (final IOException ioe) {
-            throw new RuntimeException("Unable to read feature file " + artFile + " for " + id.toMvnId(), ioe);
-        }
-    }
 }
