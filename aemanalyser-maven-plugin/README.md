@@ -4,6 +4,8 @@ A Maven plugin used by developers of applications for AEM as a Cloud Service (AE
 
 The plugin provides an easy way to run the same checks locally as in the Cloud Manager pipeline and ensures that the application works correctly when deployed in the cloud.
 
+This plugin requires at least Apache Maven 3.8.1 and Java version 8 or higher.
+
 > **_NOTE:_**  Please make sure to always use the latest version. Refrain from using any version below 1.1.10
 
 ## Functionality
