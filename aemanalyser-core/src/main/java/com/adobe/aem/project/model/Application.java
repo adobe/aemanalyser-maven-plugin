@@ -16,12 +16,13 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.json.stream.JsonParsingException;
+
 import org.apache.sling.feature.Configuration;
 import com.adobe.aem.analyser.tasks.ConfigurationFile;
 import com.adobe.aem.analyser.tasks.ConfigurationFileType;
-import com.adobe.aem.analyser.tasks.TaskResult;
 import com.adobe.aem.analyser.tasks.ConfigurationFile.Location;
-import com.adobe.aem.analyser.tasks.TaskResult.Annotation;
 import com.adobe.aem.project.EnvironmentType;
 import com.adobe.aem.project.SDKType;
 import com.adobe.aem.project.ServiceType;
@@ -143,47 +144,56 @@ public class Application implements Serializable {
         return result;
     }
 
-    public TaskResult verify(final List<ConfigurationFile> configs,
+    public Result verify(final List<ConfigurationFile> configs,
         final List<RepoinitFile> repoinit,
         final List<ArtifactsFile> bundles,
         final List<ArtifactsFile> contentPackages) {
-        final TaskResult result = new TaskResult();
+        final Result result = new Result();
         for(final ConfigurationFile f : configs) {
             try {
                 if ( f.getType() != ConfigurationFileType.JSON ) {
-                    result.getWarnings().add(new Annotation(this.getRelativePath(f.getSource()), "Configurations should use the JSON format"));
+                    result.getWarnings().add(new Result.Annotation(f.getSource(), "Configurations should use the JSON format"));
                 }
                 final Configuration c = new Configuration(f.getPid());
                 if ( RepoinitFile.REPOINIT_FACTORY_PID.equals(c.getFactoryPid()) && (!c.isFactoryConfiguration() && RepoinitFile.REPOINIT_PID.equals(c.getPid()))) {
-                    result.getErrors().add(new Annotation(this.getRelativePath(f.getSource()), "Repoinit must be put inside separate txt files"));
+                    result.getErrors().add(new Result.Annotation(f.getSource(), "Repoinit must be put inside separate txt files"));
                 }
                 f.readConfiguration();
             } catch ( final IOException ioe) {
-                result.getErrors().add(new Annotation(this.getRelativePath(f.getSource()), ioe.getMessage()));
+                result.getErrors().add(getAnnotation(f.getSource(), ioe));
             }
         }
         for(final RepoinitFile f : repoinit) {
             try {
                 f.readContents();
             } catch ( final IOException ioe) {
-                result.getErrors().add(new Annotation(this.getRelativePath(f.getSource()), ioe.getMessage()));
+                result.getErrors().add(new Result.Annotation(f.getSource(), ioe.getMessage()));
             }
         }
         for(final ArtifactsFile f : bundles) {
             try {
                 f.readArtifacts();
             } catch ( final IOException ioe) {
-                result.getErrors().add(new Annotation(this.getRelativePath(f.getSource()), ioe.getMessage()));
+                result.getErrors().add(getAnnotation(f.getSource(), ioe));
             }
         }
         for(final ArtifactsFile f : contentPackages) {
             try {
                 f.readArtifacts();
             } catch ( final IOException ioe) {
-                result.getErrors().add(new Annotation(this.getRelativePath(f.getSource()), ioe.getMessage()));
+                result.getErrors().add(getAnnotation(f.getSource(), ioe));
             }
         }
         return result;
+    }
+
+    private Result.Annotation getAnnotation(final File f, final IOException ioe) {
+        if ( ioe.getCause() != null && ioe.getCause() instanceof JsonParsingException ) {
+            final JsonParsingException jpe = (JsonParsingException) ioe.getCause();
+            return new Result.Annotation(f, jpe.getMessage(), jpe.getLocation() != null ? jpe.getLocation().getLineNumber() : -1,
+                jpe.getLocation() != null ? jpe.getLocation().getColumnNumber() : -1);
+        }
+        return new Result.Annotation(f, ioe.getMessage());
     }
 
     public List<RepoinitFile> getRepoInitFiles() {

@@ -40,9 +40,7 @@ import org.codehaus.plexus.archiver.jar.ManifestException;
 import org.codehaus.plexus.archiver.jar.Manifest.Attribute;
 
 import com.adobe.aem.analyser.tasks.ConfigurationFile;
-import com.adobe.aem.analyser.tasks.TaskResult;
 import com.adobe.aem.analyser.tasks.ConfigurationFile.Location;
-import com.adobe.aem.analyser.tasks.TaskResult.Annotation;
 import com.adobe.aem.project.EnvironmentType;
 import com.adobe.aem.project.SDKType;
 import com.adobe.aem.project.ServiceType;
@@ -51,6 +49,7 @@ import com.adobe.aem.project.model.ArtifactsFile;
 import com.adobe.aem.project.model.Module;
 import com.adobe.aem.project.model.Project;
 import com.adobe.aem.project.model.RepoinitFile;
+import com.adobe.aem.project.model.Result;
 
 @Mojo(name = "package-app", 
     defaultPhase = LifecyclePhase.PACKAGE,
@@ -110,7 +109,7 @@ public class PackageAppMojo extends AbstractAemMojo {
             final List<RepoinitFile> repoinit = app.getRepoInitFiles();
             final List<ArtifactsFile> bundles = app.getBundleFiles();
             final List<ArtifactsFile> contentPackages = app.getContentPackageFiles();
-            final TaskResult result = app.verify(configs, repoinit, bundles, contentPackages);
+            final Result result = app.verify(configs, repoinit, bundles, contentPackages);
             this.processResult(result);
 
             this.processConfigurations(configs);
@@ -137,27 +136,43 @@ public class PackageAppMojo extends AbstractAemMojo {
         project.getArtifact().setFile(buildFile);
     }
 
-    private void processResult(final TaskResult result) throws MojoExecutionException {
-        for(final Annotation ann : result.getWarnings()) {
+    private void processResult(final Result result) throws MojoExecutionException {
+        File baseDir = this.project.getBasedir();
+        if ( this.useSysout ) {
+            boolean done = false;
+            do {
+                final File gitDir = new File(baseDir, ".git");
+                if ( gitDir.exists() && gitDir.isDirectory() ) {
+                    done = true;
+                } else {
+                    baseDir = baseDir.getParentFile();
+                    if ( baseDir == null ) {
+                        baseDir = this.project.getBasedir();
+                        done = true;
+                    }
+                }
+            } while ( !done );
+        }
+        for(final Result.Annotation ann : result.getWarnings()) {
             if ( this.strictValidation ) {
                 if ( this.useSysout ) {
-                    System.out.println(ann.toActionString("error"));
+                    System.out.println(ann.toMessage(Result.Level.error, baseDir));
                 } else {
-                    getLog().error(ann.toActionString("error"));
+                    getLog().error(ann.toMessage(Result.Level.error, baseDir));
                 }
             } else {
                 if ( this.useSysout ) {
-                    System.out.println(ann.toActionString("warning"));
+                    System.out.println(ann.toMessage(Result.Level.warning, baseDir));
                 } else {
-                    getLog().warn(ann.toActionString("warning"));
+                    getLog().warn(ann.toMessage(Result.Level.warning, baseDir));
                 }
             }
         }
-        for(final Annotation ann : result.getErrors()) {
+        for(final Result.Annotation ann : result.getErrors()) {
             if ( this.useSysout ) {
-                System.out.println(ann.toActionString("error"));
+                System.out.println(ann.toMessage(Result.Level.error, baseDir));
             } else {
-                getLog().error(ann.toActionString("error"));
+                getLog().error(ann.toMessage(Result.Level.error, baseDir));
             }
         }
         if ( result.hasErrors() || (this.strictValidation && result.hasWarnings()) ) {
