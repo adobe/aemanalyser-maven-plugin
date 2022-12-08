@@ -67,13 +67,6 @@ public abstract class AbstractAnalyseMojo extends AbstractAemMojo {
     private boolean failOnAnalyserErrors;
 
     /**
-     * If enabled, all analyser warnings will be turned into errors and fail the build.
-     * @since 1.0.12
-     */
-    @Parameter(defaultValue = "false", property = "aem.analyser.strict")
-    private boolean strictValidation;
-
-    /**
      * The artifact manager to resolve artifacts
      */
     @Component

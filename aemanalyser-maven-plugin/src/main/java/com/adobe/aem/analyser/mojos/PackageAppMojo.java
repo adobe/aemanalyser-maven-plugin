@@ -17,9 +17,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Dictionary;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.List;
 import java.util.Properties;
+import java.util.Set;
+
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
@@ -28,21 +32,24 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
-import org.apache.sling.feature.Artifacts;
-import org.apache.sling.feature.Configuration;
-import org.apache.sling.feature.Configurations;
 import org.codehaus.plexus.archiver.ArchiverException;
 import org.codehaus.plexus.archiver.jar.JarArchiver;
 import org.codehaus.plexus.archiver.jar.Manifest;
 import org.codehaus.plexus.archiver.jar.ManifestException;
 import org.codehaus.plexus.archiver.jar.Manifest.Attribute;
 
+import com.adobe.aem.analyser.tasks.ConfigurationFile;
+import com.adobe.aem.analyser.tasks.TaskResult;
+import com.adobe.aem.analyser.tasks.ConfigurationFile.Location;
+import com.adobe.aem.analyser.tasks.TaskResult.Annotation;
 import com.adobe.aem.project.EnvironmentType;
 import com.adobe.aem.project.SDKType;
 import com.adobe.aem.project.ServiceType;
 import com.adobe.aem.project.model.Application;
+import com.adobe.aem.project.model.ArtifactsFile;
 import com.adobe.aem.project.model.Module;
 import com.adobe.aem.project.model.Project;
+import com.adobe.aem.project.model.RepoinitFile;
 
 @Mojo(name = "package-app", 
     defaultPhase = LifecyclePhase.PACKAGE,
@@ -57,9 +64,6 @@ public class PackageAppMojo extends AbstractAemMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        if ( !DependencyLifecycleParticipant.isExperimentalEnabled() ) {
-            return;
-        }
         getLog().warn("*********************************************************************************************");
         getLog().warn("THIS MOJO IS IN ALPHA STATE. USE WITH CAUTION AT YOUR OWN RISK");
         getLog().warn("THE FUNCTIONALITY MIGHT CHANGE OR BREAK WITHOUT PRIOR NOTICE");
@@ -97,44 +101,29 @@ public class PackageAppMojo extends AbstractAemMojo {
             this.addFile(filterFile, "META-INF/vault/" + filterFile.getName());
             this.addFile(defFile, "META-INF/vault/definition/" + defFile.getName());
             this.addFile(propsFile, "META-INF/vault/" + propsFile.getName());
-    
-            final Map<ArtifactId, ServiceType> moduleIds = new HashMap<>();
+
+            final List<ConfigurationFile> configs = app.getConfigurationFiles();
+            final List<RepoinitFile> repoinit = app.getRepoInitFiles();
+            final List<ArtifactsFile> bundles = app.getBundleFiles();
+            final List<ArtifactsFile> contentPackages = app.getContentPackageFiles();
+            final TaskResult result = app.verify(configs, repoinit, bundles, contentPackages);
+            this.processResult(result);
+
+            this.processConfigurations(configs);
+            this.processRepoinit(repoinit);
+
+            final Set<ArtifactId> moduleIds = new HashSet<>();
+            this.processArtifacts(moduleIds, bundles);
+            this.processArtifacts(moduleIds, contentPackages);
+
             for(final Module m : pr.getModules()) {
                 if ( m.getMvnId() != null) {
                     final ArtifactId id = ArtifactId.fromMvnId(m.getMvnId());
-                    final Artifact a = new Artifact(id);
-                    this.processArtifact(moduleIds, a, m.getServiceType());
+                    if ( moduleIds.add(id) ) {
+                        this.processArtifact(new Artifact(id), m.getServiceType());    
+                    }
                 }
             }
-            this.processArtifacts(moduleIds, app.getBundles(null), null);
-            this.processArtifacts(moduleIds, app.getBundles(ServiceType.AUTHOR), ServiceType.AUTHOR);
-            this.processArtifacts(moduleIds, app.getBundles(ServiceType.PUBLISH), ServiceType.PUBLISH);
-
-            this.processArtifacts(moduleIds, app.getContentPackages(null), null);
-            this.processArtifacts(moduleIds, app.getContentPackages(ServiceType.AUTHOR), ServiceType.AUTHOR);
-            this.processArtifacts(moduleIds, app.getContentPackages(ServiceType.PUBLISH), ServiceType.PUBLISH);
-
-            this.processConfigurations(app.getConfigurations(null, null, null), null);
-            this.processConfigurations(app.getConfigurations(null, SDKType.RDE, null), SDKType.RDE.asString());
-            this.processConfigurations(app.getConfigurations(null, null, EnvironmentType.DEV), EnvironmentType.DEV.asString());
-            this.processConfigurations(app.getConfigurations(null, null, EnvironmentType.STAGE), EnvironmentType.STAGE.asString());
-            this.processConfigurations(app.getConfigurations(null, null, EnvironmentType.PROD), EnvironmentType.PROD.asString());
-
-            this.processConfigurations(app.getConfigurations(ServiceType.AUTHOR, null, null), ServiceType.AUTHOR.asString());
-            this.processConfigurations(app.getConfigurations(ServiceType.AUTHOR, null, EnvironmentType.DEV), ServiceType.AUTHOR.asString().concat(".").concat(EnvironmentType.DEV.asString()));
-            this.processConfigurations(app.getConfigurations(ServiceType.AUTHOR, null, EnvironmentType.STAGE), ServiceType.AUTHOR.asString().concat(".").concat(EnvironmentType.STAGE.asString()));
-            this.processConfigurations(app.getConfigurations(ServiceType.AUTHOR, null, EnvironmentType.PROD), ServiceType.AUTHOR.asString().concat(".").concat(EnvironmentType.PROD.asString()));
-            this.processConfigurations(app.getConfigurations(ServiceType.AUTHOR, SDKType.RDE, null), ServiceType.AUTHOR.asString().concat(".").concat(SDKType.RDE.asString()));
-
-            this.processConfigurations(app.getConfigurations(ServiceType.PUBLISH, null, null), ServiceType.PUBLISH.asString());
-            this.processConfigurations(app.getConfigurations(ServiceType.PUBLISH, null, EnvironmentType.DEV), ServiceType.PUBLISH.asString().concat(".").concat(EnvironmentType.DEV.asString()));
-            this.processConfigurations(app.getConfigurations(ServiceType.PUBLISH, null, EnvironmentType.STAGE), ServiceType.PUBLISH.asString().concat(".").concat(EnvironmentType.STAGE.asString()));
-            this.processConfigurations(app.getConfigurations(ServiceType.PUBLISH, null, EnvironmentType.PROD), ServiceType.PUBLISH.asString().concat(".").concat(EnvironmentType.PROD.asString()));
-            this.processConfigurations(app.getConfigurations(ServiceType.PUBLISH, SDKType.RDE, null), ServiceType.PUBLISH.asString().concat(".").concat(SDKType.RDE.asString()));
-
-            this.processRepoinit(app.getRepoInit(null), null);
-            this.processRepoinit(app.getRepoInit(ServiceType.AUTHOR), ServiceType.AUTHOR.asString());
-            this.processRepoinit(app.getRepoInit(ServiceType.PUBLISH), ServiceType.PUBLISH.asString());
         } catch ( final IOException ioe) {
             throw new MojoExecutionException(ioe.getMessage(), ioe);
         }
@@ -144,58 +133,76 @@ public class PackageAppMojo extends AbstractAemMojo {
         project.getArtifact().setFile(buildFile);
     }
 
-    private void processRepoinit(final String repoinit, final String runmode) throws IOException, MojoExecutionException {
-        if ( repoinit != null ) {
-            final Configurations cfgs = new Configurations();
-            final Configuration c = new Configuration(Application.REPOINIT_FACTORY_PID.concat("~").concat(runmode == null ? "global" : runmode));
-            c.getProperties().put("scripts", repoinit);
-            cfgs.add(c);
-            this.processConfigurations(cfgs, runmode);
+    private void processResult(final TaskResult result) throws MojoExecutionException {
+        for(final Annotation ann : result.getWarnings()) {
+            if ( this.strictValidation ) {
+                getLog().error(ann.toActionString("error"));
+            } else {
+                getLog().warn(ann.toActionString("warning"));
+            }
+        }
+        for(final Annotation ann : result.getErrors()) {
+            getLog().error(ann.toActionString("error"));
+        }
+        if ( result.hasErrors() || (this.strictValidation && result.hasWarnings()) ) {
+            throw new MojoExecutionException("Configurations are not valid. Please check log");
         }
     }
 
-    private void processConfigurations(final Configurations configs, final String runmode) throws MojoExecutionException, IOException {
-        if ( configs != null ) {
-            for(final Configuration c : configs) {
-                final String path = this.getConfigurationPath(runmode, c);
-                final String source = (String)c.getProperties().get(Application.CFG_SOURCE);
-                final File file;
-                if ( source != null ) {
-                    file = new File(source);
-                } else {
-                    file = new File(this.project.getBuild().getDirectory(), c.getPid().concat(".cfg.json"));
-                    try ( final FileWriter writer = new FileWriter(file)) {
-                        org.apache.felix.cm.json.Configurations
-                            .buildWriter().build(writer)
-                            .writeConfiguration(c.getProperties());
-                    }
-                }
-                this.addFile(file, path);
+    private void processRepoinit(final List<RepoinitFile> repoinit) throws IOException, MojoExecutionException {
+        for(final RepoinitFile file : repoinit) {
+            final Dictionary<String, Object> props = new Hashtable<>();
+            props.put("scripts", file.getContents());
+            final File outFile = new File(this.project.getBuild().getDirectory(), file.getPid().concat(this.project.getArtifactId()).concat(".cfg.json"));
+            try ( final FileWriter writer = new FileWriter(outFile)) {
+                org.apache.felix.cm.json.Configurations
+                    .buildWriter().build(writer)
+                    .writeConfiguration(props);
+            }
+            final ConfigurationFile cfgFile = new ConfigurationFile(Location.APPS, outFile);
+            cfgFile.setServiceType(file.getServiceType());
+            this.processConfiguration(cfgFile);
+        }
+    }
+
+    private void processConfigurations(final List<ConfigurationFile> configs) throws MojoExecutionException {
+        for(final ConfigurationFile file : configs) {
+            this.processConfiguration(file);
+        }
+    }
+
+    private void processConfiguration(final ConfigurationFile file) throws MojoExecutionException {
+        final String runmode = getRunMode(file.getServiceType(), file.getEnvType(), file.getSdkType());
+        final String path = this.getConfigurationPath(runmode, file.getPid());
+        this.addFile(file.getSource(), path);
+    }
+
+    private String getRunMode(ServiceType serviceType, EnvironmentType envType, SDKType sdkType) {
+        if ( serviceType != null ) {
+            if ( envType != null ) {
+                return serviceType.asString().concat(".").concat(envType.asString());
+            } else if ( sdkType != null ) {
+                return serviceType.asString().concat(".").concat(sdkType.asString());
+            }
+            return serviceType.asString();
+        } else if ( envType != null ) {
+            return envType.asString();
+        } else if ( sdkType != null ) {
+            return sdkType.asString();
+        }
+        return null;
+    }
+
+    private void processArtifacts(final Set<ArtifactId> moduleIds, final List<ArtifactsFile> files) throws MojoExecutionException {
+        for(final ArtifactsFile f : files) {
+            for(final Artifact a : f.getArtifacts()) {
+                moduleIds.add(a.getId());
+                processArtifact(a, f.getServiceType());
             }
         }
     }
 
-    private void processArtifacts(final Map<ArtifactId, ServiceType> moduleIds, final Artifacts artifacts, final ServiceType serviceType) throws MojoExecutionException {
-        if ( artifacts != null ) {
-            for(final Artifact a : artifacts) {
-                processArtifact(moduleIds, a, serviceType);
-            }
-        }
-    }
-
-    private void processArtifact(final Map<ArtifactId, ServiceType> moduleIds, final Artifact a, ServiceType serviceType) throws MojoExecutionException {
-        if ( moduleIds.containsKey(a.getId()) ) {
-            if ( moduleIds.get(a.getId()) == serviceType ) {
-                return;
-            }
-            if ( moduleIds.get(a.getId()) == null ) {
-                return;
-            }
-            if ( serviceType != null ) {
-                serviceType = null;
-            }
-        }
-        moduleIds.put(a.getId(), serviceType);
+    private void processArtifact(final Artifact a, ServiceType serviceType) throws MojoExecutionException {
         final String path = this.getArtifactPath(serviceType == null ? null : serviceType.asString(), a);
         final File file = this.getOrResolveArtifact(a.getId()).getFile();
         this.addFile(file, path);
@@ -220,12 +227,12 @@ public class PackageAppMojo extends AbstractAemMojo {
         return base.concat("/").concat(a.getId().toMvnName());
     }
 
-    private String getConfigurationPath(final String runmode, final Configuration c) {
+    private String getConfigurationPath(final String runmode, final String pid) {
         String base = getRoot().concat("/config");
         if ( runmode != null ) {
             base = base.concat(".").concat(runmode);
         }
-        return base.concat("/").concat(c.getPid()).concat(".cfg.json");
+        return base.concat("/").concat(pid).concat(".cfg.json");
     }
 
     private Properties getPackageProperties() {

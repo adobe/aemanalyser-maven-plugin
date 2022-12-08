@@ -57,6 +57,13 @@ public abstract class AbstractAemMojo extends AbstractMojo {
     private final Map<String, Artifact> artifactCache = new ConcurrentHashMap<>();
 
     /**
+     * If enabled, all analyser warnings will be turned into errors and fail the build.
+     * @since 1.0.12
+     */
+    @Parameter(defaultValue = "false", property = "aem.analyser.strict")
+    protected boolean strictValidation;
+
+    /**
      * Find the artifact in the collection
      * @param id The artifact id
      * @param artifacts The collection

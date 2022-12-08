@@ -42,6 +42,10 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import com.adobe.aem.project.EnvironmentType;
+import com.adobe.aem.project.SDKType;
+import com.adobe.aem.project.ServiceType;
+
 /**
  * A configuration file
  */
@@ -52,8 +56,12 @@ public final class ConfigurationFile {
         LIBS;
     }
 
+    private ServiceType serviceType;
+    private EnvironmentType envType;
+    private SDKType sdkType;
     private String runMode;
     private int level = -1;
+    private Dictionary<String, Object> properties;
     private final File source;
     private final ConfigurationFileType type;
     private final Location location;
@@ -99,7 +107,7 @@ public final class ConfigurationFile {
     /**
      * @param runMode the runMode to set
      */
-    public void setRunMode(String runMode) {
+    public void setRunMode(final String runMode) {
         this.runMode = runMode;
     }
 
@@ -123,7 +131,7 @@ public final class ConfigurationFile {
      */
     public String getPid() {
         int pos = source.getName().lastIndexOf(".");
-        if ( type == ConfigurationFileType.JSON ) {
+        if ( type == ConfigurationFileType.JSON && source.getName().endsWith(".cfg.json") ) {
             pos = pos - 4;
         }
         final String id = source.getName().substring(0, pos);
@@ -134,7 +142,22 @@ public final class ConfigurationFile {
         return id;
     }
 
+    public void resetConfiguration() {
+        this.properties = null;
+    }
+
+    public Dictionary<String, Object> getConfiguration() {
+        return this.properties;
+    }
+
     public Dictionary<String, Object> readConfiguration() throws IOException {
+        if ( this.properties == null ) {
+            this.properties = this.internalReadConfiguration();
+        }
+        return this.properties;
+    }
+
+    private Dictionary<String, Object> internalReadConfiguration() throws IOException {
         try ( final InputStream input = new FileInputStream(this.getSource()) ) {
             if ( this.getType() == ConfigurationFileType.CONFIGADMIN ) {
                 return ConfigurationHandler.read(input);
@@ -262,5 +285,29 @@ public final class ConfigurationFile {
         private static Object[] mapValues(final String[] strValues, final Function<String, Object> function) {
             return Arrays.stream(strValues).filter(s -> s != null && !s.isEmpty()).map(function).filter(Objects::nonNull).toArray();
         }
+    }
+
+    public ServiceType getServiceType() {
+        return serviceType;
+    }
+
+    public void setServiceType(final ServiceType serviceType) {
+        this.serviceType = serviceType;
+    }
+
+    public EnvironmentType getEnvType() {
+        return envType;
+    }
+
+    public void setEnvType(final EnvironmentType envType) {
+        this.envType = envType;
+    }
+
+    public SDKType getSdkType() {
+        return sdkType;
+    }
+
+    public void setSdkType(final SDKType sdkType) {
+        this.sdkType = sdkType;
     }
 }
