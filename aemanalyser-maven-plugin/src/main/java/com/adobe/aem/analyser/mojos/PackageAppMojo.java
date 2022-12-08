@@ -29,6 +29,7 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
@@ -55,6 +56,9 @@ import com.adobe.aem.project.model.RepoinitFile;
     defaultPhase = LifecyclePhase.PACKAGE,
     requiresDependencyResolution = ResolutionScope.COMPILE)
 public class PackageAppMojo extends AbstractAemMojo {
+
+    @Parameter(defaultValue = "false", property = "aem.analyser.sysout")
+    private boolean useSysout;
 
     /**
      * The Jar archiver.
@@ -136,13 +140,25 @@ public class PackageAppMojo extends AbstractAemMojo {
     private void processResult(final TaskResult result) throws MojoExecutionException {
         for(final Annotation ann : result.getWarnings()) {
             if ( this.strictValidation ) {
-                getLog().error(ann.toActionString("error"));
+                if ( this.useSysout ) {
+                    System.out.println(ann.toActionString("error"));
+                } else {
+                    getLog().error(ann.toActionString("error"));
+                }
             } else {
-                getLog().warn(ann.toActionString("warning"));
+                if ( this.useSysout ) {
+                    System.out.println(ann.toActionString("warning"));
+                } else {
+                    getLog().warn(ann.toActionString("warning"));
+                }
             }
         }
         for(final Annotation ann : result.getErrors()) {
-            getLog().error(ann.toActionString("error"));
+            if ( this.useSysout ) {
+                System.out.println(ann.toActionString("error"));
+            } else {
+                getLog().error(ann.toActionString("error"));
+            }
         }
         if ( result.hasErrors() || (this.strictValidation && result.hasWarnings()) ) {
             throw new MojoExecutionException("Configurations are not valid. Please check log");
