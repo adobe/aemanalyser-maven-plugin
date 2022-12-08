@@ -12,34 +12,30 @@
 package com.adobe.aem.project.model;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.nio.file.Files;
-import java.util.Collections;
-import java.util.Dictionary;
-
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.sling.feature.Artifacts;
 import org.apache.sling.feature.Bundles;
 import org.apache.sling.feature.Configuration;
-import org.apache.sling.feature.Configurations;
 import org.apache.sling.feature.Extension;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.io.json.FeatureJSONReader;
 
+import com.adobe.aem.analyser.tasks.ConfigurationFile;
+import com.adobe.aem.analyser.tasks.ConfigurationFileType;
+import com.adobe.aem.analyser.tasks.TaskResult;
+import com.adobe.aem.analyser.tasks.ConfigurationFile.Location;
+import com.adobe.aem.analyser.tasks.TaskResult.Annotation;
 import com.adobe.aem.project.EnvironmentType;
 import com.adobe.aem.project.SDKType;
 import com.adobe.aem.project.ServiceType;
+import com.adobe.aem.project.model.ArtifactsFile.FileType;
 
 public class Application implements Serializable {
-
-    public static final String CFG_SOURCE = Configuration.CONFIGURATOR_PREFIX.concat("source");
-
-    public static final String REPOINIT_FACTORY_PID = "org.apache.sling.jcr.repoinit.RepositoryInitializer";
-
-    public static final String REPOINIT_PID = "org.apache.sling.jcr.repoinit.impl.RepositoryInitializer";
 
     private final File directory;
 
@@ -56,34 +52,45 @@ public class Application implements Serializable {
         return new File(src, name);
     }
 
-    public Bundles getBundles(final ServiceType type) throws IOException {
-        final String filename = type == null ? "bundles.json" : (type == ServiceType.AUTHOR ? "bundles.author.json" : "bundles.publish.json");
-        final File bundlesFile = getSourceFile(filename);
-        if ( bundlesFile.exists()) {
-            final String contents = Files.readString(bundlesFile.toPath());
-            final String featureJson = "{ \"id\":\"g:a:1\",\"bundles\": ".concat(contents).concat("}");
-            final Feature f = FeatureJSONReader.read(new StringReader(featureJson), bundlesFile.getAbsolutePath());
-            return f.getBundles().isEmpty() ? null : f.getBundles();
-        }
-        return null;
+    /**
+     * Get the relative path for a project file
+     * @param file The file
+     * @return The relative path
+     */
+    public String getRelativePath(final File file) {
+        return file.getAbsolutePath().substring(this.directory.getAbsolutePath().length() + 1);
     }
 
-    public Artifacts getContentPackages(final ServiceType type) throws IOException {
-        final String filename = type == null ? "content-packages.json" : (type == ServiceType.AUTHOR ? "content-packages.author.json" : "content-packages.publish.json");
-        final File packagesFile = getSourceFile(filename);
-        if ( packagesFile.exists()) {
-            final String contents = Files.readString(packagesFile.toPath());
-            final String featureJson = "{ \"id\":\"g:a:1\",\"content-packages:ARTIFACTS|true\": ".concat(contents).concat("}");
-            final Feature f = FeatureJSONReader.read(new StringReader(featureJson), packagesFile.getAbsolutePath());
-            final Extension ext = f.getExtensions().getByName("content-packages");
-            return ext.getArtifacts().isEmpty() ? null : ext.getArtifacts();
-        }
-        return null;
+    private void getArtifactsFile(final List<ArtifactsFile> result, final ArtifactsFile.FileType fileType, final ServiceType serviceType) {
+        final String prefix = fileType == FileType.BUNDLES ? "bundles" : "content-packages";
+         final String filename = serviceType == null ? prefix.concat(".json") : prefix.concat(".").concat(serviceType.asString()).concat(".json");
+         final File file = getSourceFile(filename);
+         if ( file.exists()) {
+             final ArtifactsFile f = new ArtifactsFile(fileType, file);
+             f.setServiceType(serviceType);
+             result.add(f);
+         }
+     }
+
+    public List<ArtifactsFile> getBundleFiles() {
+        final List<ArtifactsFile> result = new ArrayList<>();
+        getArtifactsFile(result, ArtifactsFile.FileType.BUNDLES, null);
+        getArtifactsFile(result, ArtifactsFile.FileType.BUNDLES, ServiceType.AUTHOR);
+        getArtifactsFile(result, ArtifactsFile.FileType.BUNDLES, ServiceType.PUBLISH);
+        return result;
     }
 
-    public Configurations getConfigurations(final ServiceType type, final SDKType sdkType, final EnvironmentType envType) throws IOException {
+    public List<ArtifactsFile> getContentPackageFiles() {
+        final List<ArtifactsFile> result = new ArrayList<>();
+        getArtifactsFile(result, ArtifactsFile.FileType.CONTENT_PACKAGES, null);
+        getArtifactsFile(result, ArtifactsFile.FileType.CONTENT_PACKAGES, ServiceType.AUTHOR);
+        getArtifactsFile(result, ArtifactsFile.FileType.CONTENT_PACKAGES, ServiceType.PUBLISH);
+        return result;
+    }
+
+    private File getConfigurationDirectory(final ServiceType type, final SDKType sdkType, final EnvironmentType envType) {
         if ( sdkType != null && envType != null ) {
-            throw new IOException("Only pass in either SDK or env, but not both");
+            return null;
         }
         final String filename;
         if ( type == null && sdkType == null && envType == null ) {
@@ -99,44 +106,109 @@ public class Application implements Serializable {
         } else {
             filename = "configs.".concat(type.asString()).concat(".").concat(envType.asString());
         }
-        final File configsDir = getSourceFile(filename);
-        if ( configsDir.exists()) {
-            if ( configsDir.isFile() ) {
-                throw new IOException("Must be a directory " + configsDir);
-            }
-            final Configurations cfgs = new Configurations();
-            for(final File f : configsDir.listFiles()) {
-                if ( !f.getName().startsWith(".") && f.getName().endsWith(".json") ) {
-                    final int cut = f.getName().endsWith(".cfg.json") ? 9 : 5;
-                    final String pid = f.getName().substring(0, f.getName().length() - cut).replace('-', '~');
-                    final Configuration c = new Configuration(pid);
-                    if ( REPOINIT_FACTORY_PID.equals(c.getFactoryPid()) && (!c.isFactoryConfiguration() && REPOINIT_PID.equals(c.getPid()))) {
-                        throw new IOException("Repoinit must be put inside separate txt files " + f.getAbsolutePath());
-                    }
-                    try ( final Reader r = new FileReader(f)) {
-                        final Dictionary<String, Object> props = org.apache.felix.cm.json.Configurations.buildReader()
-                            .withIdentifier(f.getAbsolutePath())
-                            .build(r)
-                            .readConfiguration();
-                        for(final String propName : Collections.list(props.keys())) {
-                            c.getProperties().put(propName, props.get(propName));
-                        }
-                        c.getProperties().put(CFG_SOURCE, f.getAbsolutePath());
-                    }
-                    cfgs.add(c);
-                }
-            }
-            return cfgs.isEmpty() ? null : cfgs;
-        }
-        return null;
+        final File f = this.getSourceFile(filename);
+        return f.exists() ? f : null;
     }
 
-    public String getRepoInit(final ServiceType serviceType) throws IOException {
+    private void getConfigurationFiles(final List<ConfigurationFile> files, 
+          final ServiceType serviceType, final SDKType sdkType, final EnvironmentType envType) {
+        final File directory = this.getConfigurationDirectory(serviceType, sdkType, envType);
+        if ( directory != null && directory.isDirectory() ) {
+            for(final File f : directory.listFiles()) {
+                if ( !f.getName().startsWith(".") ) {
+                    final ConfigurationFileType fileType = ConfigurationFileType.fromFileName(f.getName());
+                    if ( fileType != null ) {
+                        final ConfigurationFile cfg = new ConfigurationFile(Location.APPS, f, fileType);
+                        cfg.setServiceType(serviceType);
+                        cfg.setSdkType(sdkType);
+                        cfg.setEnvType(envType);
+                        files.add(cfg);    
+                    }
+                }
+            }
+        }
+    }
+
+    public List<ConfigurationFile> getConfigurationFiles() {
+        final List<ConfigurationFile> result = new ArrayList<>();
+        this.getConfigurationFiles(result, null, null, null);
+        this.getConfigurationFiles(result, null, SDKType.RDE, null);
+        this.getConfigurationFiles(result, null, null, EnvironmentType.DEV);
+        this.getConfigurationFiles(result, null, null, EnvironmentType.STAGE);
+        this.getConfigurationFiles(result, null, null, EnvironmentType.PROD);
+
+        this.getConfigurationFiles(result, ServiceType.AUTHOR, null, null);
+        this.getConfigurationFiles(result, ServiceType.AUTHOR, null, EnvironmentType.DEV);
+        this.getConfigurationFiles(result, ServiceType.AUTHOR, null, EnvironmentType.STAGE);
+        this.getConfigurationFiles(result, ServiceType.AUTHOR, null, EnvironmentType.PROD);
+        this.getConfigurationFiles(result, ServiceType.AUTHOR, SDKType.RDE, null);
+
+        this.getConfigurationFiles(result, ServiceType.PUBLISH, null, null);
+        this.getConfigurationFiles(result, ServiceType.PUBLISH, null, EnvironmentType.DEV);
+        this.getConfigurationFiles(result, ServiceType.PUBLISH, null, EnvironmentType.STAGE);
+        this.getConfigurationFiles(result, ServiceType.PUBLISH, null, EnvironmentType.PROD);
+        this.getConfigurationFiles(result, ServiceType.PUBLISH, SDKType.RDE, null);
+        return result;
+    }
+
+    public TaskResult verify(final List<ConfigurationFile> configs,
+        final List<RepoinitFile> repoinit,
+        final List<ArtifactsFile> bundles,
+        final List<ArtifactsFile> contentPackages) {
+        final TaskResult result = new TaskResult();
+        for(final ConfigurationFile f : configs) {
+            try {
+                if ( f.getType() != ConfigurationFileType.JSON ) {
+                    result.getWarnings().add(new Annotation(this.getRelativePath(f.getSource()), "Configurations should use the JSON format"));
+                }
+                final Configuration c = new Configuration(f.getPid());
+                if ( RepoinitFile.REPOINIT_FACTORY_PID.equals(c.getFactoryPid()) && (!c.isFactoryConfiguration() && RepoinitFile.REPOINIT_PID.equals(c.getPid()))) {
+                    result.getErrors().add(new Annotation(this.getRelativePath(f.getSource()), "Repoinit must be put inside separate txt files"));
+                }
+                f.readConfiguration();
+            } catch ( final IOException ioe) {
+                result.getErrors().add(new Annotation(this.getRelativePath(f.getSource()), ioe.getMessage()));
+            }
+        }
+        for(final RepoinitFile f : repoinit) {
+            try {
+                f.readContents();
+            } catch ( final IOException ioe) {
+                result.getErrors().add(new Annotation(this.getRelativePath(f.getSource()), ioe.getMessage()));
+            }
+        }
+        for(final ArtifactsFile f : bundles) {
+            try {
+                f.readArtifacts();
+            } catch ( final IOException ioe) {
+                result.getErrors().add(new Annotation(this.getRelativePath(f.getSource()), ioe.getMessage()));
+            }
+        }
+        for(final ArtifactsFile f : contentPackages) {
+            try {
+                f.readArtifacts();
+            } catch ( final IOException ioe) {
+                result.getErrors().add(new Annotation(this.getRelativePath(f.getSource()), ioe.getMessage()));
+            }
+        }
+        return result;
+    }
+
+    public List<RepoinitFile> getRepoInitFiles() {
+        final List<RepoinitFile> result = new ArrayList<>();
+        this.getRepoInitFile(result, null);
+        this.getRepoInitFile(result, ServiceType.AUTHOR);
+        this.getRepoInitFile(result, ServiceType.PUBLISH);
+        return result;
+    }
+
+    private void getRepoInitFile(final List<RepoinitFile> result, final ServiceType serviceType) {
         final String filename = serviceType == null ? "repoinit.txt" : (serviceType == ServiceType.AUTHOR ? "repoinit.author.txt" : "repoinit.publish.txt");
         final File file = this.getSourceFile(filename);
         if ( file.exists() ) {
-            return Files.readString(file.toPath());
+            final RepoinitFile r = new RepoinitFile(file);
+            r.setServiceType(serviceType);
+            result.add(r);
         }
-        return null;
     }
 }

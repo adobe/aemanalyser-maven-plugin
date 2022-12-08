@@ -33,14 +33,13 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.project.MavenProject;
 import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
-import org.apache.sling.feature.Artifacts;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
-import com.adobe.aem.project.ServiceType;
 import com.adobe.aem.project.model.Application;
+import com.adobe.aem.project.model.ArtifactsFile;
 import com.adobe.aem.project.model.Module;
 import com.adobe.aem.project.model.ModuleType;
 import com.adobe.aem.project.model.Project;
@@ -55,8 +54,6 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
      * The plugin ID consists of <code>groupId:artifactId</code>, see {@link Plugin#constructKey(String, String)}
      */
     private static final String PLUGIN_ID = "com.adobe.aem:aemanalyser-maven-plugin";
-
-    private static final String SCOPE_PROVIDED = "provided";
 
     @Requirement
     private Logger logger;
@@ -76,7 +73,7 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
         final List<MavenProject> apps = new ArrayList<>();
         for (final MavenProject project : session.getProjects()) {
             final Plugin plugin = project.getPlugin(PLUGIN_ID);
-            if (plugin != null && "aemapp".equals(project.getPackaging()) ) {
+            if (plugin != null && Constants.PACKAGING_AEMAPP.equals(project.getPackaging()) ) {
                 apps.add(project);
             }
         }
@@ -126,7 +123,7 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
                             final ArtifactId id = new ArtifactId(groupId, model.getArtifactId(), version, null, 
                                 m.getType() == ModuleType.BUNDLE ? null : "zip");
                             m.setMvnId(id.toMvnId());
-                            addDependency(mavenProject, id, SCOPE_PROVIDED);    
+                            addDependency(mavenProject, id);    
                         } 
                     } catch ( IOException | XmlPullParserException ignore) {
                         // ignore this
@@ -136,7 +133,7 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
                 final ArtifactId id = new ArtifactId(found.getGroupId(), found.getArtifactId(), found.getVersion(), null, 
                     m.getType() == ModuleType.BUNDLE ? null : "zip");
                 m.setMvnId(id.toMvnId());
-                addDependency(mavenProject, id, SCOPE_PROVIDED);
+                addDependency(mavenProject, id);
             }
         }
         try ( final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -148,36 +145,8 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
             // we ignore this
         }
         logger.debug("Adding dependencies...");
-        try {
-            addArtifacts(mavenProject, app.getBundles(null));
-        } catch ( final IOException ioe) {
-            // we ignore this
-        }
-        try {
-            addArtifacts(mavenProject, app.getBundles(ServiceType.AUTHOR));
-        } catch ( final IOException ioe) {
-            // we ignore this
-        }
-        try {
-            addArtifacts(mavenProject, app.getBundles(ServiceType.PUBLISH));
-        } catch ( final IOException ioe) {
-            // we ignore this
-        }
-        try {
-            addArtifacts(mavenProject, app.getContentPackages(null));
-        } catch ( final IOException ioe) {
-            // we ignore this
-        }
-        try {
-            addArtifacts(mavenProject, app.getContentPackages(ServiceType.AUTHOR));
-        } catch ( final IOException ioe) {
-            // we ignore this
-        }
-        try {
-            addArtifacts(mavenProject, app.getContentPackages(ServiceType.PUBLISH));
-        } catch ( final IOException ioe) {
-            // we ignore this
-        }
+        addArtifacts(mavenProject, app.getBundleFiles());
+        addArtifacts(mavenProject, app.getContentPackageFiles());
         logger.debug("Done adding dependencies");
     }
 
@@ -194,12 +163,16 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
         return null;
     }
 
-    private void addArtifacts(final MavenProject project, final Artifacts artifacts) {
-        if ( artifacts != null ) {
-            for(final Artifact a : artifacts) {
-                this.addDependency(project, a.getId(), SCOPE_PROVIDED);
+    private void addArtifacts(final MavenProject project, final List<ArtifactsFile> artifactsFiles) {
+        for(final ArtifactsFile file : artifactsFiles) {
+            try {
+                for(final Artifact a : file.readArtifacts()) {
+                    this.addDependency(project, a.getId());
+                }
+            } catch ( final IOException io) {
+                // ignore
             }
-        }        
+        }
     }
 
     private Dependency toDependency(final ArtifactId id, final String scope) {
@@ -214,7 +187,7 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
         return dep;
     }
 
-    private void addDependency(final MavenProject project, final ArtifactId id, final String scope) {
+    private void addDependency(final MavenProject project, final ArtifactId id) {
         if ( id.getGroupId().equals(project.getGroupId())
              && id.getArtifactId().equals(project.getArtifactId())
              && id.getVersion().equals(project.getVersion()) ) {
@@ -238,8 +211,8 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
 				}
 			}
 			if ( !found ) {
-				logger.info("- adding dependency " + id.toMvnId());
-				final Dependency dep = this.toDependency(id, scope);
+				logger.debug("- adding dependency " + id.toMvnId());
+				final Dependency dep = this.toDependency(id, org.apache.maven.artifact.Artifact.SCOPE_PROVIDED);
 
 				// Exclude all transitive dependencies coming from the feature model deps
 				final Exclusion exclusion = new Exclusion();
@@ -249,7 +222,7 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
 
 				project.getDependencies().add(dep);
 			} else {
-                logger.info("- skipping duplicate dependency " + id.toMvnId());
+                logger.debug("- skipping duplicate dependency " + id.toMvnId());
             }
         }
     }

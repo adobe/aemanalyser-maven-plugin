@@ -26,7 +26,7 @@ public enum ConfigurationFileType {
      * @return The detected type or {@code null}
      */
     public static ConfigurationFileType fromFileName(final String name) {
-        if ( name.endsWith(".cfg.json") ) {
+        if ( name.endsWith(".cfg.json") || name.endsWith(".json") ) {
             return JSON;
         } else if ( name.endsWith(".xml") ) {
             return XML;
