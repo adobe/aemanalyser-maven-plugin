@@ -14,17 +14,9 @@ package com.adobe.aem.project.model;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.io.StringReader;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.sling.feature.Artifacts;
-import org.apache.sling.feature.Bundles;
 import org.apache.sling.feature.Configuration;
-import org.apache.sling.feature.Extension;
-import org.apache.sling.feature.Feature;
-import org.apache.sling.feature.io.json.FeatureJSONReader;
-
 import com.adobe.aem.analyser.tasks.ConfigurationFile;
 import com.adobe.aem.analyser.tasks.ConfigurationFileType;
 import com.adobe.aem.analyser.tasks.TaskResult;

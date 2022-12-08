@@ -64,9 +64,6 @@ public class PackageAppMojo extends AbstractAemMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        if ( !DependencyLifecycleParticipant.isExperimentalEnabled() ) {
-            return;
-        }
         getLog().warn("*********************************************************************************************");
         getLog().warn("THIS MOJO IS IN ALPHA STATE. USE WITH CAUTION AT YOUR OWN RISK");
         getLog().warn("THE FUNCTIONALITY MIGHT CHANGE OR BREAK WITHOUT PRIOR NOTICE");

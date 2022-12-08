@@ -58,16 +58,8 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
     @Requirement
     private Logger logger;
 
-    public static boolean isExperimentalEnabled() {
-        final String value = System.getenv("AEM_EXPERIMENTAL");
-        return value != null && value.equalsIgnoreCase("true");
-    }
-
     @Override
     public void afterProjectsRead(final MavenSession session) throws MavenExecutionException {
-        if ( !isExperimentalEnabled() ) {
-            return;
-        }
         logger.debug("Searching for project using plugin '" + PLUGIN_ID + "'...");
 
         final List<MavenProject> apps = new ArrayList<>();
