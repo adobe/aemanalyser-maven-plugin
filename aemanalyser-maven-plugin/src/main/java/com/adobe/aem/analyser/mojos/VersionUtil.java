@@ -256,10 +256,16 @@ public class VersionUtil {
     private List<RemoteRepository> getRemoteRepositoriesWithUpdatePolicy(List<RemoteRepository> repositories, String updatePolicy) {
         List<RemoteRepository> newRepositories = new ArrayList<>();
         for (RemoteRepository repo : repositories) {
-            RemoteRepository.Builder builder = new RemoteRepository.Builder(repo);
-            RepositoryPolicy newPolicy = new RepositoryPolicy(repo.getPolicy(false).isEnabled(), updatePolicy, repo.getPolicy(false).getChecksumPolicy());
-            builder.setPolicy(newPolicy);
-            newRepositories.add(builder.build());
+            // TODO: replace with RemoteRepository#isBlocked once #183 is merged (Change Maven minimum version to 3.8.1)
+            // https://maven.apache.org/resolver/apidocs/org/eclipse/aether/repository/RemoteRepository.html#isBlocked()
+            if (!repo.getId().equals("maven-default-http-blocker")) {
+                RemoteRepository.Builder builder = new RemoteRepository.Builder(repo);
+                RepositoryPolicy newPolicy = new RepositoryPolicy(repo.getPolicy(false).isEnabled(), updatePolicy, repo.getPolicy(false).getChecksumPolicy());
+                builder.setPolicy(newPolicy);
+                newRepositories.add(builder.build());    
+            } else {
+                this.log.debug("Skipping blocked repo: " + repo.getId());
+            }
         }
         return newRepositories;
     }
