@@ -13,6 +13,7 @@ package com.adobe.aem.project.model;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.StringReader;
 import java.nio.file.Files;
 
@@ -26,7 +27,7 @@ import com.adobe.aem.project.ServiceType;
 /**
  * A artifacts file
  */
-public final class ArtifactsFile {
+public final class ArtifactsFile implements Serializable {
 
     public enum FileType {
         BUNDLES,
@@ -34,7 +35,7 @@ public final class ArtifactsFile {
     }
 
     private ServiceType serviceType;
-    private Artifacts artifacts;
+    private transient Artifacts artifacts;
     private final File source;
     private final FileType type;
 

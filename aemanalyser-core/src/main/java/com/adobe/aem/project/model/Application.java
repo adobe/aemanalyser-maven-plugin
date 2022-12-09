@@ -30,6 +30,12 @@ import com.adobe.aem.project.model.ConfigurationFile.Location;
 
 public class Application extends AbstractModule {
 
+    private List<ArtifactsFile> bundlesFiles;
+
+    private List<ArtifactsFile> contentFiles;
+
+    private List<ConfigurationFile> configFiles;
+
     public Application(final File f) {
         super(f);
     }
@@ -50,29 +56,33 @@ public class Application extends AbstractModule {
 
     private void getArtifactsFile(final List<ArtifactsFile> result, final ArtifactsFile.FileType fileType, final ServiceType serviceType) {
         final String prefix = fileType == FileType.BUNDLES ? "bundles" : "content-packages";
-         final String filename = serviceType == null ? prefix.concat(".json") : prefix.concat(".").concat(serviceType.asString()).concat(".json");
-         final File file = getSourceFile(filename);
-         if ( file.exists()) {
-             final ArtifactsFile f = new ArtifactsFile(fileType, file);
-             f.setServiceType(serviceType);
-             result.add(f);
-         }
-     }
+        final String filename = serviceType == null ? prefix.concat(".json") : prefix.concat(".").concat(serviceType.asString()).concat(".json");
+        final File file = getSourceFile(filename);
+        if ( file.exists()) {
+            final ArtifactsFile f = new ArtifactsFile(fileType, file);
+            f.setServiceType(serviceType);
+            result.add(f);
+        }
+    }
 
     public List<ArtifactsFile> getBundleFiles() {
-        final List<ArtifactsFile> result = new ArrayList<>();
-        getArtifactsFile(result, ArtifactsFile.FileType.BUNDLES, null);
-        getArtifactsFile(result, ArtifactsFile.FileType.BUNDLES, ServiceType.AUTHOR);
-        getArtifactsFile(result, ArtifactsFile.FileType.BUNDLES, ServiceType.PUBLISH);
-        return result;
+        if ( this.bundlesFiles == null ) {
+            this.bundlesFiles = new ArrayList<>();
+            getArtifactsFile(this.bundlesFiles, ArtifactsFile.FileType.BUNDLES, null);
+            getArtifactsFile(this.bundlesFiles, ArtifactsFile.FileType.BUNDLES, ServiceType.AUTHOR);
+            getArtifactsFile(this.bundlesFiles, ArtifactsFile.FileType.BUNDLES, ServiceType.PUBLISH);    
+        }
+        return this.bundlesFiles;
     }
 
     public List<ArtifactsFile> getContentPackageFiles() {
-        final List<ArtifactsFile> result = new ArrayList<>();
-        getArtifactsFile(result, ArtifactsFile.FileType.CONTENT_PACKAGES, null);
-        getArtifactsFile(result, ArtifactsFile.FileType.CONTENT_PACKAGES, ServiceType.AUTHOR);
-        getArtifactsFile(result, ArtifactsFile.FileType.CONTENT_PACKAGES, ServiceType.PUBLISH);
-        return result;
+        if ( this.contentFiles == null ) {
+            this.contentFiles = new ArrayList<>();
+            getArtifactsFile(this.contentFiles, ArtifactsFile.FileType.CONTENT_PACKAGES, null);
+            getArtifactsFile(this.contentFiles, ArtifactsFile.FileType.CONTENT_PACKAGES, ServiceType.AUTHOR);
+            getArtifactsFile(this.contentFiles, ArtifactsFile.FileType.CONTENT_PACKAGES, ServiceType.PUBLISH);
+        }
+        return this.contentFiles;
     }
 
     private File getConfigurationDirectory(final ServiceType type, final SDKType sdkType, final EnvironmentType envType) {
@@ -117,25 +127,27 @@ public class Application extends AbstractModule {
     }
 
     public List<ConfigurationFile> getConfigurationFiles() {
-        final List<ConfigurationFile> result = new ArrayList<>();
-        this.getConfigurationFiles(result, null, null, null);
-        this.getConfigurationFiles(result, null, SDKType.RDE, null);
-        this.getConfigurationFiles(result, null, null, EnvironmentType.DEV);
-        this.getConfigurationFiles(result, null, null, EnvironmentType.STAGE);
-        this.getConfigurationFiles(result, null, null, EnvironmentType.PROD);
+        if ( this.configFiles == null ) {
+            this.configFiles = new ArrayList<>();
+            this.getConfigurationFiles(this.configFiles, null, null, null);
+            this.getConfigurationFiles(this.configFiles, null, SDKType.RDE, null);
+            this.getConfigurationFiles(this.configFiles, null, null, EnvironmentType.DEV);
+            this.getConfigurationFiles(this.configFiles, null, null, EnvironmentType.STAGE);
+            this.getConfigurationFiles(this.configFiles, null, null, EnvironmentType.PROD);
 
-        this.getConfigurationFiles(result, ServiceType.AUTHOR, null, null);
-        this.getConfigurationFiles(result, ServiceType.AUTHOR, null, EnvironmentType.DEV);
-        this.getConfigurationFiles(result, ServiceType.AUTHOR, null, EnvironmentType.STAGE);
-        this.getConfigurationFiles(result, ServiceType.AUTHOR, null, EnvironmentType.PROD);
-        this.getConfigurationFiles(result, ServiceType.AUTHOR, SDKType.RDE, null);
+            this.getConfigurationFiles(this.configFiles, ServiceType.AUTHOR, null, null);
+            this.getConfigurationFiles(this.configFiles, ServiceType.AUTHOR, null, EnvironmentType.DEV);
+            this.getConfigurationFiles(this.configFiles, ServiceType.AUTHOR, null, EnvironmentType.STAGE);
+            this.getConfigurationFiles(this.configFiles, ServiceType.AUTHOR, null, EnvironmentType.PROD);
+            this.getConfigurationFiles(this.configFiles, ServiceType.AUTHOR, SDKType.RDE, null);
 
-        this.getConfigurationFiles(result, ServiceType.PUBLISH, null, null);
-        this.getConfigurationFiles(result, ServiceType.PUBLISH, null, EnvironmentType.DEV);
-        this.getConfigurationFiles(result, ServiceType.PUBLISH, null, EnvironmentType.STAGE);
-        this.getConfigurationFiles(result, ServiceType.PUBLISH, null, EnvironmentType.PROD);
-        this.getConfigurationFiles(result, ServiceType.PUBLISH, SDKType.RDE, null);
-        return result;
+            this.getConfigurationFiles(this.configFiles, ServiceType.PUBLISH, null, null);
+            this.getConfigurationFiles(this.configFiles, ServiceType.PUBLISH, null, EnvironmentType.DEV);
+            this.getConfigurationFiles(this.configFiles, ServiceType.PUBLISH, null, EnvironmentType.STAGE);
+            this.getConfigurationFiles(this.configFiles, ServiceType.PUBLISH, null, EnvironmentType.PROD);
+            this.getConfigurationFiles(this.configFiles, ServiceType.PUBLISH, SDKType.RDE, null);
+        }
+        return this.configFiles;
     }
 
     public AemAnalyserResult verify(final List<ConfigurationFile> configs,

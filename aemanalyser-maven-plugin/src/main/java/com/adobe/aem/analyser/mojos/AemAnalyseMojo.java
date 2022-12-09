@@ -48,7 +48,6 @@ import com.adobe.aem.analyser.AemAnalyser;
 import com.adobe.aem.analyser.AemPackageConverter;
 import com.adobe.aem.analyser.result.AemAnalyserAnnotation;
 import com.adobe.aem.analyser.result.AemAnalyserResult;
-import com.adobe.aem.project.model.Application;
 
 public class AemAnalyseMojo extends AbstractAnalyseMojo {
 
