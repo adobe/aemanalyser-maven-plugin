@@ -23,12 +23,11 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.sling.feature.ArtifactId;
 
-import com.adobe.aem.analyser.AemAnalyserResult;
-import com.adobe.aem.analyser.tasks.ConfigurationFile;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
 import com.adobe.aem.analyser.tasks.ConfigurationsTask;
 import com.adobe.aem.analyser.tasks.ConfigurationsTaskConfig;
 import com.adobe.aem.analyser.tasks.TaskContext;
-import com.adobe.aem.analyser.tasks.TaskResult;
+import com.adobe.aem.project.model.ConfigurationFile;
 
 @Mojo(name = "analyse-configs", 
     defaultPhase = LifecyclePhase.COMPILE,
@@ -59,12 +58,8 @@ public class AnalyseConfigsMojo extends AbstractAnalyseMojo {
 
             final ConfigurationsTask task = new ConfigurationsTask(context, config);
             final List<ConfigurationFile> files = task.scanRepositoryDirectory(this.repositoryRootDirectory);
-            final TaskResult result = task.analyseConfigurations(files);
-    
-            final AemAnalyserResult mojoResult = new AemAnalyserResult();
-            result.getErrors().stream().forEach(a -> mojoResult.getErrors().add(a.toString()));
-            result.getWarnings().stream().forEach(a -> mojoResult.getWarnings().add(a.toString()));
-            return mojoResult;
+            final AemAnalyserResult result = task.analyseConfigurations(files);
+            return result;
         } catch ( final IOException ioe ) {
             throw new MojoExecutionException(ioe.getMessage(), ioe);
         }

@@ -19,21 +19,34 @@ import java.util.List;
 
 import javax.json.stream.JsonParsingException;
 
+import org.apache.sling.feature.Artifact;
+import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Configuration;
-import com.adobe.aem.analyser.tasks.ConfigurationFile;
-import com.adobe.aem.analyser.tasks.ConfigurationFileType;
-import com.adobe.aem.analyser.tasks.ConfigurationFile.Location;
+
+import com.adobe.aem.analyser.result.AemAnalyserAnnotation;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
 import com.adobe.aem.project.EnvironmentType;
 import com.adobe.aem.project.SDKType;
 import com.adobe.aem.project.ServiceType;
 import com.adobe.aem.project.model.ArtifactsFile.FileType;
+import com.adobe.aem.project.model.ConfigurationFile.Location;
 
-public class Application implements Serializable {
+public class Application implements FeatureParticipantResolver, Serializable {
 
     private final File directory;
 
+    private ArtifactId id;
+
     public Application(final File f) {
         this.directory = f;
+    }
+
+    public ArtifactId getId() {
+        return this.id;
+    }
+
+    public void setId(final ArtifactId id) {
+        this.id = id;
     }
 
     public File getDirectory() {
@@ -144,19 +157,19 @@ public class Application implements Serializable {
         return result;
     }
 
-    public Result verify(final List<ConfigurationFile> configs,
+    public AemAnalyserResult verify(final List<ConfigurationFile> configs,
         final List<RepoinitFile> repoinit,
         final List<ArtifactsFile> bundles,
         final List<ArtifactsFile> contentPackages) {
-        final Result result = new Result();
+        final AemAnalyserResult result = new AemAnalyserResult();
         for(final ConfigurationFile f : configs) {
             try {
                 if ( f.getType() != ConfigurationFileType.JSON ) {
-                    result.getWarnings().add(new Result.Annotation(f.getSource(), "Configurations should use the JSON format"));
+                    result.getWarnings().add(new AemAnalyserAnnotation(f.getSource(), "Configurations should use the JSON format"));
                 }
                 final Configuration c = new Configuration(f.getPid());
                 if ( RepoinitFile.REPOINIT_FACTORY_PID.equals(c.getFactoryPid()) && (!c.isFactoryConfiguration() && RepoinitFile.REPOINIT_PID.equals(c.getPid()))) {
-                    result.getErrors().add(new Result.Annotation(f.getSource(), "Repoinit must be put inside separate txt files"));
+                    result.getErrors().add(new AemAnalyserAnnotation(f.getSource(), "Repoinit must be put inside separate txt files"));
                 }
                 f.readConfiguration();
             } catch ( final IOException ioe) {
@@ -167,7 +180,7 @@ public class Application implements Serializable {
             try {
                 f.readContents();
             } catch ( final IOException ioe) {
-                result.getErrors().add(new Result.Annotation(f.getSource(), ioe.getMessage()));
+                result.getErrors().add(new AemAnalyserAnnotation(f.getSource(), ioe.getMessage()));
             }
         }
         for(final ArtifactsFile f : bundles) {
@@ -187,13 +200,13 @@ public class Application implements Serializable {
         return result;
     }
 
-    private Result.Annotation getAnnotation(final File f, final IOException ioe) {
+    private AemAnalyserAnnotation getAnnotation(final File f, final IOException ioe) {
         if ( ioe.getCause() != null && ioe.getCause() instanceof JsonParsingException ) {
             final JsonParsingException jpe = (JsonParsingException) ioe.getCause();
-            return new Result.Annotation(f, jpe.getMessage(), jpe.getLocation() != null ? jpe.getLocation().getLineNumber() : -1,
+            return new AemAnalyserAnnotation(f, jpe.getMessage(), jpe.getLocation() != null ? jpe.getLocation().getLineNumber() : -1,
                 jpe.getLocation() != null ? jpe.getLocation().getColumnNumber() : -1);
         }
-        return new Result.Annotation(f, ioe.getMessage());
+        return new AemAnalyserAnnotation(f, ioe.getMessage());
     }
 
     public List<RepoinitFile> getRepoInitFiles() {
@@ -212,5 +225,59 @@ public class Application implements Serializable {
             r.setServiceType(serviceType);
             result.add(r);
         }
+    }
+
+    @Override
+    public ConfigurationFile getSource(final Configuration cfg, final ServiceType serviceType, final ArtifactId origin) {
+        if ( this.id.equals(origin) ) {
+            for(final ConfigurationFile current : this.getConfigurationFiles()) {
+                if ( current.getPid().equals(cfg.getPid()) && serviceType == current.getServiceType() ) {
+                    return current;
+                }
+            }
+            if ( serviceType != null ) {
+                return getSource(cfg, null, origin);
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public ArtifactsFile getSource(final ArtifactId artifactId, final ServiceType serviceType, final ArtifactId origin) {
+        if ( this.id.equals(origin) ) {
+            for(final ArtifactsFile current : this.getBundleFiles()) {
+                if ( current.getServiceType() == serviceType ) {
+                    final ArtifactsFile file = this.getSource(artifactId, serviceType, current);
+                    if ( file != null ) {
+                        return file;
+                    }
+                }
+            }
+            for(final ArtifactsFile current : this.getContentPackageFiles()) {
+                final ArtifactsFile file = this.getSource(artifactId, serviceType, current);
+                if ( current.getServiceType() == serviceType ) {
+                    if ( file != null ) {
+                        return file;
+                    }
+                }
+            }
+            if ( serviceType != null ) {
+                return getSource(artifactId, null, origin);
+            }
+        }
+        return null;
+    }
+
+    private ArtifactsFile getSource(final ArtifactId artifactId, final ServiceType serviceType, final ArtifactsFile artifacts) {
+        try {
+            for(final Artifact a : artifacts.readArtifacts()) {
+                if ( a.getId().isSame(artifactId) ) {
+                    return artifacts;
+                }
+            }
+        } catch ( final IOException ignore ) {
+            // ignore
+        }
+        return null;
     }
 }

@@ -20,7 +20,9 @@ import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.sling.feature.ArtifactId;
-import com.adobe.aem.analyser.AemAnalyserResult;
+
+import com.adobe.aem.analyser.result.AemAnalyserAnnotation;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
 
 /**
  * Abstract base class for all analyse mojos
@@ -119,19 +121,15 @@ public abstract class AbstractAnalyseMojo extends AbstractAemMojo {
 
         final AemAnalyserResult result = this.doExecute(sdkId, addons);
 
-        // version util warnings
-        versionUtil.getVersionWarnings().stream().forEach(msg -> {if ( strictValidation) getLog().error(msg); else getLog().warn(msg);});
-
-        // result warnings and errors
-        result.getWarnings().stream().forEach(msg -> {if ( strictValidation) getLog().error(msg); else getLog().warn(msg);});
-        if ( strictValidation ) {
-            versionUtil.getVersionWarnings().stream().forEach(msg -> getLog().error(msg));
+        // add version util warnings
+        for(final String warn : versionUtil.getVersionWarnings()) {
+            result.getWarnings().add(new AemAnalyserAnnotation(warn));
         }
-        result.getErrors().stream().forEach(msg -> getLog().error(msg));
+
+        this.printResult(result);
 
         // finally, analyser errors
-        final boolean hasErrors = result.hasErrors() 
-            || (strictValidation && (result.hasWarnings() || !versionUtil.getVersionWarnings().isEmpty()));
+        final boolean hasErrors = result.hasErrors() || (strictValidation && result.hasWarnings());
 
         if (hasErrors) {
             if ( failOnAnalyserErrors ) {

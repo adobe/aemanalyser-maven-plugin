@@ -34,6 +34,11 @@ import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 
+import com.adobe.aem.analyser.result.AemAnalyserAnnotation;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
+import com.adobe.aem.project.model.Application;
+import com.adobe.aem.project.model.Project;
+
 /**
  * Abstract base class for all mojos
  */
@@ -62,6 +67,9 @@ public abstract class AbstractAemMojo extends AbstractMojo {
      */
     @Parameter(defaultValue = "false", property = "aem.analyser.strict")
     protected boolean strictValidation;
+
+    @Parameter(defaultValue = "false", property = "aem.analyser.sysout")
+    protected boolean useSysout;
 
     /**
      * Find the artifact in the collection
@@ -126,6 +134,65 @@ public abstract class AbstractAemMojo extends AbstractMojo {
             return FeatureJSONReader.read(reader, artFile.getAbsolutePath());
         } catch (final IOException ioe) {
             throw new RuntimeException("Unable to read feature file " + artFile + " for " + id.toMvnId(), ioe);
+        }
+    }
+
+    protected Project getProject() {
+        Project pr = DependencyLifecycleParticipant.getProject(this.project);
+        if ( pr == null ) {
+            pr = new Project(this.project.getBasedir().getParentFile());
+            pr.scan();
+        }
+        if ( pr.getApplication() == null || !pr.getApplication().getDirectory().getAbsolutePath().equals(this.project.getBasedir().getAbsolutePath())) {
+            pr.setApplication(new Application(this.project.getBasedir()));
+        }
+        pr.getApplication().setId(new ArtifactId(project.getGroupId(), project.getArtifactId(), project.getVersion(), null, null));
+        return pr;
+    }
+
+    private File getBaseDirectory() {
+        File baseDir = this.project.getBasedir();
+        if ( this.useSysout ) {
+            boolean done = false;
+            do {
+                final File gitDir = new File(baseDir, ".git");
+                if ( gitDir.exists() && gitDir.isDirectory() ) {
+                    done = true;
+                } else {
+                    baseDir = baseDir.getParentFile();
+                    if ( baseDir == null ) {
+                        baseDir = this.project.getBasedir();
+                        done = true;
+                    }
+                }
+            } while ( !done );
+        }
+        return baseDir;
+    }
+
+    protected void printResult(final AemAnalyserResult result) {
+        final File baseDir = this.getBaseDirectory();
+        for(final AemAnalyserAnnotation ann : result.getWarnings()) {
+            if ( this.strictValidation ) {
+                if ( this.useSysout ) {
+                    System.out.println(ann.toMessage(AemAnalyserAnnotation.Level.error, baseDir));
+                } else {
+                    getLog().error(ann.toString(baseDir));
+                }
+            } else {
+                if ( this.useSysout ) {
+                    System.out.println(ann.toMessage(AemAnalyserAnnotation.Level.warning, baseDir));
+                } else {
+                    getLog().warn(ann.toString(baseDir));
+                }
+            }
+        }
+        for(final AemAnalyserAnnotation ann : result.getErrors()) {
+            if ( this.useSysout ) {
+                System.out.println(ann.toMessage(AemAnalyserAnnotation.Level.error, baseDir));
+            } else {
+                getLog().error(ann.toString(baseDir));
+            }
         }
     }
 }

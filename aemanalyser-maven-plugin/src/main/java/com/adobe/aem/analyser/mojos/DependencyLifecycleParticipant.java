@@ -84,7 +84,7 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
             logger.debug("Skipping project due to setup mismatch");
             return;
         }
-
+        app.setId(new ArtifactId(mavenProject.getGroupId(), mavenProject.getArtifactId(), mavenProject.getVersion(), null, null));
         for(final Module m : project.getModules()) {
             if ( m.getType() != ModuleType.BUNDLE && m.getType() != ModuleType.CONTENT ) {
                 continue;

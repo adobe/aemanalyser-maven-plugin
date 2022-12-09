@@ -29,7 +29,6 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
@@ -39,25 +38,22 @@ import org.codehaus.plexus.archiver.jar.Manifest;
 import org.codehaus.plexus.archiver.jar.ManifestException;
 import org.codehaus.plexus.archiver.jar.Manifest.Attribute;
 
-import com.adobe.aem.analyser.tasks.ConfigurationFile;
-import com.adobe.aem.analyser.tasks.ConfigurationFile.Location;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
 import com.adobe.aem.project.EnvironmentType;
 import com.adobe.aem.project.SDKType;
 import com.adobe.aem.project.ServiceType;
 import com.adobe.aem.project.model.Application;
 import com.adobe.aem.project.model.ArtifactsFile;
+import com.adobe.aem.project.model.ConfigurationFile;
 import com.adobe.aem.project.model.Module;
 import com.adobe.aem.project.model.Project;
 import com.adobe.aem.project.model.RepoinitFile;
-import com.adobe.aem.project.model.Result;
+import com.adobe.aem.project.model.ConfigurationFile.Location;
 
 @Mojo(name = "package-app", 
     defaultPhase = LifecyclePhase.PACKAGE,
     requiresDependencyResolution = ResolutionScope.COMPILE)
 public class PackageAppMojo extends AbstractAemMojo {
-
-    @Parameter(defaultValue = "false", property = "aem.analyser.sysout")
-    private boolean useSysout;
 
     /**
      * The Jar archiver.
@@ -71,19 +67,10 @@ public class PackageAppMojo extends AbstractAemMojo {
         getLog().warn("THIS MOJO IS IN ALPHA STATE. USE WITH CAUTION AT YOUR OWN RISK");
         getLog().warn("THE FUNCTIONALITY MIGHT CHANGE OR BREAK WITHOUT PRIOR NOTICE");
         getLog().warn("*********************************************************************************************");
-        new File(this.project.getBuild().getDirectory()).mkdirs();
 
-        Project pr = DependencyLifecycleParticipant.getProject(this.project);
-        if ( pr == null ) {
-            pr = new Project(this.project.getBasedir().getParentFile());
-            pr.scan();
-        }
-        final Application app;
-        if ( pr.getApplication() == null || !pr.getApplication().getDirectory().getAbsolutePath().equals(this.project.getBasedir().getAbsolutePath())) {
-            app = new Application(this.project.getBasedir());
-        } else {
-            app = pr.getApplication();
-        }
+        final Project pr = this.getProject();
+        final Application app = pr.getApplication();
+        new File(this.project.getBuild().getDirectory()).mkdirs();
 
         final File buildDirectory = new File(this.project.getBuild().getDirectory());
         final File buildFile = new File(buildDirectory, this.project.getBuild().getFinalName().concat(".zip"));
@@ -109,7 +96,7 @@ public class PackageAppMojo extends AbstractAemMojo {
             final List<RepoinitFile> repoinit = app.getRepoInitFiles();
             final List<ArtifactsFile> bundles = app.getBundleFiles();
             final List<ArtifactsFile> contentPackages = app.getContentPackageFiles();
-            final Result result = app.verify(configs, repoinit, bundles, contentPackages);
+            final AemAnalyserResult result = app.verify(configs, repoinit, bundles, contentPackages);
             this.processResult(result);
 
             this.processConfigurations(configs);
@@ -136,45 +123,8 @@ public class PackageAppMojo extends AbstractAemMojo {
         project.getArtifact().setFile(buildFile);
     }
 
-    private void processResult(final Result result) throws MojoExecutionException {
-        File baseDir = this.project.getBasedir();
-        if ( this.useSysout ) {
-            boolean done = false;
-            do {
-                final File gitDir = new File(baseDir, ".git");
-                if ( gitDir.exists() && gitDir.isDirectory() ) {
-                    done = true;
-                } else {
-                    baseDir = baseDir.getParentFile();
-                    if ( baseDir == null ) {
-                        baseDir = this.project.getBasedir();
-                        done = true;
-                    }
-                }
-            } while ( !done );
-        }
-        for(final Result.Annotation ann : result.getWarnings()) {
-            if ( this.strictValidation ) {
-                if ( this.useSysout ) {
-                    System.out.println(ann.toMessage(Result.Level.error, baseDir));
-                } else {
-                    getLog().error(ann.toMessage(Result.Level.error, baseDir));
-                }
-            } else {
-                if ( this.useSysout ) {
-                    System.out.println(ann.toMessage(Result.Level.warning, baseDir));
-                } else {
-                    getLog().warn(ann.toMessage(Result.Level.warning, baseDir));
-                }
-            }
-        }
-        for(final Result.Annotation ann : result.getErrors()) {
-            if ( this.useSysout ) {
-                System.out.println(ann.toMessage(Result.Level.error, baseDir));
-            } else {
-                getLog().error(ann.toMessage(Result.Level.error, baseDir));
-            }
-        }
+    private void processResult(final AemAnalyserResult result) throws MojoExecutionException {
+        this.printResult(result);
         if ( result.hasErrors() || (this.strictValidation && result.hasWarnings()) ) {
             throw new MojoExecutionException("Configurations are not valid. Please check log");
         }
