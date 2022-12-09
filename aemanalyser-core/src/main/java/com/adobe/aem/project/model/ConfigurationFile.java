@@ -9,7 +9,7 @@
   OF ANY KIND, either express or implied. See the License for the specific language
   governing permissions and limitations under the License.
 */
-package com.adobe.aem.analyser.tasks;
+package com.adobe.aem.project.model;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -17,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -49,7 +50,7 @@ import com.adobe.aem.project.ServiceType;
 /**
  * A configuration file
  */
-public final class ConfigurationFile {
+public final class ConfigurationFile implements Serializable {
 
     public enum Location {
         APPS,

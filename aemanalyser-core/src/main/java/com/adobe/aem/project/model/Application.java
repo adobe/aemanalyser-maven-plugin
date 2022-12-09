@@ -13,31 +13,31 @@ package com.adobe.aem.project.model;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.json.stream.JsonParsingException;
 
 import org.apache.sling.feature.Configuration;
-import com.adobe.aem.analyser.tasks.ConfigurationFile;
-import com.adobe.aem.analyser.tasks.ConfigurationFileType;
-import com.adobe.aem.analyser.tasks.ConfigurationFile.Location;
+
+import com.adobe.aem.analyser.result.AemAnalyserAnnotation;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
 import com.adobe.aem.project.EnvironmentType;
 import com.adobe.aem.project.SDKType;
 import com.adobe.aem.project.ServiceType;
 import com.adobe.aem.project.model.ArtifactsFile.FileType;
+import com.adobe.aem.project.model.ConfigurationFile.Location;
 
-public class Application implements Serializable {
+public class Application extends AbstractModule {
 
-    private final File directory;
+    private List<ArtifactsFile> bundlesFiles;
+
+    private List<ArtifactsFile> contentFiles;
+
+    private List<ConfigurationFile> configFiles;
 
     public Application(final File f) {
-        this.directory = f;
-    }
-
-    public File getDirectory() {
-        return this.directory;
+        super(f);
     }
 
     private File getSourceFile(final String name) {
@@ -51,34 +51,38 @@ public class Application implements Serializable {
      * @return The relative path
      */
     public String getRelativePath(final File file) {
-        return file.getAbsolutePath().substring(this.directory.getAbsolutePath().length() + 1);
+        return file.getAbsolutePath().substring(this.getDirectory().getAbsolutePath().length() + 1);
     }
 
     private void getArtifactsFile(final List<ArtifactsFile> result, final ArtifactsFile.FileType fileType, final ServiceType serviceType) {
         final String prefix = fileType == FileType.BUNDLES ? "bundles" : "content-packages";
-         final String filename = serviceType == null ? prefix.concat(".json") : prefix.concat(".").concat(serviceType.asString()).concat(".json");
-         final File file = getSourceFile(filename);
-         if ( file.exists()) {
-             final ArtifactsFile f = new ArtifactsFile(fileType, file);
-             f.setServiceType(serviceType);
-             result.add(f);
-         }
-     }
+        final String filename = serviceType == null ? prefix.concat(".json") : prefix.concat(".").concat(serviceType.asString()).concat(".json");
+        final File file = getSourceFile(filename);
+        if ( file.exists()) {
+            final ArtifactsFile f = new ArtifactsFile(fileType, file);
+            f.setServiceType(serviceType);
+            result.add(f);
+        }
+    }
 
     public List<ArtifactsFile> getBundleFiles() {
-        final List<ArtifactsFile> result = new ArrayList<>();
-        getArtifactsFile(result, ArtifactsFile.FileType.BUNDLES, null);
-        getArtifactsFile(result, ArtifactsFile.FileType.BUNDLES, ServiceType.AUTHOR);
-        getArtifactsFile(result, ArtifactsFile.FileType.BUNDLES, ServiceType.PUBLISH);
-        return result;
+        if ( this.bundlesFiles == null ) {
+            this.bundlesFiles = new ArrayList<>();
+            getArtifactsFile(this.bundlesFiles, ArtifactsFile.FileType.BUNDLES, null);
+            getArtifactsFile(this.bundlesFiles, ArtifactsFile.FileType.BUNDLES, ServiceType.AUTHOR);
+            getArtifactsFile(this.bundlesFiles, ArtifactsFile.FileType.BUNDLES, ServiceType.PUBLISH);    
+        }
+        return this.bundlesFiles;
     }
 
     public List<ArtifactsFile> getContentPackageFiles() {
-        final List<ArtifactsFile> result = new ArrayList<>();
-        getArtifactsFile(result, ArtifactsFile.FileType.CONTENT_PACKAGES, null);
-        getArtifactsFile(result, ArtifactsFile.FileType.CONTENT_PACKAGES, ServiceType.AUTHOR);
-        getArtifactsFile(result, ArtifactsFile.FileType.CONTENT_PACKAGES, ServiceType.PUBLISH);
-        return result;
+        if ( this.contentFiles == null ) {
+            this.contentFiles = new ArrayList<>();
+            getArtifactsFile(this.contentFiles, ArtifactsFile.FileType.CONTENT_PACKAGES, null);
+            getArtifactsFile(this.contentFiles, ArtifactsFile.FileType.CONTENT_PACKAGES, ServiceType.AUTHOR);
+            getArtifactsFile(this.contentFiles, ArtifactsFile.FileType.CONTENT_PACKAGES, ServiceType.PUBLISH);
+        }
+        return this.contentFiles;
     }
 
     private File getConfigurationDirectory(final ServiceType type, final SDKType sdkType, final EnvironmentType envType) {
@@ -123,40 +127,42 @@ public class Application implements Serializable {
     }
 
     public List<ConfigurationFile> getConfigurationFiles() {
-        final List<ConfigurationFile> result = new ArrayList<>();
-        this.getConfigurationFiles(result, null, null, null);
-        this.getConfigurationFiles(result, null, SDKType.RDE, null);
-        this.getConfigurationFiles(result, null, null, EnvironmentType.DEV);
-        this.getConfigurationFiles(result, null, null, EnvironmentType.STAGE);
-        this.getConfigurationFiles(result, null, null, EnvironmentType.PROD);
+        if ( this.configFiles == null ) {
+            this.configFiles = new ArrayList<>();
+            this.getConfigurationFiles(this.configFiles, null, null, null);
+            this.getConfigurationFiles(this.configFiles, null, SDKType.RDE, null);
+            this.getConfigurationFiles(this.configFiles, null, null, EnvironmentType.DEV);
+            this.getConfigurationFiles(this.configFiles, null, null, EnvironmentType.STAGE);
+            this.getConfigurationFiles(this.configFiles, null, null, EnvironmentType.PROD);
 
-        this.getConfigurationFiles(result, ServiceType.AUTHOR, null, null);
-        this.getConfigurationFiles(result, ServiceType.AUTHOR, null, EnvironmentType.DEV);
-        this.getConfigurationFiles(result, ServiceType.AUTHOR, null, EnvironmentType.STAGE);
-        this.getConfigurationFiles(result, ServiceType.AUTHOR, null, EnvironmentType.PROD);
-        this.getConfigurationFiles(result, ServiceType.AUTHOR, SDKType.RDE, null);
+            this.getConfigurationFiles(this.configFiles, ServiceType.AUTHOR, null, null);
+            this.getConfigurationFiles(this.configFiles, ServiceType.AUTHOR, null, EnvironmentType.DEV);
+            this.getConfigurationFiles(this.configFiles, ServiceType.AUTHOR, null, EnvironmentType.STAGE);
+            this.getConfigurationFiles(this.configFiles, ServiceType.AUTHOR, null, EnvironmentType.PROD);
+            this.getConfigurationFiles(this.configFiles, ServiceType.AUTHOR, SDKType.RDE, null);
 
-        this.getConfigurationFiles(result, ServiceType.PUBLISH, null, null);
-        this.getConfigurationFiles(result, ServiceType.PUBLISH, null, EnvironmentType.DEV);
-        this.getConfigurationFiles(result, ServiceType.PUBLISH, null, EnvironmentType.STAGE);
-        this.getConfigurationFiles(result, ServiceType.PUBLISH, null, EnvironmentType.PROD);
-        this.getConfigurationFiles(result, ServiceType.PUBLISH, SDKType.RDE, null);
-        return result;
+            this.getConfigurationFiles(this.configFiles, ServiceType.PUBLISH, null, null);
+            this.getConfigurationFiles(this.configFiles, ServiceType.PUBLISH, null, EnvironmentType.DEV);
+            this.getConfigurationFiles(this.configFiles, ServiceType.PUBLISH, null, EnvironmentType.STAGE);
+            this.getConfigurationFiles(this.configFiles, ServiceType.PUBLISH, null, EnvironmentType.PROD);
+            this.getConfigurationFiles(this.configFiles, ServiceType.PUBLISH, SDKType.RDE, null);
+        }
+        return this.configFiles;
     }
 
-    public Result verify(final List<ConfigurationFile> configs,
+    public AemAnalyserResult verify(final List<ConfigurationFile> configs,
         final List<RepoinitFile> repoinit,
         final List<ArtifactsFile> bundles,
         final List<ArtifactsFile> contentPackages) {
-        final Result result = new Result();
+        final AemAnalyserResult result = new AemAnalyserResult();
         for(final ConfigurationFile f : configs) {
             try {
                 if ( f.getType() != ConfigurationFileType.JSON ) {
-                    result.getWarnings().add(new Result.Annotation(f.getSource(), "Configurations should use the JSON format"));
+                    result.getWarnings().add(new AemAnalyserAnnotation(f.getSource(), "Configurations should use the JSON format"));
                 }
                 final Configuration c = new Configuration(f.getPid());
                 if ( RepoinitFile.REPOINIT_FACTORY_PID.equals(c.getFactoryPid()) && (!c.isFactoryConfiguration() && RepoinitFile.REPOINIT_PID.equals(c.getPid()))) {
-                    result.getErrors().add(new Result.Annotation(f.getSource(), "Repoinit must be put inside separate txt files"));
+                    result.getErrors().add(new AemAnalyserAnnotation(f.getSource(), "Repoinit must be put inside separate txt files"));
                 }
                 f.readConfiguration();
             } catch ( final IOException ioe) {
@@ -167,7 +173,7 @@ public class Application implements Serializable {
             try {
                 f.readContents();
             } catch ( final IOException ioe) {
-                result.getErrors().add(new Result.Annotation(f.getSource(), ioe.getMessage()));
+                result.getErrors().add(new AemAnalyserAnnotation(f.getSource(), ioe.getMessage()));
             }
         }
         for(final ArtifactsFile f : bundles) {
@@ -187,13 +193,13 @@ public class Application implements Serializable {
         return result;
     }
 
-    private Result.Annotation getAnnotation(final File f, final IOException ioe) {
+    private AemAnalyserAnnotation getAnnotation(final File f, final IOException ioe) {
         if ( ioe.getCause() != null && ioe.getCause() instanceof JsonParsingException ) {
             final JsonParsingException jpe = (JsonParsingException) ioe.getCause();
-            return new Result.Annotation(f, jpe.getMessage(), jpe.getLocation() != null ? jpe.getLocation().getLineNumber() : -1,
+            return new AemAnalyserAnnotation(f, jpe.getMessage(), jpe.getLocation() != null ? jpe.getLocation().getLineNumber() : -1,
                 jpe.getLocation() != null ? jpe.getLocation().getColumnNumber() : -1);
         }
-        return new Result.Annotation(f, ioe.getMessage());
+        return new AemAnalyserAnnotation(f, ioe.getMessage());
     }
 
     public List<RepoinitFile> getRepoInitFiles() {

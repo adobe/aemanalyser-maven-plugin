@@ -25,7 +25,10 @@ import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.FeatureProvider;
 import org.junit.Test;
 
-import com.adobe.aem.analyser.tasks.ConfigurationFile.Location;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
+import com.adobe.aem.project.model.ConfigurationFile;
+import com.adobe.aem.project.model.ConfigurationFileType;
+import com.adobe.aem.project.model.ConfigurationFile.Location;
 
 public class ConfigurationsTaskTest {
 
@@ -94,7 +97,7 @@ public class ConfigurationsTaskTest {
         }
         assertEquals(4, count);
 
-        final TaskResult result = task.analyseConfigurations(files);
+        final AemAnalyserResult result = task.analyseConfigurations(files);
         assertEquals(2, result.getErrors().size());
     }
     

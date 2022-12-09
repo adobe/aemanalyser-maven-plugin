@@ -34,9 +34,13 @@ import org.apache.sling.feature.extension.apiregions.api.config.validation.Prope
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.adobe.aem.analyser.tasks.ConfigurationFile.Location;
+import com.adobe.aem.analyser.result.AemAnalyserAnnotation;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
 import com.adobe.aem.project.RunModes;
 import com.adobe.aem.project.ServiceType;
+import com.adobe.aem.project.model.ConfigurationFile;
+import com.adobe.aem.project.model.ConfigurationFileType;
+import com.adobe.aem.project.model.ConfigurationFile.Location;
 
 public class ConfigurationsTask {
 
@@ -84,8 +88,8 @@ public class ConfigurationsTask {
         return result;
     }
 
-    public TaskResult analyseConfigurations(final List<ConfigurationFile> configFiles) throws IOException {
-        final TaskResult result = new TaskResult();
+    public AemAnalyserResult analyseConfigurations(final List<ConfigurationFile> configFiles) throws IOException {
+        final AemAnalyserResult result = new AemAnalyserResult();
 
         if ( configFiles.isEmpty() ) {
             logger.info("No configurations found in project");
@@ -194,15 +198,15 @@ public class ConfigurationsTask {
         return null;
     }
 
-    private boolean checkRunMode(final ConfigurationFile file, final TaskResult result) throws IOException {
+    private boolean checkRunMode(final ConfigurationFile file, final AemAnalyserResult result) throws IOException {
         final boolean validRunMode = RunModes.isRunModeAllowedIncludingSDK(file.getRunMode());
         if ( !validRunMode ) {
             final String validMode = RunModes.checkIfRunModeIsSpecifiedInWrongOrder(file.getRunMode());
             if ( validMode != null ) {
-                result.getErrors().add(this.context.newAnnotation(file.getSource(), 
+                result.getErrors().add(new AemAnalyserAnnotation(file.getSource(), 
                     "Configuration has invalid runmode: ".concat(file.getRunMode()).concat(". Please use this runmode instead: ").concat(validMode)));
             } else {
-                result.getErrors().add(this.context.newAnnotation(file.getSource(), "Configuration has unused runmode: ".concat(file.getRunMode())));
+                result.getErrors().add(new AemAnalyserAnnotation(file.getSource(), "Configuration has unused runmode: ".concat(file.getRunMode())));
             }
         }
         return validRunMode;
@@ -216,25 +220,25 @@ public class ConfigurationsTask {
      * @throws IOException
      */
     private void analyseConfigFile(final ConfigurationFile file, 
-            final TaskResult result,
+            final AemAnalyserResult result,
             final Map<ServiceType, ConfigurationApi> productApis,
             final Feature customFeature,
             final ArtifactId productFeatureId) throws IOException {
         logger.debug("Analysing file ".concat(context.getRelativePath(file.getSource())));
 
         if ( taskConfig.isEnforceRepositoryConfigurationBelowConfigFolder() && file.getLevel() > 1 ) {
-            result.getErrors().add(context.newAnnotation(file.getSource(), 
+            result.getErrors().add(new AemAnalyserAnnotation(file.getSource(), 
                 "Configuration must be directly inside a configuration folder and not in a sub folder."));
         }
         if ( file.getLocation() == Location.LIBS) {
-            result.getErrors().add(context.newAnnotation(file.getSource(), 
+            result.getErrors().add(new AemAnalyserAnnotation(file.getSource(), 
                 "Configuration must be inside the apps folder (not libs)."));
         }
         if ( checkRunMode(file, result) ) {
             final Dictionary<String, Object> properties = file.readConfiguration();
             if ( properties != null ) {
                 if ( file.getType() != ConfigurationFileType.JSON ) {
-                    result.getWarnings().add(context.newAnnotation(file.getSource(), "Configuration is not in JSON format. Please convert."));
+                    result.getWarnings().add(new AemAnalyserAnnotation(file.getSource(), "Configuration is not in JSON format. Please convert."));
                 }
                 for(final ServiceType serviceType : this.context.getProductFeatures().keySet()) {
                     if ( RunModes.matchesRunMode(serviceType, file.getRunMode()) ) {
@@ -277,24 +281,24 @@ public class ConfigurationsTask {
     }
 
     private void validateConfiguration(final ConfigurationFile file, final Feature customFeature, 
-        final ConfigurationApi api, final TaskResult result) throws IOException {
+        final ConfigurationApi api, final AemAnalyserResult result) throws IOException {
 
         final FeatureValidator validator = new FeatureValidator();
         final FeatureValidationResult featureResult = validator.validate(customFeature, api);
 
         final ConfigurationValidationResult cfgResult = featureResult.getConfigurationResults().get(file.getPid());
         for(final String warn : cfgResult.getWarnings()) {
-            result.getWarnings().add(context.newAnnotation(file.getSource(), warn));
+            result.getWarnings().add(new AemAnalyserAnnotation(file.getSource(), warn));
         }
         for(final String err : cfgResult.getErrors()) {
-            result.getErrors().add(context.newAnnotation(file.getSource(), err));
+            result.getErrors().add(new AemAnalyserAnnotation(file.getSource(), err));
         }
         for(final Map.Entry<String, PropertyValidationResult> propEntry : cfgResult.getPropertyResults().entrySet()) {
             for(final String warn : propEntry.getValue().getWarnings()) {
-                result.getWarnings().add(context.newAnnotation(file.getSource(), "Property ".concat(propEntry.getKey()).concat(" - ").concat(warn)));
+                result.getWarnings().add(new AemAnalyserAnnotation(file.getSource(), "Property ".concat(propEntry.getKey()).concat(" - ").concat(warn)));
             }
             for(final String err : propEntry.getValue().getErrors()) {
-                result.getErrors().add(context.newAnnotation(file.getSource(), "Property ".concat(propEntry.getKey()).concat(" - ").concat(err)));
+                result.getErrors().add(new AemAnalyserAnnotation(file.getSource(), "Property ".concat(propEntry.getKey()).concat(" - ").concat(err)));
             }
         }
     }

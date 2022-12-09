@@ -9,7 +9,7 @@
   OF ANY KIND, either express or implied. See the License for the specific language
   governing permissions and limitations under the License.
 */
-package com.adobe.aem.analyser;
+package com.adobe.aem.analyser.result;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,9 +19,9 @@ import java.util.List;
  */
 public class AemAnalyserResult {
 
-    private final List<String> errors = new ArrayList<>();
+    private final List<AemAnalyserAnnotation> errors = new ArrayList<>();
 
-    private final List<String> warnings = new ArrayList<>();
+    private final List<AemAnalyserAnnotation> warnings = new ArrayList<>();
 
     /**
      * Are there any errors?
@@ -43,7 +43,7 @@ public class AemAnalyserResult {
      * Get the list of errors. The list is mutable.
      * @return The list of errors, might be empty.
      */
-    public List<String> getErrors() {
+    public List<AemAnalyserAnnotation> getErrors() {
         return this.errors;
     }
 
@@ -51,7 +51,7 @@ public class AemAnalyserResult {
      * Get the list of warnings. The list is mutable.
      * @return The list of warnings, might be empty.
      */
-    public List<String> getWarnings() {
+    public List<AemAnalyserAnnotation> getWarnings() {
         return this.warnings;
     }
 }

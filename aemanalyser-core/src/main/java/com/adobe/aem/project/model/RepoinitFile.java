@@ -13,13 +13,14 @@ package com.adobe.aem.project.model;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.Files;
 import com.adobe.aem.project.ServiceType;
 
 /**
  * A repoinit file
  */
-public final class RepoinitFile {
+public final class RepoinitFile implements Serializable {
 
     public static final String REPOINIT_FACTORY_PID = "org.apache.sling.jcr.repoinit.RepositoryInitializer";
 

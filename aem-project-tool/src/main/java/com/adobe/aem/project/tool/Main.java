@@ -13,7 +13,8 @@ package com.adobe.aem.project.tool;
 
 import java.io.IOException;
 
-import com.adobe.aem.analyser.tasks.TaskResult;
+import com.adobe.aem.analyser.result.AemAnalyserAnnotation;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
 
 public class Main {
     
@@ -47,10 +48,10 @@ public class Main {
         command.setParser(parser);
         command.validate();
         try {
-            final TaskResult result = command.doExecute();
+            final AemAnalyserResult result = command.doExecute();
             if ( result != null ) {
-                result.getWarnings().stream().forEach(a -> System.out.println(a.toActionString(command.isStrict() ? "error" : "warning")));
-                result.getErrors().stream().forEach(a -> System.out.println(a.toActionString("error")));
+                result.getWarnings().stream().forEach(a -> System.out.println(a.toMessage(command.isStrict() ? AemAnalyserAnnotation.Level.error : AemAnalyserAnnotation.Level.warning, command.getBaseDirectory())));
+                result.getErrors().stream().forEach(a -> System.out.println(a.toMessage(AemAnalyserAnnotation.Level.error, command.getBaseDirectory())));
                 if ( !result.getErrors().isEmpty() || ( command.isStrict() && !result.getWarnings().isEmpty()) ) {
                     System.exit(1);
                 }    

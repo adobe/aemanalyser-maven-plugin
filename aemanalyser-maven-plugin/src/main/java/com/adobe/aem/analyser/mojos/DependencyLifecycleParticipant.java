@@ -55,6 +55,10 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
      */
     private static final String PLUGIN_ID = "com.adobe.aem:aemanalyser-maven-plugin";
 
+    private static final String KEY_PROJECT = PLUGIN_ID.concat("/project");
+
+    private static final String KEY_PROJECT_SERIALIZED = KEY_PROJECT.concat("-ser");
+
     @Requirement
     private Logger logger;
 
@@ -84,7 +88,7 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
             logger.debug("Skipping project due to setup mismatch");
             return;
         }
-
+        app.setId(new ArtifactId(mavenProject.getGroupId(), mavenProject.getArtifactId(), mavenProject.getVersion(), null, null));
         for(final Module m : project.getModules()) {
             if ( m.getType() != ModuleType.BUNDLE && m.getType() != ModuleType.CONTENT ) {
                 continue;
@@ -114,7 +118,7 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
                         if ( groupId != null && model.getArtifactId() != null && version != null ) {
                             final ArtifactId id = new ArtifactId(groupId, model.getArtifactId(), version, null, 
                                 m.getType() == ModuleType.BUNDLE ? null : "zip");
-                            m.setMvnId(id.toMvnId());
+                            m.setId(id);
                             addDependency(mavenProject, id);    
                         } 
                     } catch ( IOException | XmlPullParserException ignore) {
@@ -124,17 +128,18 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
             } else {
                 final ArtifactId id = new ArtifactId(found.getGroupId(), found.getArtifactId(), found.getVersion(), null, 
                     m.getType() == ModuleType.BUNDLE ? null : "zip");
-                m.setMvnId(id.toMvnId());
-                addDependency(mavenProject, id);
+                    m.setId(id);
+                    addDependency(mavenProject, id);
             }
         }
         try ( final ByteArrayOutputStream baos = new ByteArrayOutputStream();
               final ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(project);
             oos.flush();
-            mavenProject.setContextValue(PLUGIN_ID, baos.toByteArray());
+            mavenProject.setContextValue(KEY_PROJECT_SERIALIZED, baos.toByteArray());
         } catch ( final IOException ignore) {
             // we ignore this
+            ignore.printStackTrace();
         }
         logger.debug("Adding dependencies...");
         addArtifacts(mavenProject, app.getBundleFiles());
@@ -143,16 +148,25 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
     }
 
     public static Project getProject(final MavenProject mavenProject) {
-        final byte[] data = (byte[]) mavenProject.getContextValue(PLUGIN_ID);
-        if ( data != null ) {
-            try ( final ByteArrayInputStream bais = new ByteArrayInputStream(data);
-                  final ObjectInputStream ois = new ObjectInputStream(bais)) {
-                return (Project) ois.readObject();
-            } catch ( final IOException | ClassNotFoundException ignore) {
-                // we ignore this
+        Project project = (Project) mavenProject.getContextValue(KEY_PROJECT);
+        if ( project == null ) {
+            final byte[] data = (byte[]) mavenProject.getContextValue(KEY_PROJECT_SERIALIZED);
+            if ( data != null ) {
+                try ( final ByteArrayInputStream bais = new ByteArrayInputStream(data);
+                      final ObjectInputStream ois = new ObjectInputStream(bais)) {
+                    project = (Project) ois.readObject();
+                    mavenProject.setContextValue(KEY_PROJECT, project);
+                } catch ( final IOException | ClassNotFoundException ignore) {
+                    // we ignore this
+                    ignore.printStackTrace();
+                }
             }
         }
-        return null;
+        return project;
+    }
+
+    public static void setProject(final MavenProject mavenProject, final Project project) {
+        mavenProject.setContextValue(KEY_PROJECT, project);
     }
 
     private void addArtifacts(final MavenProject project, final List<ArtifactsFile> artifactsFiles) {

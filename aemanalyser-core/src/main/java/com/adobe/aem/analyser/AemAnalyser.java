@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.sling.feature.Artifact;
+import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Configuration;
 import org.apache.sling.feature.Extension;
 import org.apache.sling.feature.ExtensionType;
@@ -42,7 +43,13 @@ import org.apache.sling.feature.scanner.Scanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.adobe.aem.analyser.result.AemAnalyserAnnotation;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
 import com.adobe.aem.project.EnvironmentType;
+import com.adobe.aem.project.ServiceType;
+import com.adobe.aem.project.model.ArtifactsFile;
+import com.adobe.aem.project.model.ConfigurationFile;
+import com.adobe.aem.project.model.FeatureParticipantResolver;
 
 public class AemAnalyser {
 
@@ -69,9 +76,9 @@ public class AemAnalyser {
         + ",repoinit"
         + ",content-packages-validation";
 
-    private static final String BUNDLE_ORIGINS = "content-package-origins";
-    private static final String CONFIGURATION_ORIGINS = Configuration.CONFIGURATOR_PREFIX.concat(BUNDLE_ORIGINS);
-
+    private static final String CONTENT_PACKAGE_ORIGINS = "content-package-origins";
+    private static final String CONFIGURATION_ORIGINS = Configuration.CONFIGURATOR_PREFIX.concat(CONTENT_PACKAGE_ORIGINS);
+    
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private ArtifactProvider artifactProvider;
@@ -83,6 +90,8 @@ public class AemAnalyser {
     private Set<String> includedUserTasks;
 
     private Map<String, Map<String, String>> taskConfigurations;
+
+    private FeatureParticipantResolver fpResolver;
 
     public AemAnalyser() {
         this.setIncludedTasks(new LinkedHashSet<>(Arrays.asList(DEFAULT_TASKS.split(","))));
@@ -123,6 +132,10 @@ public class AemAnalyser {
      */
     public Map<String, Map<String, String>> getTaskConfigurations() {
         return taskConfigurations;
+    }
+
+    public void setFeatureParticipantResolver(final FeatureParticipantResolver resolver) {
+        this.fpResolver = resolver;
     }
 
     /**
@@ -216,8 +229,8 @@ public class AemAnalyser {
         final Analyser userAnalyser = this.createAnalyser(scanner, this.getIncludedUserTasks(), this.getTaskConfigurations());
         final Analyser finalAnalyser = this.createAnalyser(scanner, this.getIncludedTasks(), this.getTaskConfigurations());
 
-        final Map<String, List<String>> featureErrors = new LinkedHashMap<>();
-        final Map<String, List<String>> featureWarnings = new LinkedHashMap<>();
+        final Map<String, List<AemAnalyserAnnotation>> featureErrors = new LinkedHashMap<>();
+        final Map<String, List<AemAnalyserAnnotation>> featureWarnings = new LinkedHashMap<>();
 
         for (final Feature f : features) {
             final String classifier = f.getId().getClassifier();
@@ -238,30 +251,30 @@ public class AemAnalyser {
 
             // report errors
             for(final GlobalReport report : r.getGlobalErrors()) {
-                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(report.toString());
+                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(new AemAnalyserAnnotation(report.toString()));
             }
             for(final ArtifactReport report : r.getArtifactErrors()) {
-                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getArtifactMessage(f, report));
+                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getArtifactAnnotation(f, report));
             }
             for(final ExtensionReport report : r.getExtensionErrors()) {
-                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(report.toString());
+                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getExtensionAnnotation(f, report));
             }
             for(final ConfigurationReport report : r.getConfigurationErrors()) {
-                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getConfigurationMessage(f, report));
+                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getConfigurationAnnotation(f, report));
             }
 
             // report warnings
             for(final GlobalReport report : r.getGlobalWarnings()) {
-                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(report.toString());
+                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(new AemAnalyserAnnotation(report.toString()));
             }
             for(final ArtifactReport report : r.getArtifactWarnings()) {
-                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getArtifactMessage(f, report));
+                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getArtifactAnnotation(f, report));
             }
             for(final ExtensionReport report : r.getExtensionWarnings()) {
-                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(report.toString());
+                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getExtensionAnnotation(f, report));
             }
             for(final ConfigurationReport report : r.getConfigurationWarnings()) {
-                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getConfigurationMessage(f, report));
+                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getConfigurationAnnotation(f, report));
             }
         }
 
@@ -271,15 +284,41 @@ public class AemAnalyser {
         return result;
     }
 
-    private String getConfigurationMessage(final Feature f, final ConfigurationReport report) {
-        final Object val = report.getKey().getProperties().get(CONFIGURATION_ORIGINS);
-        if ( val != null ) {
-            return report.toString().concat(" (").concat(val.toString()).concat(")");
+    private AemAnalyserAnnotation getExtensionAnnotation(final Feature f, final ExtensionReport report) {
+        if ( report.getKey().equals(Extension.EXTENSION_NAME_REPOINIT) ) {
+            // TODO how do we find the source?
         }
-        return report.toString();
+        return new AemAnalyserAnnotation(report.toString());
     }
 
-    private String getArtifactMessage(final Feature f, final ArtifactReport report) {
+    private AemAnalyserAnnotation getConfigurationAnnotation(final Feature f, final ConfigurationReport report) {
+        final Object val = report.getKey().getProperties().get(CONFIGURATION_ORIGINS);
+        if ( val != null ) {
+            if ( this.fpResolver != null ) {
+                try {
+                    final ArtifactId originId = ArtifactId.parse(val.toString()).changeType(null).changeClassifier(null);
+                    ServiceType originServiceType = null;
+                    if ( f.getId().getClassifier() != null && f.getId().getClassifier().contains(ServiceType.AUTHOR.asString())) {
+                        originServiceType = ServiceType.AUTHOR;
+                    } else if ( f.getId().getClassifier() != null && f.getId().getClassifier().contains(ServiceType.PUBLISH.asString())) {
+                        originServiceType = ServiceType.PUBLISH;
+                    }
+
+                    final ConfigurationFile source = this.fpResolver.getSource(report.getKey(), originServiceType, originId);
+                    if ( source != null ) {
+                        return new AemAnalyserAnnotation(source.getSource(), report.toString());
+                    }
+
+                } catch ( final IllegalArgumentException iae) {
+                    // ignore
+                }
+            }
+            return new AemAnalyserAnnotation(report.toString().concat(" (").concat(val.toString()).concat(")"));
+        }
+        return new AemAnalyserAnnotation(report.toString());
+    }
+
+    private AemAnalyserAnnotation getArtifactAnnotation(final Feature f, final ArtifactReport report) {
         Artifact artifact = f.getBundles().getExact(report.getKey());
         if ( artifact == null ) {
             for(final Extension ext : f.getExtensions()) {
@@ -294,12 +333,31 @@ public class AemAnalyser {
             }
         }
         if ( artifact != null ) {
-            final Object val = artifact.getMetadata().get(BUNDLE_ORIGINS);
+            final Object val = artifact.getMetadata().get(CONTENT_PACKAGE_ORIGINS);
             if ( val != null ) {
-                return report.toString().concat(" (").concat(val.toString()).concat(")");
+                if ( this.fpResolver != null ) {
+                    try {
+                        final ArtifactId originId = ArtifactId.parse(val.toString()).changeType(null).changeClassifier(null);
+                        ServiceType originServiceType = null;
+                        if ( f.getId().getClassifier() != null && f.getId().getClassifier().contains(ServiceType.AUTHOR.asString())) {
+                            originServiceType = ServiceType.AUTHOR;
+                        } else if ( f.getId().getClassifier() != null && f.getId().getClassifier().contains(ServiceType.PUBLISH.asString())) {
+                            originServiceType = ServiceType.PUBLISH;
+                        }
+    
+                        final ArtifactsFile source = this.fpResolver.getSource(report.getKey(), originServiceType, originId);
+                        if ( source != null ) {
+                            return new AemAnalyserAnnotation(source.getSource(), report.toString());
+                        }
+    
+                    } catch ( final IllegalArgumentException iae) {
+                        // ignore
+                    }
+                }
+                return new AemAnalyserAnnotation(report.toString().concat(" (").concat(val.toString()).concat(")"));
             }
         }
-        return report.toString();
+        return new AemAnalyserAnnotation(report.toString());
     }
 
     private static final String KEY_AUTHOR_AND_PUBLISH = "author and publish";
@@ -322,8 +380,8 @@ public class AemAnalyser {
      * then dev/prod/stage exists. Return the common set of messages from those instead.
      * @return
      */
-    private List<String> getTierMessages(final Map<String, List<String>> messages, final String tier) {
-        List<String> msgs = messages.get(tier);
+    private List<AemAnalyserAnnotation> getTierMessages(final Map<String, List<AemAnalyserAnnotation>> messages, final String tier) {
+        List<AemAnalyserAnnotation> msgs = messages.get(tier);
         if ( msgs == null ) {
             for(final EnvironmentType env : EnvironmentType.values()) {
                 final String key = tier.concat(".").concat(env.asString());
@@ -339,12 +397,12 @@ public class AemAnalyser {
         return msgs;
     }
 
-    protected void logOutput(final List<String> output, final Map<String, List<String>> messages, final String type) {
+    protected void logOutput(final List<AemAnalyserAnnotation> output, final Map<String, List<AemAnalyserAnnotation>> messages, final String type) {
         // clean up environment specific messages
-        final List<String> authorMsgs = getTierMessages(messages, KEY_AUTHOR);
-        final List<String> publishMsgs = getTierMessages(messages, KEY_PUBLISH);
+        final List<AemAnalyserAnnotation> authorMsgs = getTierMessages(messages, KEY_AUTHOR);
+        final List<AemAnalyserAnnotation> publishMsgs = getTierMessages(messages, KEY_PUBLISH);
 
-        for(final Map.Entry<String, List<String>> entry : messages.entrySet()) {
+        for(final Map.Entry<String, List<AemAnalyserAnnotation>> entry : messages.entrySet()) {
             if ( entry.getKey().startsWith(PREFIX_AUTHOR) ) {
                 entry.getValue().removeAll(authorMsgs);
             }
@@ -354,7 +412,7 @@ public class AemAnalyser {
         }
 
         // author and publish
-        final List<String> list = new ArrayList<>();
+        final List<AemAnalyserAnnotation> list = new ArrayList<>();
         list.addAll(authorMsgs);
         list.retainAll(publishMsgs);
         if ( !list.isEmpty() ) {
@@ -365,10 +423,10 @@ public class AemAnalyser {
 
         // log default classifiers
         for(final String k : KEYS) {
-            final List<String> m = messages.get(k);
+            final List<AemAnalyserAnnotation> m = messages.get(k);
             if ( m!= null && !m.isEmpty() ) {
                 final String id = k.startsWith(PREFIX) ? k.substring(PREFIX.length()) : k;
-                output.add("The analyser found the following ".concat(type).concat(" for ").concat(id).concat(" : "));
+                output.add(new AemAnalyserAnnotation("The analyser found the following ".concat(type).concat(" for ").concat(id).concat(" : ")));
                 m.stream().forEach(t -> output.add(t));
             }
         }
