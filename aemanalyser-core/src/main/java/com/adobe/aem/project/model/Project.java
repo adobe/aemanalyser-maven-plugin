@@ -135,4 +135,12 @@ public class Project implements FeatureParticipantResolver, Serializable {
         }
         return null;
     }
+
+    @Override
+    public RepoinitFile getSource(final ServiceType serviceType, final ArtifactId origin) {
+        if ( this.getApplication() != null && this.getApplication().getId().equals(origin) ) {
+            return null;
+        }
+        return null;
+    }
 }

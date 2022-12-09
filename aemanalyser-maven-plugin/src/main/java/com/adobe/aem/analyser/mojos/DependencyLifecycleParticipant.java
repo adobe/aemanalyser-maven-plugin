@@ -139,6 +139,7 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
             mavenProject.setContextValue(KEY_PROJECT_SERIALIZED, baos.toByteArray());
         } catch ( final IOException ignore) {
             // we ignore this
+            ignore.printStackTrace();
         }
         logger.debug("Adding dependencies...");
         addArtifacts(mavenProject, app.getBundleFiles());
@@ -157,6 +158,7 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
                     mavenProject.setContextValue(KEY_PROJECT, project);
                 } catch ( final IOException | ClassNotFoundException ignore) {
                     // we ignore this
+                    ignore.printStackTrace();
                 }
             }
         }

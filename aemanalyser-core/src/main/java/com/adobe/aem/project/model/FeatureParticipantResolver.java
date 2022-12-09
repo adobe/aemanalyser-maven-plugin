@@ -21,4 +21,6 @@ public interface FeatureParticipantResolver {
     ConfigurationFile getSource(Configuration cfg, ServiceType serviceType, ArtifactId origin);
 
     ArtifactsFile getSource(ArtifactId artifactId, ServiceType serviceType, ArtifactId origin);
+
+    RepoinitFile getSource(ServiceType serviceType, ArtifactId origin);
 }

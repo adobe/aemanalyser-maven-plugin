@@ -257,7 +257,7 @@ public class AemAnalyser {
                 featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getArtifactAnnotation(f, report));
             }
             for(final ExtensionReport report : r.getExtensionErrors()) {
-                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(new AemAnalyserAnnotation(report.toString()));
+                featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getExtensionAnnotation(f, report));
             }
             for(final ConfigurationReport report : r.getConfigurationErrors()) {
                 featureErrors.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getConfigurationAnnotation(f, report));
@@ -271,7 +271,7 @@ public class AemAnalyser {
                 featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getArtifactAnnotation(f, report));
             }
             for(final ExtensionReport report : r.getExtensionWarnings()) {
-                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(new AemAnalyserAnnotation(report.toString()));
+                featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getExtensionAnnotation(f, report));
             }
             for(final ConfigurationReport report : r.getConfigurationWarnings()) {
                 featureWarnings.computeIfAbsent(msgKey, key -> new ArrayList<>()).add(getConfigurationAnnotation(f, report));
@@ -282,6 +282,13 @@ public class AemAnalyser {
         logOutput(result.getWarnings(), featureWarnings, "warnings");
 
         return result;
+    }
+
+    private AemAnalyserAnnotation getExtensionAnnotation(final Feature f, final ExtensionReport report) {
+        if ( report.getKey().equals(Extension.EXTENSION_NAME_REPOINIT) ) {
+            // TODO how do we find the source?
+        }
+        return new AemAnalyserAnnotation(report.toString());
     }
 
     private AemAnalyserAnnotation getConfigurationAnnotation(final Feature f, final ConfigurationReport report) {
