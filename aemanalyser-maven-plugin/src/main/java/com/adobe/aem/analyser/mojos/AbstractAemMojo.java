@@ -142,6 +142,7 @@ public abstract class AbstractAemMojo extends AbstractMojo {
         if ( pr == null ) {
             pr = new Project(this.project.getBasedir().getParentFile());
             pr.scan();
+            DependencyLifecycleParticipant.setProject(this.project, pr);
         }
         if ( pr.getApplication() == null || !pr.getApplication().getDirectory().getAbsolutePath().equals(this.project.getBasedir().getAbsolutePath())) {
             pr.setApplication(new Application(this.project.getBasedir()));

@@ -107,10 +107,9 @@ public class PackageAppMojo extends AbstractAemMojo {
             this.processArtifacts(moduleIds, contentPackages);
 
             for(final Module m : pr.getModules()) {
-                if ( m.getMvnId() != null) {
-                    final ArtifactId id = ArtifactId.fromMvnId(m.getMvnId());
-                    if ( moduleIds.add(id) ) {
-                        this.processArtifact(new Artifact(id), m.getServiceType());    
+                if ( m.getId() != null) {
+                    if ( moduleIds.add(m.getId()) ) {
+                        this.processArtifact(new Artifact(m.getId()), m.getServiceType());    
                     }
                 }
             }

@@ -292,7 +292,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
             analyser.setIncludedUserTasks(this.getAnalyserUserTasks());
             analyser.setTaskConfigurations(this.getAnalyserTaskConfigurations());
 
-            analyser.setFeatureParticipantResolver(this.getProject().getApplication());
+            analyser.setFeatureParticipantResolver(this.getProject());
 
             return analyser.analyse(features);            
         } catch ( final Exception e) {

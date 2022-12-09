@@ -12,11 +12,18 @@
 package com.adobe.aem.project.model;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Project implements Serializable {
+import org.apache.sling.feature.Artifact;
+import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.Configuration;
+
+import com.adobe.aem.project.ServiceType;
+
+public class Project implements FeatureParticipantResolver, Serializable {
 
     private final List<Module> modules = new ArrayList<>();
 
@@ -63,5 +70,69 @@ public class Project implements Serializable {
 
     public void setApplication(final Application application) {
         this.application = application;
+    }
+
+    @Override
+    public ConfigurationFile getSource(final Configuration cfg, final ServiceType serviceType, final ArtifactId origin) {
+        for(final Module m : this.getModules()) {
+            if ( m.getId().changeClassifier(null).isSame(origin) ) {
+                // TODO What should we return?
+            }
+        }
+        if ( this.getApplication() != null && this.getApplication().getId().equals(origin) ) {
+            for(final ConfigurationFile current : this.getApplication().getConfigurationFiles()) {
+                if ( current.getPid().equals(cfg.getPid()) && serviceType == current.getServiceType() ) {
+                    return current;
+                }
+            }
+            if ( serviceType != null ) {
+                return getSource(cfg, null, origin);
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public ArtifactsFile getSource(final ArtifactId artifactId, final ServiceType serviceType, final ArtifactId origin) {
+        for(final Module m : this.getModules()) {
+            if ( m.getId().changeClassifier(null).isSame(origin) ) {
+                // TODO What should we return?
+            }
+        }
+        if ( this.getApplication() != null && this.getApplication().getId().equals(origin) ) {
+            for(final ArtifactsFile current : this.getApplication().getBundleFiles()) {
+                if ( current.getServiceType() == serviceType ) {
+                    final ArtifactsFile file = this.getSource(artifactId, serviceType, current);
+                    if ( file != null ) {
+                        return file;
+                    }
+                }
+            }
+            for(final ArtifactsFile current : this.getApplication().getContentPackageFiles()) {
+                final ArtifactsFile file = this.getSource(artifactId, serviceType, current);
+                if ( current.getServiceType() == serviceType ) {
+                    if ( file != null ) {
+                        return file;
+                    }
+                }
+            }
+            if ( serviceType != null ) {
+                return getSource(artifactId, null, origin);
+            }
+        }
+        return null;
+    }
+
+    private ArtifactsFile getSource(final ArtifactId artifactId, final ServiceType serviceType, final ArtifactsFile artifacts) {
+        try {
+            for(final Artifact a : artifacts.readArtifacts()) {
+                if ( a.getId().isSame(artifactId) ) {
+                    return artifacts;
+                }
+            }
+        } catch ( final IOException ignore ) {
+            // ignore
+        }
+        return null;
     }
 }

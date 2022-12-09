@@ -12,50 +12,33 @@
 package com.adobe.aem.project.model;
 
 import java.io.File;
-import java.io.Serializable;
 
 import com.adobe.aem.project.ServiceType;
 
-public class Module implements Serializable {
+public class Module extends AbstractModule {
 
     private String name;
 
     private ModuleType type;
 
-    private final File directory;
-
-    private String mvnId;
-
     public Module(final File directory) {
-        this.directory = directory;
-    }
-
-    public File getDirectory() {
-        return this.directory;
+        super(directory);
     }
 
     public ServiceType getServiceType() {
-        if ( this.directory.getName().contains("_author_") ) {
+        if ( this.getDirectory().getName().contains("_author_") ) {
             return ServiceType.AUTHOR;
-        } else if ( this.directory.getName().contains("_publish_") ) {
+        } else if ( this.getDirectory().getName().contains("_publish_") ) {
             return ServiceType.PUBLISH;
         }
         return null;
-    }
-
-    public String getMvnId() {
-        return mvnId;
-    }
-
-    public void setMvnId(String mvnId) {
-        this.mvnId = mvnId;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(final String name) {
         this.name = name;
     }
 
@@ -63,8 +46,7 @@ public class Module implements Serializable {
         return type;
     }
 
-    public void setType(ModuleType type) {
+    public void setType(final ModuleType type) {
         this.type = type;
     }
-
 }

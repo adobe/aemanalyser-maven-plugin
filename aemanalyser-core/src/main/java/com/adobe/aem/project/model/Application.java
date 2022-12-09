@@ -13,14 +13,11 @@ package com.adobe.aem.project.model;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.json.stream.JsonParsingException;
 
-import org.apache.sling.feature.Artifact;
-import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Configuration;
 
 import com.adobe.aem.analyser.result.AemAnalyserAnnotation;
@@ -31,26 +28,10 @@ import com.adobe.aem.project.ServiceType;
 import com.adobe.aem.project.model.ArtifactsFile.FileType;
 import com.adobe.aem.project.model.ConfigurationFile.Location;
 
-public class Application implements FeatureParticipantResolver, Serializable {
-
-    private final File directory;
-
-    private ArtifactId id;
+public class Application extends AbstractModule {
 
     public Application(final File f) {
-        this.directory = f;
-    }
-
-    public ArtifactId getId() {
-        return this.id;
-    }
-
-    public void setId(final ArtifactId id) {
-        this.id = id;
-    }
-
-    public File getDirectory() {
-        return this.directory;
+        super(f);
     }
 
     private File getSourceFile(final String name) {
@@ -64,7 +45,7 @@ public class Application implements FeatureParticipantResolver, Serializable {
      * @return The relative path
      */
     public String getRelativePath(final File file) {
-        return file.getAbsolutePath().substring(this.directory.getAbsolutePath().length() + 1);
+        return file.getAbsolutePath().substring(this.getDirectory().getAbsolutePath().length() + 1);
     }
 
     private void getArtifactsFile(final List<ArtifactsFile> result, final ArtifactsFile.FileType fileType, final ServiceType serviceType) {
@@ -225,59 +206,5 @@ public class Application implements FeatureParticipantResolver, Serializable {
             r.setServiceType(serviceType);
             result.add(r);
         }
-    }
-
-    @Override
-    public ConfigurationFile getSource(final Configuration cfg, final ServiceType serviceType, final ArtifactId origin) {
-        if ( this.id.equals(origin) ) {
-            for(final ConfigurationFile current : this.getConfigurationFiles()) {
-                if ( current.getPid().equals(cfg.getPid()) && serviceType == current.getServiceType() ) {
-                    return current;
-                }
-            }
-            if ( serviceType != null ) {
-                return getSource(cfg, null, origin);
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public ArtifactsFile getSource(final ArtifactId artifactId, final ServiceType serviceType, final ArtifactId origin) {
-        if ( this.id.equals(origin) ) {
-            for(final ArtifactsFile current : this.getBundleFiles()) {
-                if ( current.getServiceType() == serviceType ) {
-                    final ArtifactsFile file = this.getSource(artifactId, serviceType, current);
-                    if ( file != null ) {
-                        return file;
-                    }
-                }
-            }
-            for(final ArtifactsFile current : this.getContentPackageFiles()) {
-                final ArtifactsFile file = this.getSource(artifactId, serviceType, current);
-                if ( current.getServiceType() == serviceType ) {
-                    if ( file != null ) {
-                        return file;
-                    }
-                }
-            }
-            if ( serviceType != null ) {
-                return getSource(artifactId, null, origin);
-            }
-        }
-        return null;
-    }
-
-    private ArtifactsFile getSource(final ArtifactId artifactId, final ServiceType serviceType, final ArtifactsFile artifacts) {
-        try {
-            for(final Artifact a : artifacts.readArtifacts()) {
-                if ( a.getId().isSame(artifactId) ) {
-                    return artifacts;
-                }
-            }
-        } catch ( final IOException ignore ) {
-            // ignore
-        }
-        return null;
     }
 }
