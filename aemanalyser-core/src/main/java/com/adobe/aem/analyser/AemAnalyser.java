@@ -61,6 +61,7 @@ public class AemAnalyser {
         + ",api-regions-check-order"
         + ",api-regions-crossfeature-dups"
         + ",api-regions-exportsimports"
+        + ",configuration-api"
         + ",region-deprecated-api";
 
     /**
@@ -71,7 +72,6 @@ public class AemAnalyser {
         + ",bundle-nativecode"
         + ",bundle-unversioned-packages"
 	    + ",artifact-rules"
-        + ",configuration-api"
         + ",aem-env-var"
         + ",repoinit"
         + ",content-packages-validation";
