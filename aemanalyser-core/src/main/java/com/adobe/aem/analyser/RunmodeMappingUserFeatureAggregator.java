@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.sling.feature.Feature;
 import org.slf4j.Logger;
@@ -46,15 +46,17 @@ public class RunmodeMappingUserFeatureAggregator implements UserFeatureAggregato
     }
 
     @Override
-    public Map<String, List<Feature>> getUserAggregates(Map<String, Feature> projectFeatures, EnumSet<ServiceType> serviceTypes)
-            throws IOException {
+    public Map<String, List<Feature>> getUserAggregates(Map<String, Feature> projectFeatures, EnumSet<ServiceType> serviceTypes,
+            Map<String,String> additionalRunmodes) throws IOException {
         // get run modes from converter output
         final Properties runmodeProps = getRunmodeMappings();
 
         final Map<String, List<Feature>> aggregates = new HashMap<>();
 
-        Map<String, Set<String>> toCreate = getUserAggregatesToCreate(runmodeProps, serviceTypes);
-        for (final Map.Entry<String, Set<String>> entry : toCreate.entrySet()) {
+        Map<String, String> rmp = runmodeProps.entrySet().stream().collect(
+            Collectors.toMap(e -> e.getKey().toString(), e -> e.getValue().toString()));
+        Map<String, List<String>> toCreate = getUserAggregatesToCreate(rmp, serviceTypes, additionalRunmodes);
+        for (final Map.Entry<String, List<String>> entry : toCreate.entrySet()) {
             final String name = "user-aggregated-".concat(entry.getKey());
 
             logger.info("For aggregate {} got entries {}", name, entry.getValue());
@@ -78,10 +80,10 @@ public class RunmodeMappingUserFeatureAggregator implements UserFeatureAggregato
         return p;
     }
 
-    private Map<String, Set<String>> getUserAggregatesToCreate(final Properties runmodeProps, final EnumSet<ServiceType> serviceTypes)
-            throws IOException {
+    private Map<String, List<String>> getUserAggregatesToCreate(Map<String,String> runmodeProps, final EnumSet<ServiceType> serviceTypes,
+            Map<String, String> additionalRunmodes) throws IOException {
         try {
-            return AemAnalyserUtil.getAggregates(runmodeProps, serviceTypes);
+            return AemAnalyserUtil.getAggregates(runmodeProps, serviceTypes, additionalRunmodes);
         } catch ( final IllegalArgumentException iae) {
             throw new IOException(iae.getMessage());
         }

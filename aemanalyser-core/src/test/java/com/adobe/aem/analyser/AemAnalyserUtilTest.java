@@ -20,10 +20,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
 
 import org.junit.Test;
 
@@ -31,7 +29,6 @@ import com.adobe.aem.project.RunModes;
 import com.adobe.aem.project.ServiceType;
 
 public class AemAnalyserUtilTest {
-
     @Test
     public void testInvalidModes() {
         assertEquals("author.dev", AemAnalyserUtil.getValidRunMode("dev.author"));
@@ -41,36 +38,36 @@ public class AemAnalyserUtilTest {
 
     @Test
     public void testPruneModels() {
-        Map<String, Set<String>> allModels = new HashMap<>();
+        Map<String, List<String>> allModels = new HashMap<>();
 
-        allModels.put("author", Collections.singleton("x"));
-        allModels.put("publish", Collections.singleton("x"));
+        allModels.put("author", Collections.singletonList("x"));
+        allModels.put("publish", Collections.singletonList("x"));
 
-        Map<String, Set<String>> expected = new HashMap<>(allModels);
+        Map<String, List<String>> expected = new HashMap<>(allModels);
         AemAnalyserUtil.pruneModels(allModels);
         assertEquals(expected, allModels);
     }
 
     @Test
     public void testPruneModels2() {
-        Map<String, Set<String>> allModels = new HashMap<>();
+        Map<String, List<String>> allModels = new HashMap<>();
 
-        allModels.put("author", Collections.singleton("x"));
-        allModels.put("author.dev", new HashSet<>(Arrays.asList("x", "x1")));
-        allModels.put("author.stage", new HashSet<>(Arrays.asList("x", "x2")));
-        allModels.put("author.prod", new HashSet<>(Arrays.asList("x", "x3")));
-        allModels.put("publish", Collections.singleton("y"));
-        allModels.put("publish.dev", new HashSet<>(Arrays.asList("y", "y1", "y2")));
-        allModels.put("publish.stage", new HashSet<>(Arrays.asList("y")));
-        allModels.put("publish.prod", new HashSet<>(Arrays.asList("y", "y3")));
+        allModels.put("author", Collections.singletonList("x"));
+        allModels.put("author.dev", Arrays.asList("x", "x1"));
+        allModels.put("author.stage", Arrays.asList("x", "x2"));
+        allModels.put("author.prod", Arrays.asList("x", "x3"));
+        allModels.put("publish", Collections.singletonList("y"));
+        allModels.put("publish.dev", Arrays.asList("y", "y1", "y2"));
+        allModels.put("publish.stage", Arrays.asList("y"));
+        allModels.put("publish.prod", Arrays.asList("y", "y3"));
 
-        Map<String, Set<String>> expected = new HashMap<>();
-        expected.put("author.dev", new HashSet<>(Arrays.asList("x", "x1")));
-        expected.put("author.stage", new HashSet<>(Arrays.asList("x", "x2")));
-        expected.put("author.prod", new HashSet<>(Arrays.asList("x", "x3")));
-        expected.put("publish", Collections.singleton("y"));
-        expected.put("publish.dev", new HashSet<>(Arrays.asList("y", "y1", "y2")));
-        expected.put("publish.prod", new HashSet<>(Arrays.asList("y", "y3")));
+        Map<String, List<String>> expected = new HashMap<>();
+        expected.put("author.dev", Arrays.asList("x", "x1"));
+        expected.put("author.stage", Arrays.asList("x", "x2"));
+        expected.put("author.prod", Arrays.asList("x", "x3"));
+        expected.put("publish", Collections.singletonList("y"));
+        expected.put("publish.dev", Arrays.asList("y", "y1", "y2"));
+        expected.put("publish.prod", Arrays.asList("y", "y3"));
 
         AemAnalyserUtil.pruneModels(allModels);
         assertEquals(expected, allModels);
@@ -78,7 +75,7 @@ public class AemAnalyserUtilTest {
 
     @Test
     public void testGetAggregatesValid() throws Exception {
-        Properties p = new Properties();
+        Map<String, String> p = new HashMap<>();
 
         p.put("prod", "myproj.all-prod.json");
         p.put("stage", "myproj.all-stage.json");
@@ -93,26 +90,26 @@ public class AemAnalyserUtilTest {
         p.put("dev.foo", "myproj.dev-foo.json");
         p.put("foo.dev", "myproj.foo-dev.json");
 
-        Map<String, Set<String>> aggs = AemAnalyserUtil.getAggregates(p, EnumSet.allOf(ServiceType.class));
+        Map<String, List<String>> aggs = AemAnalyserUtil.getAggregates(p, EnumSet.allOf(ServiceType.class));
 
-        assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-author.json")),
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-author.json"),
                 aggs.get("author"));
-        assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-author.json", "myproj.all-prod.json")),
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-author.json", "myproj.all-prod.json"),
                 aggs.get("author.prod"));
-        assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-author.json", "myproj.all-stage.json")),
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-author.json", "myproj.all-stage.json"),
                 aggs.get("author.stage"));
-        assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-publish.json", "myproj.all-publish.dev.json")),
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-publish.json", "myproj.all-publish.dev.json"),
                 aggs.get("publish.dev"));
-        assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-publish.json", "myproj.all-stage.json", "myproj.all-publish.stage.json")),
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-publish.json", "myproj.all-stage.json", "myproj.all-publish.stage.json"),
                 aggs.get("publish.stage"));
-        assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-publish.json", "myproj.all-prod.json", "myproj.all-publish.prod.json")),
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-publish.json", "myproj.all-prod.json", "myproj.all-publish.prod.json"),
                 aggs.get("publish.prod"));
         assertEquals(6, aggs.size());
     }
 
     @Test
     public void testGetAggregatesAuthorOnly() throws Exception {
-        Properties p = new Properties();
+        Map<String, String> p = new HashMap<>();
 
         p.put("prod", "myproj.all-prod.json");
         p.put("stage", "myproj.all-stage.json");
@@ -127,20 +124,64 @@ public class AemAnalyserUtilTest {
         p.put("dev.foo", "myproj.dev-foo.json");
         p.put("foo.dev", "myproj.foo-dev.json");
 
-        Map<String, Set<String>> aggs = AemAnalyserUtil.getAggregates(p, EnumSet.of(ServiceType.AUTHOR));
+        Map<String, List<String>> aggs = AemAnalyserUtil.getAggregates(p, EnumSet.of(ServiceType.AUTHOR));
 
-        assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-author.json")),
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-author.json"),
                 aggs.get("author"));
-        assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-author.json", "myproj.all-prod.json")),
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-author.json", "myproj.all-prod.json"),
                 aggs.get("author.prod"));
-        assertEquals(new HashSet<>(Arrays.asList("myproj.all.json", "myproj.all-author.json", "myproj.all-stage.json")),
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-author.json", "myproj.all-stage.json"),
                 aggs.get("author.stage"));
         assertEquals(3, aggs.size());
     }
 
+    @Test
+    public void testGetAdditionalAggregates() throws Exception {
+        Map<String, String> p = new HashMap<>();
+
+        p.put("prod", "myproj.all-prod.json");
+        p.put("author", "myproj.all-author.json");
+        p.put("publish.prod", "myproj.all-publish.prod.json");
+        p.put("publish.dev", "myproj.all-publish.dev.json");
+        p.put("rde", "myproj.all-rde.json");
+        p.put("author.rde", "myproj.all-author.rde.json");
+        p.put("(default)", "myproj.all.json");
+
+        Map<String, List<String>> aggs = AemAnalyserUtil.getAggregates(p, EnumSet.allOf(ServiceType.class),
+            Collections.singletonMap("rde", "dev"));
+
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-author.json"),
+            aggs.get("author"));
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-author.json",
+            "myproj.all-rde.json", "myproj.all-author.rde.json"), aggs.get("author.rde"));
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-publish.dev.json",
+            "myproj.all-rde.json"), aggs.get("publish.rde"));
+    }
+
+    @Test
+    public void testGetAdditionalAggregates2() throws Exception {
+        Map<String, String> p = new HashMap<>();
+
+        p.put("dev", "myproj.all-dev.json");
+        p.put("rde", "myproj.all-rde.json");
+        p.put("publish.rde", "myproj.all-publish.rde.json");
+        p.put("(default)", "myproj.all.json");
+
+        Map<String, List<String>> aggs = AemAnalyserUtil.getAggregates(p, EnumSet.allOf(ServiceType.class),
+            Collections.singletonMap("rde", "dev"));
+
+        assertEquals(Arrays.asList("myproj.all.json"),
+            aggs.get("author"));
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-dev.json",
+            "myproj.all-rde.json"), aggs.get("author.rde"));
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-dev.json",
+            "myproj.all-rde.json", "myproj.all-publish.rde.json"), aggs.get("publish.rde"));
+    }
+
+
     @Test(expected = IllegalArgumentException.class)
     public void testGetAggregatesInvalid() throws Exception {
-        Properties p = new Properties();
+        Map<String, String> p = new HashMap<>();
 
         p.put("prod", "myproj.all-prod.json");
         p.put("stage", "myproj.all-stage.json");
