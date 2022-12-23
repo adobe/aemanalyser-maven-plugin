@@ -12,6 +12,7 @@
 package com.adobe.aem.analyser;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,6 @@ import com.adobe.aem.project.ServiceType;
  *
  */
 public interface UserFeatureAggregator {
-
     /**
      * Generates a mapping of all user aggregates discovered
      *
@@ -38,6 +38,24 @@ public interface UserFeatureAggregator {
      * @return a mapping of user aggregates
      * @throws IOException in case of IO errors
      */
-    Map<String, List<Feature>> getUserAggregates(final Map<String, Feature> projectFeatures, final EnumSet<ServiceType> serviceTypes)
-            throws IOException;
+    default Map<String, List<Feature>> getUserAggregates(final Map<String, Feature> projectFeatures, final EnumSet<ServiceType> serviceTypes)
+            throws IOException {
+        return getUserAggregates(projectFeatures, serviceTypes, Collections.emptyMap());
+    }
+
+    /**
+     * Generates a mapping of all user aggregates discovered
+     *
+     * <p>The key of the returned mapping is of the form <code>user-aggregated-<em>mode</em></code>,
+     * where the mode represents a valid runmode entry, such as {@code author} or {@code publish.dev}.
+     * </p>
+     *
+     * @param projectFeatures the project features
+     * @param serviceTypes the service types to consider
+     * @param additionalRunmodes a map of additional runmodes to support
+     * @return a mapping of user aggregates
+     * @throws IOException in case of IO errors
+     */
+    Map<String, List<Feature>> getUserAggregates(final Map<String, Feature> projectFeatures, final EnumSet<ServiceType> serviceTypes,
+            Map<String,String> additionalRunmodes) throws IOException;
 }
