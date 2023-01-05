@@ -86,7 +86,7 @@ public class AemAnalyserUtil {
 
     /**
      * Calculate the aggregates based on the runmode mappings
-     * @param rmp The runmode mappings
+     * @param runmodeProps The runmode mappings
      * @param serviceTypes The service types to calculate the aggregates for.
      * @param additionalRunmodes Extra runmodes to handle. The keys of the map have the new ones,
      * the values on the map has an existing runmode which is used as the bases for that new one.
