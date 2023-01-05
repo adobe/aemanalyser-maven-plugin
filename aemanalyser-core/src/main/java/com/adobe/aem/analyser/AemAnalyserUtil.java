@@ -250,7 +250,7 @@ public class AemAnalyserUtil {
         for (int i=0; i<names.size(); i++) {
             String n = names.get(i);
             String n2 = n.replace("author", "AUTHOR");
-            String n3 = n2.replaceAll("publish", "PUBLISH");
+            String n3 = n2.replace("publish", "PUBLISH");
             names.set(i, n3);
         }
 
