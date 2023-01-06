@@ -22,6 +22,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -44,7 +45,7 @@ public class AemAnalyserUtilTest {
         allModels.put("publish", Collections.singletonList("x"));
 
         Map<String, List<String>> expected = new HashMap<>(allModels);
-        AemAnalyserUtil.pruneModels(allModels);
+        AemAnalyserUtil.pruneModels(allModels, Collections.emptySet());
         assertEquals(expected, allModels);
     }
 
@@ -69,7 +70,24 @@ public class AemAnalyserUtilTest {
         expected.put("publish.dev", Arrays.asList("y", "y1", "y2"));
         expected.put("publish.prod", Arrays.asList("y", "y3"));
 
-        AemAnalyserUtil.pruneModels(allModels);
+        AemAnalyserUtil.pruneModels(allModels, Collections.emptySet());
+        assertEquals(expected, allModels);
+    }
+
+    @Test
+    public void testPruneModels3() {
+        Map<String, List<String>> allModels = new HashMap<>();
+
+        allModels.put("author", Collections.singletonList("x"));
+        allModels.put("author.xtra", Collections.singletonList("x"));
+        allModels.put("publish", Collections.singletonList("x"));
+        allModels.put("publish.xtra", Collections.singletonList("x"));
+
+        Map<String, List<String>> expected = new HashMap<>();
+        expected.put("author", Collections.singletonList("x"));
+        expected.put("publish", Collections.singletonList("x"));
+
+        AemAnalyserUtil.pruneModels(allModels, Set.of("abc", "xtra", "zzz"));
         assertEquals(expected, allModels);
     }
 

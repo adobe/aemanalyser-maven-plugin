@@ -12,6 +12,7 @@
 package com.adobe.aem.analyser;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -142,7 +143,7 @@ public class AemAnalyserUtil {
 
         handleAdditionalRunmodes(rmp, serviceTypes, additionalRunmodes, result);
         reportUnhandledModes(rmp);
-        pruneModels(result);
+        pruneModels(result, additionalRunmodes.keySet());
 
         return result;
     }
@@ -272,11 +273,16 @@ public class AemAnalyserUtil {
         return s.chars().filter(c -> c == '.').count();
     }
 
-    static void pruneModels(final Map<String, List<String>> allModels) {
+    static void pruneModels(final Map<String, List<String>> allModels, Set<String> additionalRunmodes) {
+        Set<String> allEnvs = Arrays.stream(EnvironmentType.values())
+            .map(EnvironmentType::asString)
+            .collect(Collectors.toSet());
+        allEnvs.addAll(additionalRunmodes);
+
         // Remove specialised models that don't add anything
         for (ServiceType ap : ServiceType.values()) {
-            for (EnvironmentType env : EnvironmentType.values()) {
-                String mode = ap.asString().concat(".").concat(env.asString());
+            for (String env : allEnvs) {
+                String mode = ap.asString().concat(".").concat(env);
                 if (Objects.equals(allModels.get(ap.asString()), allModels.get(mode))) {
                     allModels.remove(mode);
                 }
@@ -287,8 +293,8 @@ public class AemAnalyserUtil {
         // a specialised model is then always used
         publish:
         for (ServiceType ap : ServiceType.values()) {
-            for (EnvironmentType env : EnvironmentType.values()) {
-                String mode = ap.asString().concat(".").concat(env.asString());
+            for (String env : allEnvs) {
+                String mode = ap.asString().concat(".").concat(env);
                 if (!allModels.containsKey(mode)) {
                     continue publish;
                 }
