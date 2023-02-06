@@ -20,7 +20,7 @@ import java.util.Dictionary;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.felix.cm.json.Configurations;
+import org.apache.felix.cm.json.io.Configurations;
 import org.apache.sling.feature.Configuration;
 import org.apache.sling.feature.Feature;
 
