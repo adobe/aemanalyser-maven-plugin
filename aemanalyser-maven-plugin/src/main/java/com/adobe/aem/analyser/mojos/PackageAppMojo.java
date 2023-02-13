@@ -135,7 +135,7 @@ public class PackageAppMojo extends AbstractAemMojo {
             props.put("scripts", file.getContents());
             final File outFile = new File(this.project.getBuild().getDirectory(), file.getPid().concat(this.project.getArtifactId()).concat(".cfg.json"));
             try ( final FileWriter writer = new FileWriter(outFile)) {
-                org.apache.felix.cm.json.Configurations
+                org.apache.felix.cm.json.io.Configurations
                     .buildWriter().build(writer)
                     .writeConfiguration(props);
             }
