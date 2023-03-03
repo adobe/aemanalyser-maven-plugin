@@ -116,13 +116,15 @@ public class AemAnalyserUtilTest {
                 aggs.get("author.prod"));
         assertEquals(Arrays.asList("myproj.all.json", "myproj.all-author.json", "myproj.all-stage.json"),
                 aggs.get("author.stage"));
+        assertEquals(Arrays.asList("myproj.all.json", "myproj.all-publish.json"),
+                aggs.get("publish"));
         assertEquals(Arrays.asList("myproj.all.json", "myproj.all-publish.json", "myproj.all-publish.dev.json"),
                 aggs.get("publish.dev"));
         assertEquals(Arrays.asList("myproj.all.json", "myproj.all-publish.json", "myproj.all-stage.json", "myproj.all-publish.stage.json"),
                 aggs.get("publish.stage"));
         assertEquals(Arrays.asList("myproj.all.json", "myproj.all-publish.json", "myproj.all-prod.json", "myproj.all-publish.prod.json"),
                 aggs.get("publish.prod"));
-        assertEquals(6, aggs.size());
+        assertEquals(7, aggs.size());
     }
 
     @Test
