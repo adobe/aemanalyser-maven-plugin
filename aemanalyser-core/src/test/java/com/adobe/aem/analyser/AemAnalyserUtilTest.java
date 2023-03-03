@@ -63,6 +63,7 @@ public class AemAnalyserUtilTest {
         allModels.put("publish.prod", Arrays.asList("y", "y3"));
 
         Map<String, List<String>> expected = new HashMap<>();
+        expected.put("author", Arrays.asList("x"));
         expected.put("author.dev", Arrays.asList("x", "x1"));
         expected.put("author.stage", Arrays.asList("x", "x2"));
         expected.put("author.prod", Arrays.asList("x", "x3"));
