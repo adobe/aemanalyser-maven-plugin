@@ -288,20 +288,5 @@ public class AemAnalyserUtil {
                 }
             }
         }
-
-        // If specialised models exist for all environments, remove the generic model, as
-        // a specialised model is then always used
-        publish:
-        for (ServiceType ap : ServiceType.values()) {
-            for (String env : allEnvs) {
-                String mode = ap.asString().concat(".").concat(env);
-                if (!allModels.containsKey(mode)) {
-                    continue publish;
-                }
-            }
-
-            // Found specialised models for all, remove the generic one
-            allModels.remove(ap.asString());
-        }
     }
 }
