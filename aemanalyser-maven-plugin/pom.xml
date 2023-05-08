@@ -193,12 +193,12 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.jackrabbit.vault</groupId>
       <artifactId>org.apache.jackrabbit.vault</artifactId>
-      <version>3.6.0</version>
+      <version>3.6.8</version>
     </dependency>
     <dependency>
         <groupId>org.apache.jackrabbit.vault</groupId>
         <artifactId>vault-validation</artifactId>
-        <version>3.6.0</version>
+        <version>3.6.8</version>
     </dependency>
     <dependency>
       <groupId>org.apache.sling</groupId>
@@ -245,7 +245,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>org.apache.sling.feature.cpconverter</artifactId>
-      <version>1.3.0</version>
+      <version>1.3.2</version>
       <exclusions>
         <exclusion>
           <groupId>org.apache.maven</groupId>
