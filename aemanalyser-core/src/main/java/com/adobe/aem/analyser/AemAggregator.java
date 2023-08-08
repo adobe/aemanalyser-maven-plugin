@@ -421,7 +421,7 @@ public class AemAggregator {
             // specific rules for the different aggregates
             if ( mode == Mode.USER || mode == Mode.PRODUCT ) {
                 builderContext.addArtifactsOverride(ArtifactId.parse("*:*:HIGHEST"));
-
+                builderContext.addArtifactsOverride(ArtifactId.parse("*:*:*:*:HIGHEST"));
             } else if ( mode == Mode.FINAL) {
                 builderContext.addArtifactsOverride(ArtifactId.parse("com.adobe.cq:core.wcm.components.core:FIRST"));
                 builderContext.addArtifactsOverride(ArtifactId.parse("com.adobe.cq:core.wcm.components.extensions.amp:FIRST"));

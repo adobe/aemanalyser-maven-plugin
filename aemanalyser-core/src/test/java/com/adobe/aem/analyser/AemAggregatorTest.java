@@ -78,6 +78,28 @@ public class AemAggregatorTest {
     }
 
     @Test
+    public void testUserAggregatesWithArtifactOverride() throws Exception {
+        final AemAggregator agg = new AemAggregator();
+        agg.setFeatureOutputDirectory(tempDir.newFolder("target", "cp-conversion", "fm.out"));
+        agg.setProjectId(ArtifactId.parse("gp:ap:5"));
+        agg.setSdkId(ArtifactId.parse("lala:hoho:0.0.1"));
+        agg.setAddOnIds(Arrays.asList(ArtifactId.parse("com.adobe.aem:hihi:1.2.2"), ArtifactId.parse("com.adobe.aem:aem-sdk-api:9.9.1")));
+
+        copyTestResource("mappingfiles/runmode_3.mapping",
+                "target/cp-conversion/fm.out/runmode.mapping");
+
+        final Map<String, Feature> projectFeatures = new HashMap<>();
+        projectFeatures.put("test1.author.json", new Feature(ArtifactId.parse("g:f:zip:cp2fm:2")));
+        projectFeatures.put("test1.all.json", new Feature(ArtifactId.parse("g:f:zip:cp2fm:1")));
+        final Map<String, List<Feature>> aggregates = agg.getUserAggregates(projectFeatures);
+
+        List<Feature> features = agg.aggregate(aggregates, AemAggregator.Mode.USER,projectFeatures) ;
+        assertEquals(features.get(0).getExtensions().get(0).getArtifacts().get(0).getId().toString(),"g:f:zip:cp2fm:2");
+        assertEquals(features.get(1).getExtensions().get(0).getArtifacts().get(0).getId().toString(),"g:f:zip:cp2fm:1");
+
+    }
+
+    @Test
     public void testUserAggregates2() throws Exception {
         final AemAggregator agg = new AemAggregator();
         agg.setFeatureOutputDirectory(tempDir.newFolder("target", "cp-conversion", "fm.out"));
