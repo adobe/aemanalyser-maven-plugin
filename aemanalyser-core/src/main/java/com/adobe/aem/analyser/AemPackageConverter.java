@@ -13,6 +13,10 @@ package com.adobe.aem.analyser;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -21,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter;
 import org.apache.sling.feature.cpconverter.ContentPackage2FeatureModelConverter.SlingInitialContentPolicy;
 import org.apache.sling.feature.cpconverter.ConverterException;
@@ -36,6 +41,7 @@ import org.apache.sling.feature.cpconverter.handlers.slinginitialcontent.BundleS
 import org.apache.sling.feature.cpconverter.index.DefaultIndexManager;
 import org.apache.sling.feature.cpconverter.shared.ConverterConstants;
 import org.apache.sling.feature.cpconverter.vltpkg.DefaultPackagesEventsEmitter;
+import org.apache.sling.feature.io.json.FeatureJSONReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,12 +49,13 @@ public class AemPackageConverter {
 
     private static final Map<String, String> DEFAULT_NAMESPACE_MAPPINGS = Map.of(
         "cq", "http://www.day.com/jcr/cq/1.0",
-        "granite", "http://www.adobe.com/jcr/granite/1.0"
+        "granite", "http://www.adobe.com/jcr/granite/1.0",
+         "wcmio", "http://wcm.io/ns",
+           "crx", "http://www.day.com/crx/1.0"
     );
-
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private static final String FILTER = ".*/(apps|libs)/(.*)/install\\.(((author|publish)\\.(dev|stage|prod))|((dev|stage|prod)\\.(author|publish))|(dev|stage|prod))/(.*)(?<=\\.(zip|jar)$)";
+    private static final String FILTER = ".*/(apps|libs)/(.*)/install\\.(((author|publish)\\.(dev|stage|prod|rde))|((dev|stage|prod|rde)\\.(author|publish))|(dev|stage|prod|rde))/(.*)(?<=\\.(zip|jar)$)";
 
     private File featureOutputDirectory;
 
@@ -59,7 +66,6 @@ public class AemPackageConverter {
     private File converterOutputDirectory;
 
     private String artifactIdOverride;
-
     private final List<String> apiRegions = Arrays.asList("com.adobe.aem.deprecated");
     /**
      * @return the featureOutputDirectory
@@ -78,7 +84,7 @@ public class AemPackageConverter {
     public void setMutableContentOutputDirectory(File mutableContentOutputDirectory) {
         this.mutableContentOutputDirectory = mutableContentOutputDirectory;
     }
-    
+
     public void addToApiRegions(Collection<String> apiRegions){
         this.apiRegions.addAll(apiRegions);
     }
@@ -146,6 +152,8 @@ public class AemPackageConverter {
             aclManager
         );
 
+        featuresManager.setEnforceServiceMappingByPrincipal(false);
+
         featuresManager.setAPIRegions(apiRegions);
         featuresManager.setExportToAPIRegion("global");
         // populate with namespace mapping defaults, they can still be overridden from the bundle metadata
@@ -156,11 +164,13 @@ public class AemPackageConverter {
 
         File unreferencedArtifactsOutputDirectory = mutableContentOutputDirectory != null? mutableContentOutputDirectory : new File(converterOutputDirectory, "mutable-content");
         MutableContentPackageDeployer mutableContentPackagesDeployer = new MutableContentPackageDeployer(unreferencedArtifactsOutputDirectory);
-                
+
         try (final ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(false,
                 SlingInitialContentPolicy.EXTRACT_AND_REMOVE, true) ) {
             final BundleSlingInitialContentExtractor bundleSlingInitialContentExtractor = new BundleSlingInitialContentExtractor();
-            converter.setFeaturesManager(featuresManager)
+
+            converter
+                    .setFeaturesManager(featuresManager)
                     .setBundlesDeployer(
                         new LocalMavenRepositoryArtifactsDeployer(
                             bundlesOutputDir
@@ -190,6 +200,49 @@ public class AemPackageConverter {
             throw new IOException("Content Package Converter exception " + t.getMessage(), t);
         }
         mutableContentPackagesDeployer.logMutableContentPackages();
+//        final File bundlesOutputDir = this.bundlesOutputDirectory != null
+//                ? this.bundlesOutputDirectory : this.converterOutputDirectory;
+//        File unreferencedArtifactsOutputDirectory = mutableContentOutputDirectory != null? mutableContentOutputDirectory : new File(converterOutputDirectory, "mutable-content");
+//        AclManager aclManager = new DefaultAclManager(null, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT, false);
+//
+//        DefaultFeaturesManager featuresManager = new DefaultFeaturesManager(false,
+//                20,
+//                featureOutputDirectory,
+//                artifactIdOverride,
+//                null,
+//                new HashMap<>(),
+//                aclManager);
+//
+//        featuresManager.setEnforceServiceMappingByPrincipal(false);
+//
+//
+//        featuresManager.setAPIRegions(apiRegions);
+//        featuresManager.setExportToAPIRegion("global");
+//
+//        // populate with namespace mapping defaults, they can still be overridden from the bundle metadata
+//        featuresManager.getNamespaceUriByPrefix().putAll(DEFAULT_NAMESPACE_MAPPINGS);
+//
+//        try (ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(true, ContentPackage2FeatureModelConverter.SlingInitialContentPolicy.EXTRACT_AND_REMOVE, true)) {
+//            BundleSlingInitialContentExtractor bundleSlingInitialContentExtractor = new BundleSlingInitialContentExtractor();
+//            converter.setFeaturesManager(featuresManager)
+//                    .setBundlesDeployer(new LocalMavenRepositoryArtifactsDeployer(bundlesOutputDir))
+//                    .setBundleSlingInitialContentExtractor(bundleSlingInitialContentExtractor)
+//                    .setEntryHandlersManager(new DefaultEntryHandlersManager(new HashMap<>(), true, ContentPackage2FeatureModelConverter.SlingInitialContentPolicy.EXTRACT_AND_REMOVE, bundleSlingInitialContentExtractor,ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT ))
+//                    .setAclManager(aclManager)
+//                    .setEmitter(DefaultPackagesEventsEmitter.open(featureOutputDirectory))
+//                    .setFailOnMixedPackages(false)
+//                    .setContentTypePackagePolicy(ContentPackage2FeatureModelConverter.PackagePolicy.PUT_IN_DEDICATED_FOLDER);
+//            if (unreferencedArtifactsOutputDirectory != null) {
+//                converter.setUnreferencedArtifactsDeployer(new LocalMavenRepositoryArtifactsDeployer(unreferencedArtifactsOutputDirectory));
+//            }
+//            RegexBasedResourceFilter filter = new RegexBasedResourceFilter();
+//            filter.addFilteringPattern(".*/(apps|libs)/(.*)/install\\.(((author|publish)\\.(dev|stage|prod|rde))|(" +
+//                    "(dev|stage|prod|rde)\\.(author|publish))|(dev|stage|prod|rde))/(.*)(?<=\\.(zip|jar)$)");
+//            converter.setResourceFilter(filter);
+//            converter.setIndexManager(new DefaultIndexManager());
+//
+//            converter.convert(contentPackages.values().toArray(new File[contentPackages.size()]));
+//        }
     }
 
     private ResourceFilter getResourceFilter() {
@@ -203,7 +256,7 @@ public class AemPackageConverter {
     class MutableContentPackageDeployer extends LocalMavenRepositoryArtifactsDeployer {
 
         final Map<ArtifactId, String> mutableContentPackagesWithRunMode = new HashMap<>();
-        
+
         public MutableContentPackageDeployer(File outputDirectory) {
             super(outputDirectory);
         }
@@ -216,13 +269,13 @@ public class AemPackageConverter {
             }
             return super.deploy(artifactWriter, runmode, id);
         }
-        
+
         public void logMutableContentPackages() {
             for(final Map.Entry<ArtifactId, String> entry : mutableContentPackagesWithRunMode.entrySet()) {
                 logger.info("Mutable content package {} uses runmode {}", entry.getKey().toMvnId(), entry.getValue());
             }
         }
-        
-        
+
+
     }
 }

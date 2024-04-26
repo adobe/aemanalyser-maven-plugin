@@ -21,7 +21,7 @@ governing permissions and limitations under the License.
   </parent>
 
   <artifactId>aemanalyser-core</artifactId>
-  <version>1.4.10</version>
+  <version>1.4.11-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>AEM Analyser Core</name>
@@ -33,7 +33,7 @@ governing permissions and limitations under the License.
     <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/aemanalyser-core</url>
     <tag>aemanalyser-core-1.4.10</tag>
   </scm>
-  
+
   <dependencies>
     <!-- Logging -->
     <dependency>
