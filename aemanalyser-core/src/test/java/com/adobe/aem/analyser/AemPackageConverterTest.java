@@ -18,19 +18,24 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URL;
+import java.util.Deque;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class AemPackageConverterTest {
 
@@ -120,9 +125,23 @@ public class AemPackageConverterTest {
             assertExtractedInitialContentFromBundle("io.wcm.handler.url", "2.1.0");
             assertExtractedInitialContentFromBundle("io.wcm.wcm.commons", "1.10.0");
             assertExtractedInitialContentFromBundle("io.wcm.wcm.ui.granite", "1.10.4");
+
+            File contentPackageCSVFile = new File(featureDir, "content-packages.csv");
+            String line = "";
+            Deque<String> lines = new LinkedList<>();
+
+            //parsing a CSV file into BufferedReader class constructor
+            try(FileReader fr = new FileReader(contentPackageCSVFile); BufferedReader br = new BufferedReader(fr)){
+                while ((line = br.readLine()) != null)   //returns a Boolean value
+                {
+                    lines.add(line);
+                }
+
+                assertEquals(9, lines.size());
+            }
+
+
         }
-
-
     }
 
     private void assertExtractedInitialContentFromBundle(String module, String version) throws IOException {
