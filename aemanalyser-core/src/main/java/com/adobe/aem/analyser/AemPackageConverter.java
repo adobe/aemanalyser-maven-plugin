@@ -179,7 +179,7 @@ public class AemPackageConverter {
                     .setBundleSlingInitialContentExtractor(bundleSlingInitialContentExtractor)
                     .setEntryHandlersManager(
                         new DefaultEntryHandlersManager(Collections.emptyMap(), true,
-                                SlingInitialContentPolicy.EXTRACT_AND_REMOVE, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT)
+                                SlingInitialContentPolicy.EXTRACT_AND_REMOVE, bundleSlingInitialContentExtractor, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT)
                         )
                     .setAclManager(
                             new DefaultAclManager()
@@ -200,49 +200,6 @@ public class AemPackageConverter {
             throw new IOException("Content Package Converter exception " + t.getMessage(), t);
         }
         mutableContentPackagesDeployer.logMutableContentPackages();
-//        final File bundlesOutputDir = this.bundlesOutputDirectory != null
-//                ? this.bundlesOutputDirectory : this.converterOutputDirectory;
-//        File unreferencedArtifactsOutputDirectory = mutableContentOutputDirectory != null? mutableContentOutputDirectory : new File(converterOutputDirectory, "mutable-content");
-//        AclManager aclManager = new DefaultAclManager(null, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT, false);
-//
-//        DefaultFeaturesManager featuresManager = new DefaultFeaturesManager(false,
-//                20,
-//                featureOutputDirectory,
-//                artifactIdOverride,
-//                null,
-//                new HashMap<>(),
-//                aclManager);
-//
-//        featuresManager.setEnforceServiceMappingByPrincipal(false);
-//
-//
-//        featuresManager.setAPIRegions(apiRegions);
-//        featuresManager.setExportToAPIRegion("global");
-//
-//        // populate with namespace mapping defaults, they can still be overridden from the bundle metadata
-//        featuresManager.getNamespaceUriByPrefix().putAll(DEFAULT_NAMESPACE_MAPPINGS);
-//
-//        try (ContentPackage2FeatureModelConverter converter = new ContentPackage2FeatureModelConverter(true, ContentPackage2FeatureModelConverter.SlingInitialContentPolicy.EXTRACT_AND_REMOVE, true)) {
-//            BundleSlingInitialContentExtractor bundleSlingInitialContentExtractor = new BundleSlingInitialContentExtractor();
-//            converter.setFeaturesManager(featuresManager)
-//                    .setBundlesDeployer(new LocalMavenRepositoryArtifactsDeployer(bundlesOutputDir))
-//                    .setBundleSlingInitialContentExtractor(bundleSlingInitialContentExtractor)
-//                    .setEntryHandlersManager(new DefaultEntryHandlersManager(new HashMap<>(), true, ContentPackage2FeatureModelConverter.SlingInitialContentPolicy.EXTRACT_AND_REMOVE, bundleSlingInitialContentExtractor,ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT ))
-//                    .setAclManager(aclManager)
-//                    .setEmitter(DefaultPackagesEventsEmitter.open(featureOutputDirectory))
-//                    .setFailOnMixedPackages(false)
-//                    .setContentTypePackagePolicy(ContentPackage2FeatureModelConverter.PackagePolicy.PUT_IN_DEDICATED_FOLDER);
-//            if (unreferencedArtifactsOutputDirectory != null) {
-//                converter.setUnreferencedArtifactsDeployer(new LocalMavenRepositoryArtifactsDeployer(unreferencedArtifactsOutputDirectory));
-//            }
-//            RegexBasedResourceFilter filter = new RegexBasedResourceFilter();
-//            filter.addFilteringPattern(".*/(apps|libs)/(.*)/install\\.(((author|publish)\\.(dev|stage|prod|rde))|(" +
-//                    "(dev|stage|prod|rde)\\.(author|publish))|(dev|stage|prod|rde))/(.*)(?<=\\.(zip|jar)$)");
-//            converter.setResourceFilter(filter);
-//            converter.setIndexManager(new DefaultIndexManager());
-//
-//            converter.convert(contentPackages.values().toArray(new File[contentPackages.size()]));
-//        }
     }
 
     private ResourceFilter getResourceFilter() {
