@@ -169,7 +169,7 @@ public class AemPackageConverter {
                     .setBundleSlingInitialContentExtractor(bundleSlingInitialContentExtractor)
                     .setEntryHandlersManager(
                         new DefaultEntryHandlersManager(Collections.emptyMap(), true,
-                                SlingInitialContentPolicy.EXTRACT_AND_REMOVE, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT)
+                                SlingInitialContentPolicy.EXTRACT_AND_REMOVE, bundleSlingInitialContentExtractor, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT)
                         )
                     .setAclManager(
                             new DefaultAclManager()
