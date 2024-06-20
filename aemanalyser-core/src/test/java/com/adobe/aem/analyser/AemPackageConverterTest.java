@@ -131,9 +131,9 @@ public class AemPackageConverterTest {
 
             assertTrue("does not have desired create path statement of /apps/wcm-io/handler/link/components/global/include", cp.isPresent());
 
-            assertExtractedInitialContentFromBundle("io.wcm.handler.link", "2.1.0");
-            assertExtractedInitialContentFromBundle("io.wcm.handler.media", "2.0.4");
-            assertExtractedInitialContentFromBundle("io.wcm.handler.url", "2.1.0");
+            assertExtractedInitialContentFromBundle("io.wcm.handler.link", "1.10.4");
+            assertExtractedInitialContentFromBundle("io.wcm.handler.media", "1.16.0");
+            assertExtractedInitialContentFromBundle("io.wcm.handler.url", "1.10.2");
             assertExtractedInitialContentFromBundle("io.wcm.wcm.commons", "1.10.0");
             assertExtractedInitialContentFromBundle("io.wcm.wcm.ui.granite", "1.10.4");
 
