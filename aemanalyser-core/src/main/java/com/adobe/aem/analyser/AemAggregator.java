@@ -333,6 +333,12 @@ public class AemAggregator {
                 }
             }
         }
+
+        Feature featureFromResources = FeatureUtil.getFeatureFromResources();
+        if (featureFromResources != null) {
+            result.put(FeatureUtil.FEATURE_FILE_NAME, featureFromResources);
+        }
+
         return result;
     }
 

@@ -1,0 +1,15 @@
+{
+  "id": "group-id:artifact-id:slingosgifeature:unsupported_libraries_java21:1",
+  "artifact-rules:JSON|false": {
+    "mode": "LENIENT",
+    "bundle-version-rules": [
+      {
+        "artifact-id": "org.cid15.aem.groovy.console:aem-groovy-console-bundle:17.0.0",
+        "message": "This library is unsupported with Java 21",
+        "denied-version-ranges": [
+          "[17.0.0,17.0.0]"
+        ]
+      }
+    ]
+  }
+}

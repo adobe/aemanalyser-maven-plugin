@@ -1,0 +1,27 @@
+{
+  "id": "com.adobe.aem:aemanalyser-core:slingosgifeature:unsupported_libraries_java21:1",
+  "artifact-rules:JSON|false": {
+    "mode": "LENIENT",
+    "bundle-version-rules": [
+      {
+        "artifact-id": "org.cid15.aem.groovy.console:aem-groovy-console-bundle:17.0.0",
+        "message": "This library is unsupported with Java 21",
+        "denied-version-ranges": [
+          "[17.0.0,17.0.0]"
+        ]
+      }
+    ],
+    "artifact-version-rules": [
+      {
+        "artifact-id": "org.objectweb.asm:asm:3.1",
+        "message": "This library is unsupported with Java 21 for versions below 9.5",
+        "allowed-version-ranges": [
+          "[9.5,9.7)"
+        ],
+        "denied-version-ranges": [
+          "[4.0,9.4]"
+        ]
+      }
+    ]
+  }
+}
