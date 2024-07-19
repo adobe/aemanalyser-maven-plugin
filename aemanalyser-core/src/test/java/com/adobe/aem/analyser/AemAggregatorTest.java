@@ -29,6 +29,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.Extension;
+import org.apache.sling.feature.ExtensionState;
+import org.apache.sling.feature.ExtensionType;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.FeatureProvider;
 import org.apache.sling.feature.extension.apiregions.api.artifacts.ArtifactRules;
@@ -299,5 +302,106 @@ public class AemAggregatorTest {
         assertEquals(ArtifactId.parse("g:b:jar:c:1"), newRules.getArtifactVersionRules().get(1).getArtifactId());
         assertEquals(ArtifactId.parse("g:c:zip:cp2fm-converted:1"), newRules.getArtifactVersionRules().get(2).getArtifactId());
         assertNull(newRules.getArtifactVersionRules().get(3).getArtifactId());
+    }
+
+    @Test
+    public void testResolveSdkProductVariationNullValue() {
+        final Feature f = new Feature(ArtifactId.parse("g:a:zip:cp2fm-converted:1"));
+
+        AemAggregator agg = new AemAggregator();
+        SdkProductVariation sdkProductVariation = agg.resolveSdkProductVariation(f);
+
+        assertNull(sdkProductVariation);
+    }
+
+    @Test
+    public void testResolveSdkProductVariation() {
+        final Feature f = new Feature(ArtifactId.parse("g:a:zip:user-aggregated-publish:1"));
+
+        AemAggregator agg = new AemAggregator();
+        SdkProductVariation sdkProductVariation = agg.resolveSdkProductVariation(f);
+
+        assertEquals(SdkProductVariation.PUBLISH, sdkProductVariation);
+    }
+
+    @Test
+    public void testCopyingExtensionsEmptyExtension() {
+        final Feature f = new Feature(ArtifactId.parse("g:a:zip:user-aggregated-publish:1"));
+        List<Feature> userResult = List.of(f);
+
+        Map<ProductVariation, List<Feature>> productAggregates = new HashMap<>();
+        final Feature f21 = new Feature(ArtifactId.parse("g:a:zip:aem-publish-sdk:1"));
+        Extension ext1 = new Extension(ExtensionType.TEXT, "artifact-rules", ExtensionState.OPTIONAL);
+        ext1.setText("{\"key\":\"1\"}");
+        f21.getExtensions().add(ext1);
+
+        productAggregates.put(SdkProductVariation.PUBLISH, List.of(f21));
+
+        AemAggregator agg = new AemAggregator();
+        agg.copyArtifactRulesFromProductAggregates(productAggregates, userResult);
+
+        assertEquals(1, userResult.size());
+        assertEquals(1, userResult.get(0).getExtensions().size());
+        assertEquals("{\"key\":\"1\"}", userResult.get(0).getExtensions().get(0).getText());
+    }
+
+    @Test
+    public void testCopyingExtensionsReplaceExtension() {
+        final Feature f1 = new Feature(ArtifactId.parse("g:a:zip:user-aggregated-publish:1"));
+        Extension ext1 = new Extension(ExtensionType.TEXT, "artifact-rules", ExtensionState.OPTIONAL);
+        ext1.setText("{}");
+        f1.getExtensions().add(ext1);
+
+        List<Feature> userResult = List.of(f1);
+
+        Map<ProductVariation, List<Feature>> productAggregates = new HashMap<>();
+        final Feature f21 = new Feature(ArtifactId.parse("g:a:zip:aem-publish-sdk:1"));
+        Extension ext21 = new Extension(ExtensionType.TEXT, "artifact-rules", ExtensionState.OPTIONAL);
+        ext21.setText("{\"key\":\"1\"}");
+        f21.getExtensions().add(ext21);
+
+        productAggregates.put(SdkProductVariation.PUBLISH, List.of(f21));
+
+        AemAggregator agg = new AemAggregator();
+        agg.copyArtifactRulesFromProductAggregates(productAggregates, userResult);
+
+        assertEquals(1, userResult.size());
+        assertEquals(1, userResult.get(0).getExtensions().size());
+        assertEquals("{\"key\":\"1\"}", userResult.get(0).getExtensions().get(0).getText());
+    }
+
+    @Test
+    public void testCopyingExtensionsTwoFeatures() {
+        final Feature f1 = new Feature(ArtifactId.parse("g:a:zip:user-aggregated-publish:1"));
+        Extension ext1 = new Extension(ExtensionType.TEXT, "artifact-rules", ExtensionState.OPTIONAL);
+        ext1.setText("{}");
+        f1.getExtensions().add(ext1);
+
+        final Feature f2 = new Feature(ArtifactId.parse("g:a:zip:user-aggregated-author:1"));
+        Extension ext2 = new Extension(ExtensionType.TEXT, "artifact-rules", ExtensionState.OPTIONAL);
+        ext2.setText("{}");
+        f2.getExtensions().add(ext2);
+
+        List<Feature> userResult = List.of(f1, f2);
+
+        final Feature f21 = new Feature(ArtifactId.parse("g:a:zip:aem-publish-sdk:1"));
+        Extension ext21 = new Extension(ExtensionType.TEXT, "artifact-rules", ExtensionState.OPTIONAL);
+        ext21.setText("{\"key\":\"21\"}");
+        f21.getExtensions().add(ext21);
+
+        final Feature f22 = new Feature(ArtifactId.parse("g:a:zip:aem-author-sdk:1"));
+        Extension ext22 = new Extension(ExtensionType.TEXT, "artifact-rules", ExtensionState.OPTIONAL);
+        ext22.setText("{\"key\":\"22\"}");
+        f22.getExtensions().add(ext22);
+
+        Map<ProductVariation, List<Feature>> productAggregates = Map.of(SdkProductVariation.PUBLISH, List.of(f21), SdkProductVariation.AUTHOR, List.of(f22));
+
+        AemAggregator agg = new AemAggregator();
+        agg.copyArtifactRulesFromProductAggregates(productAggregates, userResult);
+
+        assertEquals(2, userResult.size());
+        assertEquals(1, userResult.get(0).getExtensions().size());
+        assertEquals("{\"key\":\"21\"}", userResult.get(0).getExtensions().get(0).getText());
+        assertEquals("{\"key\":\"22\"}", userResult.get(1).getExtensions().get(0).getText());
     }
 }

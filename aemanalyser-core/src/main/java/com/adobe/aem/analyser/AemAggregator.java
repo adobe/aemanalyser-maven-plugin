@@ -24,6 +24,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.Extension;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.ArtifactProvider;
 import org.apache.sling.feature.builder.BuilderContext;
@@ -281,10 +283,40 @@ public class AemAggregator {
             ConfigurationApi.setConfigurationApi(f, configApi);
         }
 
+        copyArtifactRulesFromProductAggregates(productAggregates, userResult);
+
         final List<Feature> result = new ArrayList<>();
         result.addAll(userResult);
         result.addAll(finalResult);
         return result;
+    }
+
+    void copyArtifactRulesFromProductAggregates(Map<ProductVariation, List<Feature>> productAggregates, List<Feature> userResult) {
+        for (Feature feature : userResult) {
+            SdkProductVariation sdkProductVariation = resolveSdkProductVariation(feature);
+            Optional<Extension> extension = productAggregates.getOrDefault(sdkProductVariation, Collections.emptyList()).stream()
+                    .filter(f -> f.getId().getClassifier().equals(sdkProductVariation.getSdkClassifier()))
+                    .flatMap(f -> f.getExtensions().stream()
+                            .filter(e -> e.getName().equals("artifact-rules")))
+                    .findFirst();
+
+            extension.ifPresent(ext -> {
+                feature.getExtensions().removeIf(e -> e.getName().equals("artifact-rules"));
+                feature.getExtensions().add(ext);
+            });
+        }
+    }
+
+    SdkProductVariation resolveSdkProductVariation(Feature feature) {
+        String classifier = feature.getId().getClassifier() == null ? null : feature.getId().getClassifier();
+        if (classifier == null) {
+            return null;
+        } else if (classifier.endsWith("-publish")) {
+            return SdkProductVariation.PUBLISH;
+        } else if (classifier.endsWith("-author")) {
+            return SdkProductVariation.AUTHOR;
+        }
+        return null;
     }
 
     // visible for testing
