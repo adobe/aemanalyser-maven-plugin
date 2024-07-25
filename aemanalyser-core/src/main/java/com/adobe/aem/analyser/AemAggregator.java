@@ -30,7 +30,10 @@ import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.Extension;
+import org.apache.sling.feature.ExtensionType;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.ArtifactProvider;
 import org.apache.sling.feature.builder.BuilderContext;
@@ -49,6 +52,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.adobe.aem.project.ServiceType;
+
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
+import jakarta.json.JsonValue;
 
 /**
  * Create all the aggregates
@@ -448,6 +456,11 @@ public class AemAggregator {
             final Feature feature = FeatureBuilder.assemble(newFeatureID, builderContext,
                   aggregate.getValue().toArray(new Feature[aggregate.getValue().size()]));
 
+            // special handling for exactly same mvn coordinates in user and product feature
+            if ( mode == Mode.FINAL ) {
+                handleDuplicateBundles(aggregate, feature);
+            }
+
             postProcessProductFeature(feature);
 
             final File featureFile = new File(this.getFeatureOutputDirectory(), aggregate.getKey().concat(".json"));
@@ -464,5 +477,90 @@ public class AemAggregator {
         }
 
         return result;
+    }
+
+    /**
+     * Handle duplicate bundles
+     * If the user and the product feature contain the exact same bundle, then the feature handling merges
+     * them into a single artifact - which then means the artifact is not correctly checked as a user bundle
+     * @param aggregate The features to be aggregated
+     * @param feature The final feature
+     * @throws IOException If an error occurs
+     */
+    private void handleDuplicateBundles(final Map.Entry<String, List<Feature>> aggregate, final Feature feature)
+            throws IOException {
+        // sanity check
+        if ( aggregate.getValue().size() != 2) {
+            throw new IOException("Expected two features for final aggregate, got " + aggregate.getValue().size());
+        }
+        final Feature productFeature = aggregate.getValue().get(0);
+        final Feature userFeature = aggregate.getValue().get(1);
+
+        // check if a bundle from the user feature is in the product feature
+        for(final Artifact bundle : userFeature.getBundles()) {
+            if ( productFeature.getBundles().contains(bundle)) {
+                final Artifact productBundle = productFeature.getBundles().getExact(bundle.getId());
+                logger.debug("Found duplicate bundle {} in user and product feature.", bundle.getId().toMvnId());
+
+                // the product bundle is changed to this version
+                final String version = "1.0.0.AEM-ANALYSER";
+
+                // replace product bundle with a new one, just changed version, also need to update bundle version metadata
+                final Artifact newProductBundle = new Artifact(productBundle.getId().changeVersion(version));
+                newProductBundle.getMetadata().putAll(productBundle.getMetadata());
+                feature.getBundles().add(feature.getBundles().indexOf(productBundle), newProductBundle);
+                newProductBundle.getMetadata().put("Bundle-Version", version);
+                feature.getBundles().remove(productBundle);
+                // add user bundle at the end
+                feature.getBundles().add(bundle);
+
+                // Duplicate metadata for bundle
+                final Extension me = feature.getExtensions().getByName("analyser-metadata");
+                if ( me != null && me.getType() == ExtensionType.JSON) {
+                    final JsonObject metadata = me.getJSONStructure().asJsonObject();
+                    final JsonObject bundleMetadata = metadata.getJsonObject(bundle.getId().toMvnId());
+                    if ( bundleMetadata != null ) {
+                        // Create new JSON Object and copy metadata
+                        final JsonObjectBuilder newMD = Json.createObjectBuilder();
+                        final JsonObjectBuilder newBundleMetadata = Json.createObjectBuilder();
+                        for(final String key : bundleMetadata.keySet()) {
+                            if ( "manifest".equals(key) ) {
+                                final JsonObjectBuilder newManifest = Json.createObjectBuilder();
+                                final JsonObject manifest = bundleMetadata.getJsonObject(key);
+                                for(final String manifestKey : manifest.keySet()) {
+                                    if ( "Bundle-Version".equals(manifestKey) ) {
+                                        newManifest.add(manifestKey, version);
+                                    } else {
+                                        newManifest.add(manifestKey, manifest.get(manifestKey));
+                                    }
+                                }
+                                newBundleMetadata.add(key, newManifest.build());
+                            } else {
+                                newBundleMetadata.add(key, bundleMetadata.get(key));
+                            }
+                        }
+                        newMD.add(newProductBundle.getId().toMvnId(), newBundleMetadata.build());
+                        for(final String key : metadata.keySet()) {
+                            if ( key.equals(bundle.getId().toMvnId())) {
+                                final JsonObjectBuilder builder = Json.createObjectBuilder();
+                                for(final String subKey : metadata.getJsonObject(key).keySet()) {
+                                    if ( !"report".equals(subKey)) {
+                                        builder.add(subKey, metadata.getJsonObject(key).get(subKey));
+                                    }
+                                }
+                                final JsonObjectBuilder resultBuilder = Json.createObjectBuilder();
+                                resultBuilder.add("error", true);
+                                resultBuilder.add("warning", true);
+                                builder.add("report", resultBuilder.build());
+                                newMD.add(key, builder.build());
+                            } else {
+                                newMD.add(key, metadata.getJsonObject(key));
+                            }
+                        }
+                        me.setJSONStructure(newMD.build());
+                    }
+                }
+            }
+        }
     }
 }
