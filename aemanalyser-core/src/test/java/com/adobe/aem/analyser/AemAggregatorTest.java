@@ -32,6 +32,7 @@ import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.FeatureProvider;
 import org.apache.sling.feature.extension.apiregions.api.artifacts.ArtifactRules;
+import org.apache.sling.feature.extension.apiregions.api.artifacts.Mode;
 import org.apache.sling.feature.extension.apiregions.api.artifacts.VersionRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -268,6 +269,7 @@ public class AemAggregatorTest {
         agg.postProcessProductFeature(f);
         final ArtifactRules newRules = ArtifactRules.getArtifactRules(f);
         assertNotNull(newRules);
+        assertEquals(Mode.LENIENT, newRules.getMode());
     }
 
     @Test

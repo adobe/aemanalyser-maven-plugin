@@ -267,18 +267,26 @@ public class AemAggregator {
 
         final List<Feature> finalResult = this.aggregate(finalAggregates, Mode.FINAL, projectFeatures);
 
-        // find final author and publish feature and get configuration api
+        // find final author and publish feature and get configuration api and artifact rules
         Map<ProductVariation, ConfigurationApi> apiMapping = new HashMap<>();
+        Map<ProductVariation, ArtifactRules> rules = new HashMap<>();
         for ( ProductVariation variation : productAggregates.keySet()) {
-            final ConfigurationApi configApi = ConfigurationApi.getConfigurationApi(findFeature(finalResult, variation));
+            final Feature f = findFeature(finalResult, variation);
+            final ConfigurationApi configApi = ConfigurationApi.getConfigurationApi(f);
             apiMapping.put(variation, configApi);
+            final ArtifactRules r = ArtifactRules.getArtifactRules(f);
+            if (r != null) {
+                rules.put(variation, r);
+            }
         }
 
-        // add configuration api to all user features
+        // add configuration api and artifact rules to all user features
         for(final Feature f : userResult) {
             ProductVariation variation = getProductFeatureGenerator().getVariation(f.getId().getClassifier());
             ConfigurationApi configApi = apiMapping.get(variation);
             ConfigurationApi.setConfigurationApi(f, configApi);
+            ArtifactRules r = rules.get(variation);
+            ArtifactRules.setArtifactRules(f, r);
         }
 
         final List<Feature> result = new ArrayList<>();
@@ -353,8 +361,10 @@ public class AemAggregator {
             }
             ArtifactRules.setArtifactRules(feature, rules);
         } else {
-            // create empty rules to avoid analyser warning
-            ArtifactRules.setArtifactRules(feature, new ArtifactRules());
+            // create empty rules with LENIENT mode to avoid analyser warning
+            final ArtifactRules r = new ArtifactRules();
+            r.setMode(org.apache.sling.feature.extension.apiregions.api.artifacts.Mode.LENIENT);
+            ArtifactRules.setArtifactRules(feature, r);
         }
     }
 
