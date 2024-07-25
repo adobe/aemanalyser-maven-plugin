@@ -151,6 +151,7 @@ public class AemAnalyser {
         config.computeIfAbsent("api-regions-crossfeature-dups", (key) -> apiRegionsCrossfeatureDupsDefaults());
         config.computeIfAbsent("content-packages-validation", (key) -> contentPackagesValidationDefaults());
         config.computeIfAbsent("api-regions-check-order", (key) -> apiRegionsCheckOrderDefaults());
+        config.computeIfAbsent("region-deprecated-api", (key) -> apiRegionsDeprecationDefaults());
     }
 
     private Map<String, String> apiRegionsCrossfeatureDupsDefaults() {
@@ -169,6 +170,9 @@ public class AemAnalyser {
         return singletonMap("order", "global,com.adobe.aem.deprecated,com.adobe.aem.internal");
     }
 
+    private Map<String, String> apiRegionsDeprecationDefaults() {
+        return singletonMap("regions", "global,com.adobe.aem.deprecated");
+    }
     /**
      * @return the artifactProvider
      */
