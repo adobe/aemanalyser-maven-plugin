@@ -34,6 +34,7 @@ import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 
+import com.adobe.aem.analyser.mojos.extensions.DependencyLifecycleParticipant;
 import com.adobe.aem.analyser.result.AemAnalyserAnnotation;
 import com.adobe.aem.analyser.result.AemAnalyserResult;
 import com.adobe.aem.project.model.Application;
