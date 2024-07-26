@@ -39,7 +39,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.26</version>
+      <version>1.7.36</version>
     </dependency>
 
     <!-- Feature Model -->
@@ -97,7 +97,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
-      <version>1.7.26</version>
+      <version>1.7.36</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
