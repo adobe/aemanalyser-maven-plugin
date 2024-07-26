@@ -261,7 +261,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.felix</groupId>
       <artifactId>org.apache.felix.configadmin</artifactId>
-      <version>1.9.24</version>
+      <version>1.9.26</version>
     </dependency>
     <dependency>
       <groupId>org.apache.sling</groupId>
