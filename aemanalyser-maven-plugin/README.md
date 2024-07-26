@@ -16,12 +16,13 @@ Most of the analysers are based on the [Apache Sling Feature Model Analyser fram
 
 ## Installation
 
-This is a plugin to Apache Maven. It can be enabled by referencing its coordinates in a `pom.xml`:
+This is a plugin to Apache Maven. It can be enabled by referencing its coordinates in a `pom.xml` and enabling the extensions contained in the plugin:
 
     <plugin>
         <groupId>com.adobe.aem</groupId>
         <artifactId>aemanalyser-maven-plugin</artifactId>
         <version>... version ...</version>
+        <extensions>true</extensions>
     </plugin>
 
 Example:
@@ -30,6 +31,7 @@ Example:
         <groupId>com.adobe.aem</groupId>
         <artifactId>aemanalyser-maven-plugin</artifactId>
         <version>1.1.12</version> <!-- Make sure to use the latest release -->
+        <extensions>true</extensions>
     </plugin>
 
 As this plugin is available in Maven Central, no additional configuration is needed to bring it into your Maven project.
@@ -47,6 +49,7 @@ Enable the plugin by listing it in the `build->plugins` section of the module.
                 <groupId>com.adobe.aem</groupId>
                 <artifactId>aemanalyser-maven-plugin</artifactId>
                 <version>1.1.12</version> <!-- Make sure to use the latest release -->
+                <extensions>true</extensions>
                 <executions>
                     <execution>
                         <id>aem-analyser</id>

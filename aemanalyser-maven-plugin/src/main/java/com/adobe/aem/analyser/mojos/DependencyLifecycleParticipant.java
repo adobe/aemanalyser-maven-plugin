@@ -22,6 +22,10 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.execution.MavenSession;
@@ -33,8 +37,6 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.project.MavenProject;
 import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
@@ -47,7 +49,8 @@ import com.adobe.aem.project.model.Project;
 /**
  * Maven lifecycle participant which adds the artifacts of the model to the dependencies.
  */
-@Component(role = AbstractMavenLifecycleParticipant.class, hint = "aemappparticipant")
+@Named("aemappparticipant")
+@Singleton
 public class DependencyLifecycleParticipant extends AbstractMavenLifecycleParticipant {
 
     /**
@@ -59,7 +62,7 @@ public class DependencyLifecycleParticipant extends AbstractMavenLifecyclePartic
 
     private static final String KEY_PROJECT_SERIALIZED = KEY_PROJECT.concat("-ser");
 
-    @Requirement
+    @Inject
     private Logger logger;
 
     @Override
