@@ -496,66 +496,30 @@ public class AemAggregator {
         final Feature userFeature = aggregate.getValue().get(1);
 
         // check if a bundle from the user feature is in the product feature
-        for(final Artifact bundle : userFeature.getBundles()) {
-            if ( productFeature.getBundles().contains(bundle)) {
-                final Artifact productBundle = productFeature.getBundles().getExact(bundle.getId());
-                logger.debug("Found duplicate bundle {} in user and product feature.", bundle.getId().toMvnId());
+        for(final Artifact userBundle : userFeature.getBundles()) {
+            if ( productFeature.getBundles().contains(userBundle)) {
+                final Artifact mergedBundle = feature.getBundles().getExact(userBundle.getId());
+                logger.debug("Found duplicate bundle {} in user and product feature.", userBundle.getId().toMvnId());
 
-                // the product bundle is changed to this version
-                final String version = "1.0.0.AEM-ANALYSER";
+                // use bundle metadata from user provided bundle (e.g. origin)
+                mergedBundle.getMetadata().clear();
+                mergedBundle.getMetadata().putAll(userBundle.getMetadata());
 
-                // create copy of product bundle using new version with same metadata except bundle version
-                final Artifact newProductBundle = new Artifact(productBundle.getId().changeVersion(version));
-                newProductBundle.getMetadata().putAll(productBundle.getMetadata());
-                newProductBundle.getMetadata().put("Bundle-Version", version);
-
-                // replace product bundle
-                feature.getBundles().add(feature.getBundles().indexOf(productBundle), newProductBundle);
-                feature.getBundles().remove(productBundle);
-
-                // add user bundle at the end
-                feature.getBundles().add(bundle);
-
-                // Adjust metadata for product bundle (replace version, bundle-version)
+                // Clear analyser-metadata for product bundle
                 final Extension me = feature.getExtensions().getByName("analyser-metadata");
                 if ( me != null && me.getType() == ExtensionType.JSON) {
                     final JsonObject metadata = me.getJSONStructure().asJsonObject();
-                    final JsonObject productBundleMetadata = metadata.getJsonObject(bundle.getId().toMvnId());
 
-                    if ( productBundleMetadata != null ) {
-                        // Create new JSON Object and copy metadata
-                        final JsonObjectBuilder newMetadataBuilder = Json.createObjectBuilder();
-
-                        final JsonObjectBuilder newBundleMetadataBuilder = Json.createObjectBuilder();
-                        // copy all data, except for manifest/Bundle-Version
-                        for(final String key : productBundleMetadata.keySet()) {
-                            if ( "manifest".equals(key) ) {
-                                final JsonObjectBuilder newManifest = Json.createObjectBuilder();
-                                final JsonObject manifest = productBundleMetadata.getJsonObject(key);
-                                for(final String manifestKey : manifest.keySet()) {
-                                    if ( "Bundle-Version".equals(manifestKey) ) {
-                                        newManifest.add(manifestKey, version);
-                                    } else {
-                                        newManifest.add(manifestKey, manifest.get(manifestKey));
-                                    }
-                                }
-                                newBundleMetadataBuilder.add(key, newManifest.build());
-                            } else {
-                                newBundleMetadataBuilder.add(key, productBundleMetadata.get(key));
-                            }
+                    // Create new JSON Object and copy metadata except for the bundle
+                    final JsonObjectBuilder newMetadataBuilder = Json.createObjectBuilder();
+                    for(final String key : metadata.keySet()) {
+                        if ( !key.equals(userBundle.getId().toMvnId()) ) {
+                            newMetadataBuilder.add(key, metadata.getJsonObject(key));
                         }
-                        // add updated product metadata
-                        newMetadataBuilder.add(newProductBundle.getId().toMvnId(), newBundleMetadataBuilder.build());
-                        // copy all metadata except for the changed one
-                        for(final String key : metadata.keySet()) {
-                            if ( !key.equals(bundle.getId().toMvnId()) ) {
-                                newMetadataBuilder.add(key, metadata.getJsonObject(key));
-                            }
-                        }
-
-                        // replace JSON in extension
-                        me.setJSONStructure(newMetadataBuilder.build());
                     }
+
+                    // replace JSON in extension
+                    me.setJSONStructure(newMetadataBuilder.build());
                 }
             }
         }
