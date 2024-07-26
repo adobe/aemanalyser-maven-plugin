@@ -88,6 +88,24 @@ public class AemAggregator {
 
     private EnumSet<ServiceType> serviceTypes = EnumSet.allOf(ServiceType.class);
 
+    private boolean enableDuplicateBundleHandling = false;
+
+    /**
+     * Is the special handling for duplicate bundles enabled?
+     * @return {@code true} if enabled
+     */
+    public boolean isEnableDuplicateBundleHandling() {
+        return enableDuplicateBundleHandling;
+    }
+
+    /**
+     * Enable or disable the special handling for duplicate bundles
+     * @param enableDuplicateBundleHandling {@code true} to enable
+     */
+    public void setEnableDuplicateBundleHandling(boolean enableDuplicateBundleHandling) {
+        this.enableDuplicateBundleHandling = enableDuplicateBundleHandling;
+    }
+
     /**
      * @return the artifactProvider
      */
@@ -456,7 +474,7 @@ public class AemAggregator {
                   aggregate.getValue().toArray(new Feature[aggregate.getValue().size()]));
 
             // special handling for exactly same mvn coordinates in user and product feature
-            if ( mode == Mode.FINAL ) {
+            if ( mode == Mode.FINAL && this.isEnableDuplicateBundleHandling()) {
                 handleDuplicateBundles(aggregate, feature);
             }
 
@@ -498,10 +516,10 @@ public class AemAggregator {
         // check if a bundle from the user feature is in the product feature
         for(final Artifact userBundle : userFeature.getBundles()) {
             if ( productFeature.getBundles().contains(userBundle)) {
-                final Artifact mergedBundle = feature.getBundles().getExact(userBundle.getId());
                 logger.debug("Found duplicate bundle {} in user and product feature.", userBundle.getId().toMvnId());
 
                 // use bundle metadata from user provided bundle (e.g. origin)
+                final Artifact mergedBundle = feature.getBundles().getExact(userBundle.getId());
                 mergedBundle.getMetadata().clear();
                 mergedBundle.getMetadata().putAll(userBundle.getMetadata());
 
