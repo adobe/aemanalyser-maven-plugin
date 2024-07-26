@@ -159,7 +159,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.johnzon</groupId>
       <artifactId>johnzon-core</artifactId>
-      <version>1.2.19</version>
+      <version>1.2.21</version>
       <classifier>jakarta</classifier>
       <scope>compile</scope>
     </dependency>
