@@ -41,6 +41,11 @@ import org.slf4j.LoggerFactory;
 
 public class AemPackageConverter {
 
+    private static final Map<String, String> DEFAULT_NAMESPACE_MAPPINGS = Map.of(
+        "cq", "http://www.day.com/jcr/cq/1.0",
+        "granite", "http://www.adobe.com/jcr/granite/1.0"
+    );
+
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private static final String FILTER = ".*/(apps|libs)/(.*)/install\\.(((author|publish)\\.(dev|stage|prod))|((dev|stage|prod)\\.(author|publish))|(dev|stage|prod))/(.*)(?<=\\.(zip|jar)$)";
@@ -143,7 +148,8 @@ public class AemPackageConverter {
 
         featuresManager.setAPIRegions(apiRegions);
         featuresManager.setExportToAPIRegion("global");
-
+        // populate with namespace mapping defaults, they can still be overridden from the bundle metadata
+        featuresManager.getNamespaceUriByPrefix().putAll(DEFAULT_NAMESPACE_MAPPINGS);
 
         final File bundlesOutputDir = this.bundlesOutputDirectory != null
                 ? this.bundlesOutputDirectory : this.converterOutputDirectory;
@@ -163,7 +169,7 @@ public class AemPackageConverter {
                     .setBundleSlingInitialContentExtractor(bundleSlingInitialContentExtractor)
                     .setEntryHandlersManager(
                         new DefaultEntryHandlersManager(Collections.emptyMap(), true,
-                                SlingInitialContentPolicy.EXTRACT_AND_REMOVE, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT)
+                                SlingInitialContentPolicy.EXTRACT_AND_REMOVE, bundleSlingInitialContentExtractor, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT)
                         )
                     .setAclManager(
                             new DefaultAclManager()

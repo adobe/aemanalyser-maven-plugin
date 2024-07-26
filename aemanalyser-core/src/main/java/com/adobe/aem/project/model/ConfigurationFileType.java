@@ -9,7 +9,7 @@
   OF ANY KIND, either express or implied. See the License for the specific language
   governing permissions and limitations under the License.
 */
-package com.adobe.aem.analyser.tasks;
+package com.adobe.aem.project.model;
 
 /**
  * The source type of an OSGi configuration file
@@ -26,7 +26,7 @@ public enum ConfigurationFileType {
      * @return The detected type or {@code null}
      */
     public static ConfigurationFileType fromFileName(final String name) {
-        if ( name.endsWith(".cfg.json") ) {
+        if ( name.endsWith(".cfg.json") || name.endsWith(".json") ) {
             return JSON;
         } else if ( name.endsWith(".xml") ) {
             return XML;

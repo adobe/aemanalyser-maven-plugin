@@ -9,7 +9,7 @@
   OF ANY KIND, either express or implied. See the License for the specific language
   governing permissions and limitations under the License.
 */
-package com.adobe.aem.analyser.tasks;
+package com.adobe.aem.project.model;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -17,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -35,25 +36,33 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.apache.felix.cm.file.ConfigurationHandler;
-import org.apache.felix.cm.json.Configurations;
+import org.apache.felix.cm.json.io.Configurations;
 import org.apache.jackrabbit.util.ISO8601;
 import org.apache.jackrabbit.vault.util.DocViewProperty;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import com.adobe.aem.project.EnvironmentType;
+import com.adobe.aem.project.SDKType;
+import com.adobe.aem.project.ServiceType;
+
 /**
  * A configuration file
  */
-public final class ConfigurationFile {
+public final class ConfigurationFile implements Serializable {
 
     public enum Location {
         APPS,
         LIBS;
     }
 
+    private ServiceType serviceType;
+    private EnvironmentType envType;
+    private SDKType sdkType;
     private String runMode;
     private int level = -1;
+    private Dictionary<String, Object> properties;
     private final File source;
     private final ConfigurationFileType type;
     private final Location location;
@@ -99,7 +108,7 @@ public final class ConfigurationFile {
     /**
      * @param runMode the runMode to set
      */
-    public void setRunMode(String runMode) {
+    public void setRunMode(final String runMode) {
         this.runMode = runMode;
     }
 
@@ -123,7 +132,7 @@ public final class ConfigurationFile {
      */
     public String getPid() {
         int pos = source.getName().lastIndexOf(".");
-        if ( type == ConfigurationFileType.JSON ) {
+        if ( type == ConfigurationFileType.JSON && source.getName().endsWith(".cfg.json") ) {
             pos = pos - 4;
         }
         final String id = source.getName().substring(0, pos);
@@ -134,7 +143,22 @@ public final class ConfigurationFile {
         return id;
     }
 
+    public void resetConfiguration() {
+        this.properties = null;
+    }
+
+    public Dictionary<String, Object> getConfiguration() {
+        return this.properties;
+    }
+
     public Dictionary<String, Object> readConfiguration() throws IOException {
+        if ( this.properties == null ) {
+            this.properties = this.internalReadConfiguration();
+        }
+        return this.properties;
+    }
+
+    private Dictionary<String, Object> internalReadConfiguration() throws IOException {
         try ( final InputStream input = new FileInputStream(this.getSource()) ) {
             if ( this.getType() == ConfigurationFileType.CONFIGADMIN ) {
                 return ConfigurationHandler.read(input);
@@ -262,5 +286,29 @@ public final class ConfigurationFile {
         private static Object[] mapValues(final String[] strValues, final Function<String, Object> function) {
             return Arrays.stream(strValues).filter(s -> s != null && !s.isEmpty()).map(function).filter(Objects::nonNull).toArray();
         }
+    }
+
+    public ServiceType getServiceType() {
+        return serviceType;
+    }
+
+    public void setServiceType(final ServiceType serviceType) {
+        this.serviceType = serviceType;
+    }
+
+    public EnvironmentType getEnvType() {
+        return envType;
+    }
+
+    public void setEnvType(final EnvironmentType envType) {
+        this.envType = envType;
+    }
+
+    public SDKType getSdkType() {
+        return sdkType;
+    }
+
+    public void setSdkType(final SDKType sdkType) {
+        this.sdkType = sdkType;
     }
 }

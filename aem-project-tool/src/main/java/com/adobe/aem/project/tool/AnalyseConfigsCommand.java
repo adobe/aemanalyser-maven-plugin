@@ -15,11 +15,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import com.adobe.aem.analyser.tasks.ConfigurationFile;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
 import com.adobe.aem.analyser.tasks.ConfigurationsTask;
 import com.adobe.aem.analyser.tasks.ConfigurationsTaskConfig;
 import com.adobe.aem.analyser.tasks.TaskContext;
-import com.adobe.aem.analyser.tasks.TaskResult;
+import com.adobe.aem.project.model.ConfigurationFile;
 
 public class AnalyseConfigsCommand extends AbstractCommand {
 
@@ -37,7 +37,7 @@ public class AnalyseConfigsCommand extends AbstractCommand {
     }
 
     @Override
-    public TaskResult doExecute() throws IOException {
+    public AemAnalyserResult doExecute() throws IOException {
         logger.info("Using SDK {}", this.getSdkId().toMvnId());
         final TaskContext context = new TaskContext(
             this.getBaseDirectory(),

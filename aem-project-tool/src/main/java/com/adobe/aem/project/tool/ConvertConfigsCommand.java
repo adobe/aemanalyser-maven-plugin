@@ -20,19 +20,19 @@ import java.util.Dictionary;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.felix.cm.json.Configurations;
+import org.apache.felix.cm.json.io.Configurations;
 import org.apache.sling.feature.Configuration;
 import org.apache.sling.feature.Feature;
 
-import com.adobe.aem.analyser.tasks.ConfigurationFile;
-import com.adobe.aem.analyser.tasks.ConfigurationFileType;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
 import com.adobe.aem.analyser.tasks.ConfigurationsTask;
 import com.adobe.aem.analyser.tasks.ConfigurationsTaskConfig;
 import com.adobe.aem.analyser.tasks.TaskContext;
-import com.adobe.aem.analyser.tasks.TaskResult;
-import com.adobe.aem.analyser.tasks.ConfigurationFile.Location;
 import com.adobe.aem.project.RunModes;
 import com.adobe.aem.project.ServiceType;
+import com.adobe.aem.project.model.ConfigurationFile;
+import com.adobe.aem.project.model.ConfigurationFileType;
+import com.adobe.aem.project.model.ConfigurationFile.Location;
 
 public class ConvertConfigsCommand extends AbstractCommand {
 
@@ -53,7 +53,7 @@ public class ConvertConfigsCommand extends AbstractCommand {
     }
 
     @Override
-    public TaskResult doExecute() throws IOException {
+    public AemAnalyserResult doExecute() throws IOException {
         final TaskContext context = new TaskContext(
             this.getBaseDirectory(),
             this.getProjectId(),

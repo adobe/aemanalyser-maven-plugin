@@ -44,11 +44,11 @@ public class TaskContext {
 
     /**
      * Create a new context
-     * @param projectDirectory
-     * @param projectId
-     * @param sdkId
-     * @param addons
-     * @param provider
+     * @param projectDirectory The project directory
+     * @param projectId The project ID
+     * @param sdkId The SDK ID
+     * @param addons The addons
+     * @param provider The feature provider
      * @throws NullPointerException If any of the arguments is {@code null}
      */
     public TaskContext(
@@ -91,7 +91,7 @@ public class TaskContext {
      * Get the relative path for a project file
      * @param file The file
      * @return The relative path
-     * throws IOException If the file is not inside the project directory
+     * @throws IOException If the file is not inside the project directory
      */
     public String getRelativePath(final File file) throws IOException {
         checkProjectFile(file);
@@ -99,20 +99,7 @@ public class TaskContext {
     }
 
     /**
-     * Get the annotation for the file
-     * @param file The file
-     * @param msg The message
-     * @return The annotation
-     * throws IOException If the file is not inside the project directory
-     */
-    public TaskResult.Annotation newAnnotation(final File file, final String msg) throws IOException {
-        return new TaskResult.Annotation(this.getRelativePath(file), msg);
-    }
-
-    /**
      * Get the aggregated author and publish feature
-     * @param sdkId The sdk id
-     * @param addons The addons 
      * @return A map with the author and publish feature
      * @throws IOException If something goes wrong
      */

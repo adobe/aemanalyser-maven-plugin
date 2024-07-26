@@ -45,8 +45,9 @@ import org.apache.sling.feature.io.artifacts.ArtifactManagerConfig;
 
 import com.adobe.aem.analyser.AemAggregator;
 import com.adobe.aem.analyser.AemAnalyser;
-import com.adobe.aem.analyser.AemAnalyserResult;
 import com.adobe.aem.analyser.AemPackageConverter;
+import com.adobe.aem.analyser.result.AemAnalyserAnnotation;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
 
 public class AemAnalyseMojo extends AbstractAnalyseMojo {
 
@@ -133,9 +134,9 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
             final List<Feature> features = this.aggregateFeatureModels(sdkId, addons, compositeArtifactProvider);
 
             // 3. Phase : analyse features
-            final AemAnalyserResult result = this.analyseFeatures(features, additionalWarnings, additionalErrors, compositeArtifactProvider);
-            additionalWarnings.stream().forEach(msg -> result.getWarnings().add(msg));
-            additionalErrors.stream().forEach(msg -> result.getErrors().add(msg));
+            final AemAnalyserResult result = this.analyseFeatures(features, compositeArtifactProvider);
+            additionalWarnings.stream().forEach(msg -> result.getWarnings().add(new AemAnalyserAnnotation(msg)));
+            additionalErrors.stream().forEach(msg -> result.getErrors().add(new AemAnalyserAnnotation(msg)));
             return result;
         } catch (IOException e) {
             throw new MojoExecutionException(e.getMessage(), e);
@@ -277,15 +278,11 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
      * Analyse the features
      * 
      * @param features The features
-     * @param additionalWarnings List of additional warnings, might be empty
-     * @param additionalErrors List of additional errors, might be empty
      * @param artifactProvider The artifact provider
      * @throws MojoFailureException If the analysis fails
      * @throws MojoExecutionException If something goes wrong
      */
     AemAnalyserResult analyseFeatures(final List<Feature> features, 
-            final List<String> additionalWarnings, 
-            final List<String> additionalErrors, 
             final ArtifactProvider artifactProvider) throws MojoFailureException, MojoExecutionException {
         try {
             final AemAnalyser analyser = new AemAnalyser();
@@ -294,8 +291,9 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
             analyser.setIncludedUserTasks(this.getAnalyserUserTasks());
             analyser.setTaskConfigurations(this.getAnalyserTaskConfigurations());
 
-            return analyser.analyse(features);
-            
+            analyser.setFeatureParticipantResolver(this.getProject());
+
+            return analyser.analyse(features);            
         } catch ( final Exception e) {
             throw new MojoExecutionException("A fatal error occurred while analysing the features, see error cause:",
                     e);

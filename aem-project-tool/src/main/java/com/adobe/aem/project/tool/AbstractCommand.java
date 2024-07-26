@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.adobe.aem.analyser.Constants;
-import com.adobe.aem.analyser.tasks.TaskResult;
+import com.adobe.aem.analyser.result.AemAnalyserResult;
 
 public abstract class AbstractCommand {
 
@@ -53,7 +53,7 @@ public abstract class AbstractCommand {
 
     public abstract void validate();
 
-    public abstract TaskResult doExecute() throws IOException;
+    public abstract AemAnalyserResult doExecute() throws IOException;
 
     public File getBaseDirectory() {
         return new File(new File("dot").getAbsolutePath()).getParentFile();

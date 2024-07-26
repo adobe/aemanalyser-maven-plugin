@@ -55,7 +55,7 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
 
             final List<Feature> list = aggregates.computeIfAbsent(variation, n -> new ArrayList<>());
             final Feature sdkFeature = featureProvider.provide(sdkId
-                    .changeClassifier(variation.getSdkClassifier())
+                    .changeClassifier(getProductClassifier(variation))
                     .changeType(AemAggregator.FEATUREMODEL_TYPE));
             if ( sdkFeature == null ) {
                 throw new IOException("Unable to find SDK feature for " + sdkId.toMvnId());
@@ -71,6 +71,10 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
         }
 
         return aggregates;
+    }
+
+    protected String getProductClassifier(SdkProductVariation variation) {
+        return variation.getSdkClassifier();
     }
 
     @Override
