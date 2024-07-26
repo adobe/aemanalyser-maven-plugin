@@ -266,7 +266,8 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
             a.setProjectId(new ArtifactId(project.getGroupId(), project.getArtifactId(), project.getVersion(), null, null));
             a.setSdkId(sdkId);
             a.setAddOnIds(addons);
-            
+            a.setEnableDuplicateBundleHandling(true);
+
             return a.aggregate();
         
         } catch (final IOException e) {

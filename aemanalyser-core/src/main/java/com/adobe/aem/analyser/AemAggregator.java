@@ -30,7 +30,10 @@ import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.Extension;
+import org.apache.sling.feature.ExtensionType;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.ArtifactProvider;
 import org.apache.sling.feature.builder.BuilderContext;
@@ -49,6 +52,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.adobe.aem.project.ServiceType;
+
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 
 /**
  * Create all the aggregates
@@ -80,6 +87,24 @@ public class AemAggregator {
     private List<ArtifactId> addOnIds;
 
     private EnumSet<ServiceType> serviceTypes = EnumSet.allOf(ServiceType.class);
+
+    private boolean enableDuplicateBundleHandling = false;
+
+    /**
+     * Is the special handling for duplicate bundles enabled?
+     * @return {@code true} if enabled
+     */
+    public boolean isEnableDuplicateBundleHandling() {
+        return enableDuplicateBundleHandling;
+    }
+
+    /**
+     * Enable or disable the special handling for duplicate bundles
+     * @param enableDuplicateBundleHandling {@code true} to enable
+     */
+    public void setEnableDuplicateBundleHandling(boolean enableDuplicateBundleHandling) {
+        this.enableDuplicateBundleHandling = enableDuplicateBundleHandling;
+    }
 
     /**
      * @return the artifactProvider
@@ -448,6 +473,11 @@ public class AemAggregator {
             final Feature feature = FeatureBuilder.assemble(newFeatureID, builderContext,
                   aggregate.getValue().toArray(new Feature[aggregate.getValue().size()]));
 
+            // special handling for exactly same mvn coordinates in user and product feature
+            if ( mode == Mode.FINAL && this.isEnableDuplicateBundleHandling()) {
+                handleDuplicateBundles(aggregate, feature);
+            }
+
             postProcessProductFeature(feature);
 
             final File featureFile = new File(this.getFeatureOutputDirectory(), aggregate.getKey().concat(".json"));
@@ -464,5 +494,52 @@ public class AemAggregator {
         }
 
         return result;
+    }
+
+    /**
+     * Handle duplicate bundles
+     * If the user and the product feature contain the exact same bundle, then the feature handling merges
+     * them into a single artifact - which then means the artifact is not correctly checked as a user bundle
+     * @param aggregate The features to be aggregated
+     * @param feature The final feature
+     * @throws IOException If an error occurs
+     */
+    private void handleDuplicateBundles(final Map.Entry<String, List<Feature>> aggregate, final Feature feature)
+            throws IOException {
+        // sanity check
+        if ( aggregate.getValue().size() != 2) {
+            throw new IOException("Expected two features for final aggregate, got " + aggregate.getValue().size());
+        }
+        final Feature productFeature = aggregate.getValue().get(0);
+        final Feature userFeature = aggregate.getValue().get(1);
+
+        // check if a bundle from the user feature is in the product feature
+        for(final Artifact userBundle : userFeature.getBundles()) {
+            if ( productFeature.getBundles().contains(userBundle)) {
+                logger.debug("Found duplicate bundle {} in user and product feature.", userBundle.getId().toMvnId());
+
+                // use bundle metadata from user provided bundle (e.g. origin)
+                final Artifact mergedBundle = feature.getBundles().getExact(userBundle.getId());
+                mergedBundle.getMetadata().clear();
+                mergedBundle.getMetadata().putAll(userBundle.getMetadata());
+
+                // Clear analyser-metadata for product bundle
+                final Extension me = feature.getExtensions().getByName("analyser-metadata");
+                if ( me != null && me.getType() == ExtensionType.JSON) {
+                    final JsonObject metadata = me.getJSONStructure().asJsonObject();
+
+                    // Create new JSON Object and copy metadata except for the bundle
+                    final JsonObjectBuilder newMetadataBuilder = Json.createObjectBuilder();
+                    for(final String key : metadata.keySet()) {
+                        if ( !key.equals(userBundle.getId().toMvnId()) ) {
+                            newMetadataBuilder.add(key, metadata.getJsonObject(key));
+                        }
+                    }
+
+                    // replace JSON in extension
+                    me.setJSONStructure(newMetadataBuilder.build());
+                }
+            }
+        }
     }
 }
