@@ -168,7 +168,7 @@ governing permissions and limitations under the License.
         </plugin>
         <plugin>
           <artifactId>maven-release-plugin</artifactId>
-          <version>3.0.0-M7</version>
+          <version>3.1.1</version>
           <configuration>
             <goals>deploy</goals>
             <localCheckout>true</localCheckout>
