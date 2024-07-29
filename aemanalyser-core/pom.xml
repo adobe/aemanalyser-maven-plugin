@@ -81,6 +81,13 @@ governing permissions and limitations under the License.
         <version>1.2.8</version>
     </dependency>
 
+    <!-- Class Scanning Analysers -->
+    <dependency>
+        <groupId>org.javassist</groupId>
+        <artifactId>javassist</artifactId>
+        <version>3.30.2-GA</version>
+    </dependency>
+
     <!-- Test -->
     <dependency>
       <groupId>junit</groupId>

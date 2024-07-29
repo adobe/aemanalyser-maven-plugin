@@ -74,7 +74,8 @@ public class AemAnalyser {
 	    + ",artifact-rules"
         + ",aem-env-var"
         + ",repoinit"
-        + ",content-packages-validation";
+        + ",content-packages-validation"
+        + ",aem-provider-type";
 
     private static final String CONTENT_PACKAGE_ORIGINS = "content-package-origins";
     private static final String CONFIGURATION_ORIGINS = Configuration.CONFIGURATOR_PREFIX.concat(CONTENT_PACKAGE_ORIGINS);

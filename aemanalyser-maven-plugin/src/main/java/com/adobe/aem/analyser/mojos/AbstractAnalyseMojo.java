@@ -21,6 +21,7 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.sling.feature.ArtifactId;
 
+import com.adobe.aem.analyser.impl.ProviderTypeAnalyserTask;
 import com.adobe.aem.analyser.result.AemAnalyserAnnotation;
 import com.adobe.aem.analyser.result.AemAnalyserResult;
 
@@ -118,6 +119,11 @@ public abstract class AbstractAnalyseMojo extends AbstractAemMojo {
 
         final ArtifactId sdkId = versionUtil.getSDKArtifactId(this.sdkArtifactId, this.sdkVersion, this.useDependencyVersions);
         final List<ArtifactId> addons = versionUtil.discoverAddons(this.addons, this.useDependencyVersions);
+
+        // initialize the provider types analyser
+        if ( !ProviderTypeAnalyserTask.initializeProviderTypeInfo(sdkId, this.getOrResolveArtifact(sdkId).getFile()) ) {
+            throw new MojoFailureException("Provider types not found in " + sdkId.toMvnId() + ". Please update to a more recent version of the API.");
+        }
 
         final AemAnalyserResult result = this.doExecute(sdkId, addons);
 
