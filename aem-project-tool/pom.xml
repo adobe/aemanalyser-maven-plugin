@@ -97,7 +97,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.osgi</groupId>
       <artifactId>org.osgi.resource</artifactId>
-      <version>1.0.0</version>
+      <version>1.0.1</version>
     </dependency>
 
     <!-- Feature Model Analyser -->
