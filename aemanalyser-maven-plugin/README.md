@@ -221,9 +221,9 @@ Please note that if you remove tasks which are run by default, the plugin might 
 Some analyser tasks require configuration. Default configuration is used by the plugin for the default set of analysers. Additional or different configuration can be provided like this:
 
     <analyserTaskConfigurations>
-        <api-regions-check-order>
-            <order>global,myregion</order>
-        </api-regions-check-order>
+        <aem-provider-type>
+            <strict>true</strict>
+        </aem-provider-type>
     </analyserTaskConfigurations>
 
 Please note, that overriding the default configuration for the analysers might hide errors locally that will be catched in the Cloud Manager pipeline.

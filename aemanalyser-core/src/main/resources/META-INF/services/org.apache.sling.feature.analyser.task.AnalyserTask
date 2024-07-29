@@ -1,1 +1,2 @@
 com.adobe.aem.analyser.impl.EnvVarAnalyserTask
+com.adobe.aem.analyser.impl.ProviderTypeAnalyserTask
