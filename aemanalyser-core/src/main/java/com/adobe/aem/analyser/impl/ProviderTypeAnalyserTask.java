@@ -114,13 +114,12 @@ public class ProviderTypeAnalyserTask implements AnalyserTask {
                     if (cp != null) {
                         for(final String path : cp.split(",")) {
                             if (path.trim().equals(entry.getName())) {
-                                try (final JarInputStream ejis = new JarInputStream(jis)) {
-                                    JarEntry inner = null;
-                                    while ( (inner = ejis.getNextJarEntry()) != null ) {
-                                        if (inner.getName().endsWith(".class") && !inner.getName().startsWith("META-INF/")) {
-                                            final String className = inner.getName().substring(0, inner.getName().length() - 6).replace('/', '.');
-                                            this.checkClass(context, bundle, className, ejis, strict);
-                                        }
+                                final JarInputStream ejis = new JarInputStream(jis); // don't close this stream
+                                JarEntry inner = null;
+                                while ( (inner = ejis.getNextJarEntry()) != null ) {
+                                    if (inner.getName().endsWith(".class") && !inner.getName().startsWith("META-INF/")) {
+                                        final String className = inner.getName().substring(0, inner.getName().length() - 6).replace('/', '.');
+                                        this.checkClass(context, bundle, className, ejis, strict);
                                     }
                                 }
                                 break;
@@ -141,7 +140,7 @@ public class ProviderTypeAnalyserTask implements AnalyserTask {
             this.reportProviderTypeUsage(context, bundle, className, known, strict);
             return;
         }
-        final CtClass cc = ClassPool.getDefault().makeClass(clazzStream);
+        final CtClass cc = ClassPool.getDefault().makeClass(clazzStream); // don't close this stream
         cc.setName(className);
 
         final ClassFile cfile = cc.getClassFile();
