@@ -70,6 +70,14 @@ public abstract class AbstractAnalyseMojo extends AbstractAemMojo {
     private boolean failOnAnalyserErrors;
 
     /**
+     * If enabled, warnings for maven plugin version or SDK API version are turned
+     * into errors and fail the build.
+     * @since 1.6.2
+     */
+    @Parameter(defaultValue = "false", property = "aem.analyser.strict.version")
+    protected boolean strictVersionValidation;
+
+    /**
      * The artifact manager to resolve artifacts
      */
     @Component
@@ -127,15 +135,17 @@ public abstract class AbstractAnalyseMojo extends AbstractAemMojo {
 
         final AemAnalyserResult result = this.doExecute(sdkId, addons);
 
+        // Fail build with errors, or depending on configuration with warnings
+        final boolean hasErrors = result.hasErrors()
+            || (strictValidation && result.hasWarnings())
+            || (strictVersionValidation && !versionUtil.getVersionWarnings().isEmpty());
+
         // add version util warnings
         for(final String warn : versionUtil.getVersionWarnings()) {
             result.getWarnings().add(new AemAnalyserAnnotation(warn));
         }
 
         this.printResult(result);
-
-        // finally, analyser errors
-        final boolean hasErrors = result.hasErrors() || (strictValidation && result.hasWarnings());
 
         if (hasErrors) {
             if ( failOnAnalyserErrors ) {
