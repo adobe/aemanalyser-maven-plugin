@@ -45,19 +45,6 @@ governing permissions and limitations under the License.
   <build>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.plexus</groupId>
-        <artifactId>plexus-component-metadata</artifactId>
-        <version>2.2.0</version>
-        <executions>
-          <execution>
-            <id>generate-metadata</id>
-            <goals>
-              <goal>generate-metadata</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-plugin-plugin</artifactId>
         <executions>

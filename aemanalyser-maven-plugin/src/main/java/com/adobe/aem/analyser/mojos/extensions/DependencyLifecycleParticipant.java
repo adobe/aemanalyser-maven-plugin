@@ -9,7 +9,7 @@
   OF ANY KIND, either express or implied. See the License for the specific language
   governing permissions and limitations under the License.
 */
-package com.adobe.aem.analyser.mojos;
+package com.adobe.aem.analyser.mojos.extensions;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -40,6 +40,7 @@ import org.apache.sling.feature.ArtifactId;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
+import com.adobe.aem.analyser.mojos.Constants;
 import com.adobe.aem.project.model.Application;
 import com.adobe.aem.project.model.ArtifactsFile;
 import com.adobe.aem.project.model.Module;
