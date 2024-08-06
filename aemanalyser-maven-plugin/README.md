@@ -108,7 +108,7 @@ With that, your project `pom.xml` needs to look somewhat like this:
 
 ### Example for a Multi Project Setup
 
-If your AEM project creates multiple container content packages, for example if you have a multi project setup, then instead of running the analyser on every project, it is better to run it once on all packages. This is especially important if there are dependencie between the projects.
+If your AEM project creates multiple container content packages, for example if you have a multi project setup, then instead of running the analyser on every project, it is better to run it once on all packages. This is especially important if there are dependencies between the projects.
 
 All that is needed is a new `pom.xml` in a subfolder, for example named `analyse`, looking like this:
 
@@ -159,6 +159,44 @@ And then you need to add this module to the parent project by adding this line t
     <module>analyse</module>   <!-- This is the name of the subfolder -->
 
 Make sure to add it as the last module.
+
+Alternatively you may run analysis on each container individually giving its dependencies via parameter 
+`additionalContentPackageArtifacts` like this:
+
+    <project>
+        <modelVersion>4.0.0</modelVersion>
+        <parent>
+            <groupId>!!insert.parent.groupId!!</groupId>
+            <artifactId>!!insert.parent.artifactId!!</artifactId>
+            <version>!!insert.parent.version!!</version>
+            <relativePath>../pom.xml</relativePath>
+        </parent>
+        <artifactId>!!insert.artifactId!!</artifactId>
+        <packaging>content-package</packaging>
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>com.adobe.aem</groupId>
+                    <artifactId>aemanalyser-maven-plugin</artifactId>
+                    <version>1.1.12</version> <!-- Make sure to use the latest release -->
+                    <extensions>true</extensions>
+                    <executions>
+                        <execution>
+                            <id>aem-analyser</id>
+                            <goals>
+                                <goal>project-analyse</goal>
+                            </goals>
+                            <configuration>
+                                <!-- container packages this package depends on -->
+                                <additionalContentPackageArtifacts>
+                                    <additionalContentPackageArtifact>!!insert.dependency-package-maven-coordinates!!<additionalContentPackageArtifact>
+                                </additionalContentPackageArtifacts>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </build>
 
 ## AEM as a Cloud Service
 

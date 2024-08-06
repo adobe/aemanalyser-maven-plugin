@@ -93,11 +93,21 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
 
     /**
      * Analyzes the given list of content package files.
-     * If this is configured, only these files are validated, and not the main project artifact or dependencies.
+     * If this is configured, only these files are validated (and potentially {@link #additionalContentPackageArtifacts}), 
+     * but not the main project artifact or dependencies.
      * The files must be located inside the Maven project directory (e.g. src or target folder). 
      */
     @Parameter
     private List<File> contentPackageFiles;
+
+    /**
+     * Additional content package artifacts to be considered in the analysis given as list of Maven coordinates/ids in format
+     * {@code groupId:artifactId[:packaging[:classifier]]:version}). The given packaging is ignored as ZIP is always assumed.
+     * This is useful for container packages which depend on other container packages deployed together in Cloud Manager
+     * (e.g. composed via git submodules) as otherwise analysis may fail.
+     */
+    @Parameter
+    private List<String> additionalContentPackageArtifacts;
 
     /**
      * Get the output directory for the content package converter
@@ -155,6 +165,9 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
         final Map<String, File> packages = new LinkedHashMap<>();
         for(final Artifact contentPackage: getContentPackages()) {
             final File source = contentPackage.getFile();
+            if (source == null) {
+                throw new MojoExecutionException("Content package " + contentPackage + " has no file attached");
+            }
             packages.put(contentPackage.getId().toString(), source);
         }
         try {
@@ -173,19 +186,20 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
      * @throws MojoExecutionException If anything goes wrong, for example no content packages are found
      */
     private List<Artifact> getContentPackages() throws MojoExecutionException {
+        final List<Artifact> result = new ArrayList<>();
         if (!Constants.PACKAGING_AEM_ANALYSE.equals(project.getPackaging())) {
             if (contentPackageFiles != null && !contentPackageFiles.isEmpty()) {
+                getLog().info("Using content packages from contentPackageFiles");
                 validateContentPackageFiles(contentPackageFiles);
-                return contentPackageFiles.stream()
+                contentPackageFiles.stream()
                         .map(this::contentPackageFileToArtifact)
-                        .collect(Collectors.toList());
-                        
+                        .forEach(result::add);
             } else if (classifier != null) {
                 // look for attached artifact with given classifier
                 for (Artifact artifact : project.getAttachedArtifacts()) {
                     if (classifier.equals(artifact.getClassifier())) {
                         getLog().info("Using attached artifact with classifier '" + classifier + "' as content package: " + project.getArtifact());
-                        return Collections.singletonList(artifact);
+                        result.add(artifact);
                     }
                 }
                 throw new MojoExecutionException("No attached artifact with classifier " + classifier + " found for project.");
@@ -208,11 +222,10 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
                     targetArtifact.setFile(target);
                     return Collections.singletonList(targetArtifact);
                 }
-                return Collections.singletonList(project.getArtifact());
+                result.add(project.getArtifact());
             }
         } else {
-            final List<Artifact> result = new ArrayList<>();
-            for( final Dependency d : project.getDependencies()) {
+            for (final Dependency d : project.getDependencies()) {
                 if (Constants.PACKAGING_ZIP.equals(d.getType()) || Constants.PACKAGING_CONTENT_PACKAGE.equals(d.getType())) {
                     // If a dependency is of type 'zip' it is assumed to be a content package
                     final Artifact artifact = getOrResolveArtifact(new ArtifactId(d.getGroupId(), d.getArtifactId(), d.getVersion(), d.getClassifier(), d.getType()));
@@ -222,9 +235,19 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
             if (result.isEmpty()) {
                 throw new MojoExecutionException("No content packages found for project.");
             }
-            getLog().info("Found content packages from dependencies: " + result);
-            return result;
+            getLog().info("Using content packages from dependencies: " + result);
         }
+        if (additionalContentPackageArtifacts != null) {
+            additionalContentPackageArtifacts.stream()
+                .map(ArtifactId::fromMvnId)
+                .map(a -> new ArtifactId(a.getGroupId(), a.getArtifactId(), a.getVersion(), a.getClassifier(), Constants.PACKAGING_ZIP))
+                .map(this::getOrResolveArtifact)
+                .forEach(a -> {
+                        getLog().info("Considering additional content package: " + a);
+                        result.add(a); 
+                    });
+        }
+        return result;
     }
 
     /**
