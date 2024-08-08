@@ -195,17 +195,16 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
                 getLog().info("Using current project as content package: " + project.getArtifact());
                 if (project.getArtifact().getFile() == null) {
                     // in case of a standalone usage of the plugin, the project artifact file might not be set
-                    final ArtifactId targetId = new ArtifactId(project.getGroupId(), project.getArtifactId(), project.getVersion(), null, project.getArtifact().getArtifactHandler().getExtension());
-                    final File target = new File(project.getBuild().getDirectory(), targetId.toMvnName());
+                    final File target = new File(project.getBuild().getDirectory(), project.getBuild().getFinalName() + "." + project.getArtifact().getArtifactHandler().getExtension());
                     if ( !target.exists() ) {
                         throw new MojoExecutionException("Project artifact file not found. Build the project first. Looking for: " + target.getName());
                     }
-                    final DefaultArtifact targetArtifact = new DefaultArtifact(targetId.getGroupId(),
-                        targetId.getArtifactId(), 
-                        targetId.getVersion(), 
+                    final DefaultArtifact targetArtifact = new DefaultArtifact(project.getGroupId(),
+                        project.getArtifactId(), 
+                        project.getVersion(), 
                         null, 
-                        targetId.getType(), 
-                        targetId.getClassifier(),
+                        project.getPackaging(),
+                        null,
                         project.getArtifact().getArtifactHandler());
                     targetArtifact.setFile(target);
                     return Collections.singletonList(targetArtifact);
