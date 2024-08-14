@@ -138,7 +138,7 @@ public class AemPackageConverter {
         if (contentPackages.size() > 1 && artifactIdOverride != null) {
             throw new IllegalArgumentException("'artifactIdOverride' is not supported when multiple packages are provided!");
         }
-        final AclManager aclManager = new DefaultAclManager(null, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT);
+        final AclManager aclManager = new DefaultAclManager(null, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT, false);
         final DefaultFeaturesManager featuresManager = new DefaultFeaturesManager(
             false,
             20,

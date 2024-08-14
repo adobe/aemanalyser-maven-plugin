@@ -2,11 +2,11 @@
 
 A Maven plugin used by developers of applications for AEM as a Cloud Service (AEMaaCS).
 
-The plugin provides an easy way to run the same checks locally as in the Cloud Manager pipeline and ensures that the application works correctly when deployed in the cloud.
+This plugin provides an easy way to run code quality checks. It ensures that the application works correctly when deployed to the cloud. It allows to run the same checks locally as in the Cloud Manager pipeline.
 
-This plugin requires at least Apache Maven 3.8.1 and Java version 11 or higher. Read [this section](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/using-cloud-manager/create-application-project/build-environment-details#using-java-support) on how to change Cloud Manager'S build pipeline to use Java 11.
+This plugin requires at least Apache Maven 3.8.1 and Java version 11 or higher. Read [this section](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/using-cloud-manager/create-application-project/build-environment-details#using-java-support) on how to change Cloud Manager's build pipeline to use Java 11.
 
-> **_NOTE:_**  Please make sure to always use the latest version. Refrain from using any version below 1.1.10
+> **_NOTE:_**  Please make sure to always use the latest version. Refrain from using any version below 1.6.4.
 
 ## Functionality
 
@@ -30,7 +30,7 @@ Example:
     <plugin>
         <groupId>com.adobe.aem</groupId>
         <artifactId>aemanalyser-maven-plugin</artifactId>
-        <version>1.1.12</version> <!-- Make sure to use the latest release -->
+        <version>1.6.4</version> <!-- Make sure to use the latest release -->
         <extensions>true</extensions>
     </plugin>
 
@@ -48,7 +48,7 @@ Enable the plugin by listing it in the `build->plugins` section of the module.
             <plugin>
                 <groupId>com.adobe.aem</groupId>
                 <artifactId>aemanalyser-maven-plugin</artifactId>
-                <version>1.1.12</version> <!-- Make sure to use the latest release -->
+                <version>1.6.4</version> <!-- Make sure to use the latest release -->
                 <extensions>true</extensions>
                 <executions>
                     <execution>
@@ -90,7 +90,7 @@ With that, your project `pom.xml` needs to look somewhat like this:
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>1.1.12</version> <!-- Make sure to use the latest release -->
+                    <version>1.6.4</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
@@ -127,7 +127,7 @@ All that is needed is a new `pom.xml` in a subfolder, for example named `analyse
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>1.1.12</version> <!-- Make sure to use the latest release -->
+                    <version>1.6.4</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
@@ -228,6 +228,16 @@ Some analyser tasks require configuration. Default configuration is used by the 
     </analyserTaskConfigurations>
 
 Please note, that overriding the default configuration for the analysers might hide errors locally that will be catched in the Cloud Manager pipeline.
+
+### Strict Checking per Analyser Tasks
+
+The plugin provides a global configuration to enabled `strict` checking. With that all warnings are changed into errors, failing the build. A more fine grained configuration can alternatively be done on a per analyser task level. Ever analyser task supports a strict configuration. For example to turn on the strict mode for just the `aem-provider-type` analyser task you can configure it like this:
+
+    <analyserTaskConfigurations>
+        <aem-provider-type>
+            <strict>true</strict>
+        </aem-provider-type>
+    </analyserTaskConfigurations>
 
 ## Deprecated Maven Goals
 
