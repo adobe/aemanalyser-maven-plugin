@@ -135,6 +135,9 @@ public class AemPackageConverter {
     public void convert(final Map<String, File> contentPackages) throws IOException, ConverterException {
         final Map<String, String> properties = new HashMap<>();
 
+        if (contentPackages.size() > 1 && artifactIdOverride != null) {
+            throw new IllegalArgumentException("'artifactIdOverride' is not supported when multiple packages are provided!");
+        }
         final AclManager aclManager = new DefaultAclManager(null, ConverterConstants.SYSTEM_USER_REL_PATH_DEFAULT);
         final DefaultFeaturesManager featuresManager = new DefaultFeaturesManager(
             false,

@@ -149,7 +149,6 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
      */
     void convertContentPackages(final List<String> additionalWarnings, final List<String> additionalErrors) throws MojoExecutionException {
         final AemPackageConverter converter = new AemPackageConverter();
-        converter.setArtifactIdOverride(new ArtifactId(project.getGroupId(), project.getArtifactId(), project.getVersion(), null, "slingosgifeature").toMvnId());
         converter.setConverterOutputDirectory(getConversionOutputDir());
         converter.setFeatureOutputDirectory(getGeneratedFeaturesDir());
     
