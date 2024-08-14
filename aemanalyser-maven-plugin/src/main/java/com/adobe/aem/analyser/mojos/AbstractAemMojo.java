@@ -21,6 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.handler.ArtifactHandler;
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -53,6 +55,12 @@ public abstract class AbstractAemMojo extends AbstractMojo {
 
     @Component
     protected RepositorySystem repoSystem;
+
+    /**
+     * The artifact manager to resolve artifacts
+     */
+    @Component
+    protected ArtifactHandlerManager artifactHandlerManager;
 
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true, required = true)
     protected RepositorySystemSession repoSession;
@@ -107,7 +115,8 @@ public abstract class AbstractAemMojo extends AbstractMojo {
             if ( result == null ) {
                 result = findArtifact(id, project.getArtifacts());
                 if ( result == null ) {
-                    ArtifactRequest req = new ArtifactRequest(new org.eclipse.aether.artifact.DefaultArtifact(id.toMvnId()), project.getRemoteProjectRepositories(), null);
+                    // map Maven type to simple extension
+                    ArtifactRequest req = new ArtifactRequest(new org.eclipse.aether.artifact.DefaultArtifact(resolveTypeInArtifactId(id).toMvnId()), project.getRemoteProjectRepositories(), null);
                     try {
                         ArtifactResult resolutionResult = repoSystem.resolveArtifact(repoSession, req);
                         result = RepositoryUtils.toArtifact(resolutionResult.getArtifact());
@@ -121,7 +130,24 @@ public abstract class AbstractAemMojo extends AbstractMojo {
 
         return result;
     }
-    
+
+    /**
+     * Resolves the type of the given artifact to its extension. Noop in case there is no artifact handler for the given type.
+     * @param id
+     * @return the id with the resolved type
+     */
+    private ArtifactId resolveTypeInArtifactId(ArtifactId id) {
+        if (id.getType() == null) {
+            return id;
+        }
+        ArtifactHandler artifactHandler = artifactHandlerManager.getArtifactHandler(id.getType());
+        if (artifactHandler != null) {
+            return id.changeType(artifactHandler.getExtension());
+        } else {
+            return id;
+        }
+    }
+
     /**
      * Get a resolved feature
      *
