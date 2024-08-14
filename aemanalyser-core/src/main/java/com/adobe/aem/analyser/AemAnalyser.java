@@ -75,6 +75,7 @@ public class AemAnalyser {
         + ",aem-env-var"
         + ",repoinit"
         + ",content-packages-validation"
+        + ",configurations-basic"
         + ",aem-provider-type";
 
     private static final String CONTENT_PACKAGE_ORIGINS = "content-package-origins";
