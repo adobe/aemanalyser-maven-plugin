@@ -78,12 +78,6 @@ public abstract class AbstractAnalyseMojo extends AbstractAemMojo {
     protected boolean strictVersionValidation;
 
     /**
-     * The artifact manager to resolve artifacts
-     */
-    @Component
-    protected ArtifactHandlerManager artifactHandlerManager;
-
-    /**
      * The maven session
      */
     @Parameter(property = "session", readonly = true, required = true)

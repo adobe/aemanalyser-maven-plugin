@@ -102,7 +102,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
 
     /**
      * Additional content package artifacts to be considered in the analysis given as list of Maven coordinates/ids in format
-     * {@code groupId:artifactId[:packaging[:classifier]]:version}). The given packaging is ignored as ZIP is always assumed.
+     * {@code groupId:artifactId[:packaging[:classifier]]:version}).
      * This is useful for container packages which depend on other container packages deployed together in Cloud Manager
      * (e.g. composed via git submodules) as otherwise analysis may fail.
      */
@@ -240,7 +240,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
         if (additionalContentPackageArtifacts != null) {
             additionalContentPackageArtifacts.stream()
                 .map(ArtifactId::fromMvnId)
-                .map(a -> new ArtifactId(a.getGroupId(), a.getArtifactId(), a.getVersion(), a.getClassifier(), Constants.PACKAGING_ZIP))
+                .map(a -> new ArtifactId(a.getGroupId(), a.getArtifactId(), a.getVersion(), a.getClassifier(), a.getType()))
                 .map(this::getOrResolveArtifact)
                 .forEach(a -> {
                         getLog().info("Considering additional content package: " + a);
