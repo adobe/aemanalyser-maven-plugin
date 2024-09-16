@@ -16,7 +16,7 @@ governing permissions and limitations under the License.
 
   <groupId>com.adobe.aem</groupId>
   <artifactId>parent-oss</artifactId>
-  <version>8</version>
+  <version>9-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>AEM Parent Plugin Open Source</name>
@@ -42,7 +42,7 @@ governing permissions and limitations under the License.
     <connection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</developerConnection>
     <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/parent</url>
-    <tag>parent-oss-8</tag>
+    <tag>parent-oss-6</tag>
   </scm>
 
   <organization>
