@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -48,6 +49,7 @@ import org.apache.sling.feature.extension.apiregions.api.artifacts.VersionRule;
 import org.apache.sling.feature.extension.apiregions.api.config.ConfigurationApi;
 import org.apache.sling.feature.io.json.FeatureJSONReader;
 import org.apache.sling.feature.io.json.FeatureJSONWriter;
+import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,18 +92,6 @@ public class AemAggregator {
 
     private boolean enableDuplicateBundleHandling = false;
 
-    private boolean allowProductUpdates = false;
-
-    private boolean isUserFeatureAlsoPresentInProductFeature = false;
-
-
-    /**
-     * @return returns the value of isUserFeatureAlsoPresentInProductFeature
-     */
-    public boolean isUserFeatureAlsoPresentInProductFeature() {
-        return isUserFeatureAlsoPresentInProductFeature;
-    }
-
     /**
      * Is the special handling for duplicate bundles enabled?
      * @return {@code true} if enabled
@@ -116,22 +106,6 @@ public class AemAggregator {
      */
     public void setEnableDuplicateBundleHandling(boolean enableDuplicateBundleHandling) {
         this.enableDuplicateBundleHandling = enableDuplicateBundleHandling;
-    }
-
-    /**
-     * Is the special handling for product bundle updates enabled?
-     * @return {@code true} if enabled
-     */
-    public boolean isAllowProductUpdates() {
-        return allowProductUpdates;
-    }
-
-    /**
-     * Enable or disable the special handling for product bundle updates
-     * @param allowProductUpdates {@code true} to enable
-     */
-    public void setAllowProductUpdates( boolean allowProductUpdates) {
-        this.allowProductUpdates = allowProductUpdates;
     }
 
     /**
@@ -486,18 +460,15 @@ public class AemAggregator {
                 builderContext.addArtifactsOverride(ArtifactId.parse("*:*:HIGHEST"));
                 builderContext.addArtifactsOverride(ArtifactId.parse("*:*:*:*:HIGHEST"));
             } else if ( mode == Mode.FINAL) {
-                builderContext.addArtifactsOverride(ArtifactId.parse("com.adobe.cq:core.wcm.components.core:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("com.adobe.cq:core.wcm.components.extensions.amp:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("org.apache.sling:org.apache.sling.models.impl:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:core.wcm.components.content:zip:*:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:core.wcm.components.extensions.amp.content:zip:*:FIRST"));
+                List<ArtifactId> artifactIdOverrides = new LinkedList<>();
+                artifactIdOverrides.add(ArtifactId.parse("com.adobe.cq:core.wcm.components.core:FIRST"));
+                artifactIdOverrides.add(ArtifactId.parse("com.adobe.cq:core.wcm.components.extensions.amp:FIRST"));
+                artifactIdOverrides.add(ArtifactId.parse("org.apache.sling:org.apache.sling.models.impl:FIRST"));
+                artifactIdOverrides.add(ArtifactId.parse("*:core.wcm.components.content:zip:*:FIRST"));
+                artifactIdOverrides.add(ArtifactId.parse("*:core.wcm.components.extensions.amp.content:zip:*:FIRST"));
+                artifactIdOverrides.add(ArtifactId.parse("*:*:jar:*:ALL"));
+                addArtifactsOverrideForFinalAggregation( builderContext, artifactIdOverrides, aggregate) ;
 
-                // special handling for product bundle updates, if enabled.
-                if ( isProductBundleUpdate(aggregate )) {
-                    builderContext.addArtifactsOverride(ArtifactId.parse("*:*:HIGHEST"));
-                    builderContext.addArtifactsOverride(ArtifactId.parse("*:*:*:*:HIGHEST"));
-                }
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:*:jar:*:ALL"));
             }
             builderContext.addConfigsOverrides(Collections.singletonMap("*", "MERGE_LATEST"));
 
@@ -529,37 +500,10 @@ public class AemAggregator {
         return result;
     }
 
-    /**
-     * Check if a user bundle is present also in the product feature
-     * @param aggregate
-     * @return {@code true} if a bundle from the user feature is in the product feature
-     */
-    private boolean isProductBundleUpdate( final Map.Entry<String, List<Feature>> aggregate ) {
-        checkAndSetIfUserFeatureAlsoPresentInProductFeature(aggregate);
-        return this.isUserFeatureAlsoPresentInProductFeature() && isAllowProductUpdates() ? true : false;
-    }
-
-    /**
-     * Check if a bundle from the user feature is aslo present in the product feature
-     * @param aggregate
-     */
-    public void checkAndSetIfUserFeatureAlsoPresentInProductFeature ( final Map.Entry<String, List<Feature>> aggregate) {
-        final Feature productFeature = aggregate.getValue().get(0);
-        final Feature userFeature = aggregate.getValue().get(1);
-
-        // check if a bundle from the user feature is present in the product feature
-        for ( final Artifact userBundle : userFeature.getBundles() ) {
-
-            for ( final Artifact productBundle : productFeature.getBundles() ) {
-
-                if ( productBundle.getId().getGroupId().equals(userBundle.getId().getGroupId())
-                        && productBundle.getId().getArtifactId().equals( userBundle.getId().getArtifactId()) ) {
-
-                    logger.debug( "Found duplicate bundle {} in user and product feature.", userBundle.getId().toMvnId());
-                    isUserFeatureAlsoPresentInProductFeature =  true;
-                }
-            }
-        }
+    protected void addArtifactsOverrideForFinalAggregation( BuilderContext builderContext,
+                                                            List<ArtifactId> artifactIdOverrides,
+                                                            final Map.Entry<String, List<Feature>> aggregateFeatures ) {
+        artifactIdOverrides.forEach(builderContext::addArtifactsOverride);
     }
 
     /**
