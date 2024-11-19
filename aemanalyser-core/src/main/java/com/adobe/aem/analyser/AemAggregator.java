@@ -92,6 +92,16 @@ public class AemAggregator {
 
     private boolean allowProductUpdates = false;
 
+    private boolean isUserFeatureAlsoPresentInProductFeature = false;
+
+
+    /**
+     * @return returns the value of isUserFeatureAlsoPresentInProductFeature
+     */
+    public boolean isUserFeatureAlsoPresentInProductFeature() {
+        return isUserFeatureAlsoPresentInProductFeature;
+    }
+
     /**
      * Is the special handling for duplicate bundles enabled?
      * @return {@code true} if enabled
@@ -525,27 +535,31 @@ public class AemAggregator {
      * @return {@code true} if a bundle from the user feature is in the product feature
      */
     private boolean isProductBundleUpdate( final Map.Entry<String, List<Feature>> aggregate ) {
+        checkAndSetIfUserFeatureAlsoPresentInProductFeature(aggregate);
+        return this.isUserFeatureAlsoPresentInProductFeature() && isAllowProductUpdates() ? true : false;
+    }
 
-        if ( isAllowProductUpdates()) {
+    /**
+     * Check if a bundle from the user feature is aslo present in the product feature
+     * @param aggregate
+     */
+    public void checkAndSetIfUserFeatureAlsoPresentInProductFeature ( final Map.Entry<String, List<Feature>> aggregate) {
+        final Feature productFeature = aggregate.getValue().get(0);
+        final Feature userFeature = aggregate.getValue().get(1);
 
-            final Feature productFeature = aggregate.getValue().get(0);
-            final Feature userFeature = aggregate.getValue().get(1);
+        // check if a bundle from the user feature is present in the product feature
+        for ( final Artifact userBundle : userFeature.getBundles() ) {
 
-            // check if a bundle from the user feature is present in the product feature
-            for ( final Artifact userBundle : userFeature.getBundles() ) {
+            for ( final Artifact productBundle : productFeature.getBundles() ) {
 
-                for ( final Artifact productBundle : productFeature.getBundles() ) {
+                if ( productBundle.getId().getGroupId().equals(userBundle.getId().getGroupId())
+                        && productBundle.getId().getArtifactId().equals( userBundle.getId().getArtifactId()) ) {
 
-                    if ( productBundle.getId().getGroupId().equals(userBundle.getId().getGroupId())
-                            && productBundle.getId().getArtifactId().equals( userBundle.getId().getArtifactId()) ) {
-
-                            logger.debug( "Found duplicate bundle {} in user and product feature.", userBundle.getId().toMvnId());
-                            return true;
-                    }
+                    logger.debug( "Found duplicate bundle {} in user and product feature.", userBundle.getId().toMvnId());
+                    isUserFeatureAlsoPresentInProductFeature =  true;
                 }
             }
         }
-        return false ;
     }
 
     /**
