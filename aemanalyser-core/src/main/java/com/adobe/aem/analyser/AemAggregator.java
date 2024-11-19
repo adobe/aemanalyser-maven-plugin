@@ -90,6 +90,8 @@ public class AemAggregator {
 
     private boolean enableDuplicateBundleHandling = false;
 
+    private boolean allowProductUpdates = false;
+
     /**
      * Is the special handling for duplicate bundles enabled?
      * @return {@code true} if enabled
@@ -104,6 +106,22 @@ public class AemAggregator {
      */
     public void setEnableDuplicateBundleHandling(boolean enableDuplicateBundleHandling) {
         this.enableDuplicateBundleHandling = enableDuplicateBundleHandling;
+    }
+
+    /**
+     * Is the special handling for product bundle updates enabled?
+     * @return {@code true} if enabled
+     */
+    public boolean isAllowProductUpdates() {
+        return allowProductUpdates;
+    }
+
+    /**
+     * Enable or disable the special handling for product bundle updates
+     * @param allowProductUpdates {@code true} to enable
+     */
+    public void setAllowProductUpdates( boolean allowProductUpdates) {
+        this.allowProductUpdates = allowProductUpdates;
     }
 
     /**
@@ -463,8 +481,13 @@ public class AemAggregator {
                 builderContext.addArtifactsOverride(ArtifactId.parse("org.apache.sling:org.apache.sling.models.impl:FIRST"));
                 builderContext.addArtifactsOverride(ArtifactId.parse("*:core.wcm.components.content:zip:*:FIRST"));
                 builderContext.addArtifactsOverride(ArtifactId.parse("*:core.wcm.components.extensions.amp.content:zip:*:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:*:jar:*:ALL"));
 
+                // special handling for product bundle updates, if enabled.
+                if ( isProductBundleUpdate(aggregate )) {
+                    builderContext.addArtifactsOverride(ArtifactId.parse("*:*:HIGHEST"));
+                    builderContext.addArtifactsOverride(ArtifactId.parse("*:*:*:*:HIGHEST"));
+                }
+                builderContext.addArtifactsOverride(ArtifactId.parse("*:*:jar:*:ALL"));
             }
             builderContext.addConfigsOverrides(Collections.singletonMap("*", "MERGE_LATEST"));
 
@@ -494,6 +517,35 @@ public class AemAggregator {
         }
 
         return result;
+    }
+
+    /**
+     * Check if a user bundle is present also in the product feature
+     * @param aggregate
+     * @return {@code true} if a bundle from the user feature is in the product feature
+     */
+    private boolean isProductBundleUpdate( final Map.Entry<String, List<Feature>> aggregate ) {
+
+        if ( isAllowProductUpdates()) {
+
+            final Feature productFeature = aggregate.getValue().get(0);
+            final Feature userFeature = aggregate.getValue().get(1);
+
+            // check if a bundle from the user feature is present in the product feature
+            for ( final Artifact userBundle : userFeature.getBundles() ) {
+
+                for ( final Artifact productBundle : productFeature.getBundles() ) {
+
+                    if ( productBundle.getId().getGroupId().equals(userBundle.getId().getGroupId())
+                            && productBundle.getId().getArtifactId().equals( userBundle.getId().getArtifactId()) ) {
+
+                            logger.debug( "Found duplicate bundle {} in user and product feature.", userBundle.getId().toMvnId());
+                            return true;
+                    }
+                }
+            }
+        }
+        return false ;
     }
 
     /**
