@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -49,7 +48,6 @@ import org.apache.sling.feature.extension.apiregions.api.artifacts.VersionRule;
 import org.apache.sling.feature.extension.apiregions.api.config.ConfigurationApi;
 import org.apache.sling.feature.io.json.FeatureJSONReader;
 import org.apache.sling.feature.io.json.FeatureJSONWriter;
-import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -460,7 +458,7 @@ public class AemAggregator {
                 builderContext.addArtifactsOverride(ArtifactId.parse("*:*:HIGHEST"));
                 builderContext.addArtifactsOverride(ArtifactId.parse("*:*:*:*:HIGHEST"));
             } else if ( mode == Mode.FINAL) {
-                List<ArtifactId> artifactIdOverrides = new LinkedList<>();
+                List<ArtifactId> artifactIdOverrides = new ArrayList<>();
                 artifactIdOverrides.add(ArtifactId.parse("com.adobe.cq:core.wcm.components.core:FIRST"));
                 artifactIdOverrides.add(ArtifactId.parse("com.adobe.cq:core.wcm.components.extensions.amp:FIRST"));
                 artifactIdOverrides.add(ArtifactId.parse("org.apache.sling:org.apache.sling.models.impl:FIRST"));
