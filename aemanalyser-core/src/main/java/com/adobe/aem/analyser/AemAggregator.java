@@ -431,8 +431,7 @@ public class AemAggregator {
 
             logger.info("Building aggregate feature model {}...", aggregate.getKey());
 
-            final BuilderContext builderContext = new BuilderContext(new FeatureProvider(){
-
+            BuilderContext builderContext = new BuilderContext(new FeatureProvider(){
                 @Override
                 public Feature provide(final ArtifactId id) {
                     // check in selection
@@ -444,29 +443,8 @@ public class AemAggregator {
                     return getFeatureProvider().provide(id);
                 }
             });
-            builderContext.setArtifactProvider(getArtifactProvider());
 
-            builderContext.addMergeExtensions(StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-                    ServiceLoader.load(MergeHandler.class).iterator(), Spliterator.ORDERED),
-                    false).toArray(MergeHandler[]::new))
-                .addPostProcessExtensions(StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-                    ServiceLoader.load(PostProcessHandler.class).iterator(), Spliterator.ORDERED),
-                    false).toArray(PostProcessHandler[]::new));
-
-            // specific rules for the different aggregates
-            if ( mode == Mode.USER || mode == Mode.PRODUCT ) {
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:*:HIGHEST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:*:*:*:HIGHEST"));
-            } else if ( mode == Mode.FINAL) {
-                builderContext.addArtifactsOverride(ArtifactId.parse("com.adobe.cq:core.wcm.components.core:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("com.adobe.cq:core.wcm.components.extensions.amp:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("org.apache.sling:org.apache.sling.models.impl:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:core.wcm.components.content:zip:*:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:core.wcm.components.extensions.amp.content:zip:*:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:*:jar:*:ALL"));
-
-            }
-            builderContext.addConfigsOverrides(Collections.singletonMap("*", "MERGE_LATEST"));
+            builderContext = prepareBuilderContext(builderContext, mode);
 
             final ArtifactId newFeatureID = this.getProjectId().changeClassifier(aggregate.getKey()).changeType(FEATUREMODEL_TYPE);
 
@@ -494,6 +472,33 @@ public class AemAggregator {
         }
 
         return result;
+    }
+
+    protected BuilderContext prepareBuilderContext(BuilderContext builderContext, Mode mode) {
+        builderContext.setArtifactProvider(getArtifactProvider());
+
+        builderContext.addMergeExtensions(StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+                ServiceLoader.load(MergeHandler.class).iterator(), Spliterator.ORDERED),
+                false).toArray(MergeHandler[]::new))
+            .addPostProcessExtensions(StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+                ServiceLoader.load(PostProcessHandler.class).iterator(), Spliterator.ORDERED),
+                false).toArray(PostProcessHandler[]::new));
+
+        // specific rules for the different aggregates
+        if ( mode == Mode.USER || mode == Mode.PRODUCT ) {
+            builderContext.addArtifactsOverride(ArtifactId.parse("*:*:HIGHEST"));
+            builderContext.addArtifactsOverride(ArtifactId.parse("*:*:*:*:HIGHEST"));
+        } else if ( mode == Mode.FINAL) {
+            builderContext.addArtifactsOverride(ArtifactId.parse("com.adobe.cq:core.wcm.components.core:FIRST"));
+            builderContext.addArtifactsOverride(ArtifactId.parse("com.adobe.cq:core.wcm.components.extensions.amp:FIRST"));
+            builderContext.addArtifactsOverride(ArtifactId.parse("org.apache.sling:org.apache.sling.models.impl:FIRST"));
+            builderContext.addArtifactsOverride(ArtifactId.parse("*:core.wcm.components.content:zip:*:FIRST"));
+            builderContext.addArtifactsOverride(ArtifactId.parse("*:core.wcm.components.extensions.amp.content:zip:*:FIRST"));
+            builderContext.addArtifactsOverride(ArtifactId.parse("*:*:jar:*:ALL"));
+
+        }
+        builderContext.addConfigsOverrides(Collections.singletonMap("*", "MERGE_LATEST"));
+        return builderContext;
     }
 
     /**
