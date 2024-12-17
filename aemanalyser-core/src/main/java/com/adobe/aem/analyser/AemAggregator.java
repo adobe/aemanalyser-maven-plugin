@@ -454,18 +454,9 @@ public class AemAggregator {
                     false).toArray(PostProcessHandler[]::new));
 
             // specific rules for the different aggregates
-            if ( mode == Mode.USER || mode == Mode.PRODUCT ) {
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:*:HIGHEST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:*:*:*:HIGHEST"));
-            } else if ( mode == Mode.FINAL) {
-                builderContext.addArtifactsOverride(ArtifactId.parse("com.adobe.cq:core.wcm.components.core:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("com.adobe.cq:core.wcm.components.extensions.amp:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("org.apache.sling:org.apache.sling.models.impl:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:core.wcm.components.content:zip:*:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:core.wcm.components.extensions.amp.content:zip:*:FIRST"));
-                builderContext.addArtifactsOverride(ArtifactId.parse("*:*:jar:*:ALL"));
+            List<ArtifactId> artifactOverrides = getArtifactsOverrides(mode);
+            artifactOverrides.forEach(builderContext::addArtifactsOverride);
 
-            }
             builderContext.addConfigsOverrides(Collections.singletonMap("*", "MERGE_LATEST"));
 
             final ArtifactId newFeatureID = this.getProjectId().changeClassifier(aggregate.getKey()).changeType(FEATUREMODEL_TYPE);
@@ -494,6 +485,26 @@ public class AemAggregator {
         }
 
         return result;
+    }
+
+    protected List<ArtifactId> getArtifactsOverrides(Mode mode) {
+        switch (mode) {
+            case USER:
+            case PRODUCT:
+                return List.of(
+                        ArtifactId.parse("*:*:HIGHEST"),
+                        ArtifactId.parse("*:*:*:*:HIGHEST"));
+            case FINAL:
+                return List.of(
+                        ArtifactId.parse("com.adobe.cq:core.wcm.components.core:FIRST"),
+                        ArtifactId.parse("com.adobe.cq:core.wcm.components.extensions.amp:FIRST"),
+                        ArtifactId.parse("org.apache.sling:org.apache.sling.models.impl:FIRST"),
+                        ArtifactId.parse("*:core.wcm.components.content:zip:*:FIRST"),
+                        ArtifactId.parse("*:core.wcm.components.extensions.amp.content:zip:*:FIRST"),
+                        ArtifactId.parse("*:*:jar:*:ALL"));
+            default:
+                return Collections.emptyList();
+        }
     }
 
     /**
