@@ -247,10 +247,10 @@ Some analysers are only run on the provided content packages. These can be chang
 If you want to keep all tasks that are configured by default, but skip a single one you can use:
 
     <skipAnalyserTasks>
-        <taks>task-to-skip</task>
+        <task>task-to-skip</task>
     </skipAnalyserTasks>
     <skipAnalyserUserTasks>
-        <taks>user-task-to-skip</task>
+        <task>user-task-to-skip</task>
     </skipAnalyserUserTasks>
 
 Please note that if you remove tasks which are run by default, the plugin might not report any errors in your project, while the analysers that run as part of the Cloud Manager pipeline might report errors.
