@@ -281,9 +281,9 @@ The plugin provides a global configuration to enabled `strict` checking. With th
 
 When running the AEM Analyser Maven Plugin locally, it's important to note that the program add-ons are not included by default. This add-ons are automatically injected by Cloud Manager during pipeline execution, but when executing the analyser locally, you must manually include them to ensure the analysis runs successfully.
 
-If no <addons> are explicitly defined in your configuration, the following add-ons are included by default:
-    * com.adobe.aem:aem-forms-sdk-api
-    * com.adobe.cq:aem-cif-sdk-api
+If no add-ons are explicitly defined in your configuration, the following add-ons are included by default:
+* com.adobe.aem:aem-forms-sdk-api
+* com.adobe.cq:aem-cif-sdk-api
 
 To override the default behavior and include a custom set of add-ons in your local analyser configuration, you can explicitly define the desired add-ons like this:
 
