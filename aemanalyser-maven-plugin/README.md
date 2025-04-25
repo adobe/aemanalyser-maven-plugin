@@ -277,6 +277,30 @@ The plugin provides a global configuration to enabled `strict` checking. With th
         </aem-provider-type>
     </analyserTaskConfigurations>
 
+### Running AEM Analyser locally with additional Add-Ons
+
+When running the AEM Analyser Maven Plugin locally, it's important to note that the program add-ons are not included by default. This add-ons are automatically injected by Cloud Manager during pipeline execution, but when executing the analyser locally, you must manually include them to ensure the analysis runs successfully.
+
+If no add-ons are explicitly defined in your configuration, the following add-ons are included by default:
+* com.adobe.aem:aem-forms-sdk-api
+* com.adobe.cq:aem-cif-sdk-api
+
+To override the default behavior and include a custom set of add-ons in your local analyser configuration, you can explicitly define the desired add-ons like this:
+
+E.g Adding the AEM Guides Add-on 
+
+    <configuration>
+        <addons>
+            <addon>
+                <groupId>com.adobe.aem</groupId>
+                <artifactId>aem-dox-sdk-api</artifactId>
+                <classifier>aem-dox-sdk</classifier>
+            </addon>
+        </addons>
+    </configuration>
+
+This will ensure that the AEM Guides add-on is used during local analysis.
+    
 ## Deprecated Maven Goals
 
 Both, the `aggregate` as well as the `convert` Maven mojo have been deprecated. It is recommended to remove them from your project. Their implementation has been changed to do no work. All work has been moved into the remaining `analyse` mojo.
