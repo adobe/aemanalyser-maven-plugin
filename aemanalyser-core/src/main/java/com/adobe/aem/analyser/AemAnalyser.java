@@ -76,7 +76,8 @@ public class AemAnalyser {
         + ",repoinit"
         + ",content-packages-validation"
         + ",configurations-basic"
-        + ",aem-provider-type";
+        + ",aem-provider-type"
+        + ",cors-configuration-validator";
 
     private static final String CONTENT_PACKAGE_ORIGINS = "content-package-origins";
     private static final String CONFIGURATION_ORIGINS = Configuration.CONFIGURATOR_PREFIX.concat(CONTENT_PACKAGE_ORIGINS);
