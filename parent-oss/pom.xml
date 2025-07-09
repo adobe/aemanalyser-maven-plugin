@@ -16,7 +16,7 @@ governing permissions and limitations under the License.
 
   <groupId>com.sonatype.central.testing.adobe</groupId>
   <artifactId>parent-oss</artifactId>
-  <version>10</version>
+  <version>11-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>AEM Parent Plugin Open Source</name>
