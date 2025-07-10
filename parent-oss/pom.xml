@@ -95,6 +95,15 @@ governing permissions and limitations under the License.
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>org.sonatype.central</groupId>
+          <artifactId>central-publishing-maven-plugin</artifactId>
+          <version>0.8.0</version>
+          <extensions>true</extensions>
+          <configuration>
+            <publishingServerId>central</publishingServerId>
+          </configuration>
+        </plugin>
     </plugins>
 
     <pluginManagement>
@@ -153,18 +162,6 @@ governing permissions and limitations under the License.
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
           <version>3.6.0</version>
-        </plugin>
-        <plugin>
-          <groupId>org.sonatype.plugins</groupId>
-          <artifactId>nexus-staging-maven-plugin</artifactId>
-          <version>1.7.0</version>
-          <extensions>true</extensions>
-          <configuration>
-            <serverId>ossrh</serverId>
-            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-            <!-- Closing takes a long time and often times out, which causes the build to fail -->
-            <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
-          </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-release-plugin</artifactId>
@@ -251,16 +248,4 @@ governing permissions and limitations under the License.
       </build>
     </profile>
   </profiles>
-
-
-  <distributionManagement>
-    <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
-    <repository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
-  </distributionManagement>
 </project>
