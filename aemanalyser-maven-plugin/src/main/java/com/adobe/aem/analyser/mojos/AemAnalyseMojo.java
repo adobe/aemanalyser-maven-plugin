@@ -202,7 +202,9 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
                         result.add(artifact);
                     }
                 }
-                throw new MojoExecutionException("No attached artifact with classifier " + classifier + " found for project.");
+                if (result.isEmpty()) {
+                    throw new MojoExecutionException("No attached artifact with classifier " + classifier + " found for project.");
+                }
             } else {
                 // Use the current project artifact as the content package
                 getLog().info("Using current project as content package: " + project.getArtifact());
