@@ -24,7 +24,11 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.artifact.handler.ArtifactHandler;
+import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.model.Build;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.builder.ArtifactProvider;
@@ -129,6 +133,34 @@ public class AemAnalyseMojoTest {
 
         assertEquals(ImmutableSet.of("task1","task4"), mojo.getAnalyserTasks());
         assertEquals(ImmutableSet.of("utask2","utask3"), mojo.getAnalyserUserTasks());
+    }
+
+    @Test
+    public void testGetContentPackagesWithClassifier() throws MojoExecutionException {
+        MavenProject prj = Mockito.mock(MavenProject.class);
+        Artifact packageArtifact = new DefaultArtifact("group", "artifact", "1.0", null, Constants.PACKAGING_CONTENT_PACKAGE, "myclassifier", new ContentPackageArtifactHandler());
+        Artifact signatureForPackageArtifact = new DefaultArtifact("group", "artifact", "1.0", null, Constants.PACKAGING_ZIP, "myclassifier", new DefaultArtifactHandler("zip.asc"));
+        Mockito.when(prj.getAttachedArtifacts()).thenReturn(
+            List.of(
+                packageArtifact,
+                signatureForPackageArtifact
+            )
+        );
+        AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
+        mojo.classifier = "myclassifier";
+
+        assertEquals(List.of(packageArtifact), mojo.getContentPackages());
+    }
+
+    // copied from https://github.com/apache/jackrabbit-filevault-package-maven-plugin/blob/filevault-package-maven-plugin-1.4.0/src/main/java/org/apache/jackrabbit/filevault/maven/packaging/impl/extensions/ContentPackageArtifactHandler.java
+    private static final class ContentPackageArtifactHandler extends DefaultArtifactHandler {
+        public ContentPackageArtifactHandler() {
+            super(Constants.PACKAGING_CONTENT_PACKAGE);
+            setIncludesDependencies(true);
+            setExtension("zip");
+            setLanguage("java");
+            setAddedToClasspath(true);
+        }
     }
 
     private static class TestAnalyseMojo extends AemAnalyseMojo {
