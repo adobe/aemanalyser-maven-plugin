@@ -21,7 +21,7 @@ governing permissions and limitations under the License.
   </parent>
 
   <artifactId>aemanalyser-maven-plugin</artifactId>
-  <version>1.6.12</version>
+  <version>1.6.13-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
   <name>AEM Analyser Maven Plugin</name>
