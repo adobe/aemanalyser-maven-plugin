@@ -25,6 +25,9 @@ public abstract class Constants extends com.adobe.aem.analyser.Constants {
     /** Packaging for content packages */
     public static final String PACKAGING_CONTENT_PACKAGE = "content-package";
 
+    /** The extension for the content packages without the leading dot */
+    public static final String EXTENSION_CONTENT_PACKAGE = "zip";
+
     /** The directory for the content package converter */
     public static final String CONVERTER_DIRECTORY = "cp-conversion";
 

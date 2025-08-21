@@ -89,7 +89,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
      * Only analyze the package attached to the project with the given classifier.
      */
     @Parameter(property = "aem.analyser.classifier")
-    private String classifier;
+    String classifier;
 
     /**
      * Analyzes the given list of content package files.
@@ -98,7 +98,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
      * The files must be located inside the Maven project directory (e.g. src or target folder). 
      */
     @Parameter
-    private List<File> contentPackageFiles;
+    List<File> contentPackageFiles;
 
     /**
      * Additional content package artifacts to be considered in the analysis given as list of Maven coordinates/ids in format
@@ -185,7 +185,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
      * @return The list of artifacts (non empty)
      * @throws MojoExecutionException If anything goes wrong, for example no content packages are found
      */
-    private List<Artifact> getContentPackages() throws MojoExecutionException {
+    List<Artifact> getContentPackages() throws MojoExecutionException {
         final List<Artifact> result = new ArrayList<>();
         if (!Constants.PACKAGING_AEM_ANALYSE.equals(project.getPackaging())) {
             if (contentPackageFiles != null && !contentPackageFiles.isEmpty()) {
@@ -197,20 +197,21 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
             } else if (classifier != null) {
                 // look for attached artifact with given classifier
                 for (Artifact artifact : project.getAttachedArtifacts()) {
-                    if (classifier.equals(artifact.getClassifier())) {
+                    if (classifier.equals(artifact.getClassifier()) && Constants.EXTENSION_CONTENT_PACKAGE.equalsIgnoreCase(artifact.getArtifactHandler().getExtension())) {
                         getLog().info("Using attached artifact with classifier '" + classifier + "' as content package: " + project.getArtifact());
                         result.add(artifact);
+                        break; // only one attached artifact with matching classifier and extension is expected
                     }
                 }
                 if (result.isEmpty()) {
-                    throw new MojoExecutionException("No attached artifact with classifier " + classifier + " found for project.");
+                    throw new MojoExecutionException("No attached artifact with classifier \"" + classifier + "\" and extension \"" + Constants.EXTENSION_CONTENT_PACKAGE + "\" found for project.");
                 }
             } else {
                 // Use the current project artifact as the content package
                 getLog().info("Using current project as content package: " + project.getArtifact());
                 if (project.getArtifact().getFile() == null) {
                     // in case of a standalone usage of the plugin, the project artifact file might not be set
-                    final File target = new File(project.getBuild().getDirectory(), project.getBuild().getFinalName() + "." + project.getArtifact().getArtifactHandler().getExtension());
+                    final File target = new File(project.getBuild().getDirectory(), project.getBuild().getFinalName() + "." + Constants.EXTENSION_CONTENT_PACKAGE);
                     if ( !target.exists() ) {
                         throw new MojoExecutionException("Project artifact file not found. Build the project first. Looking for: " + target.getName());
                     }
