@@ -180,7 +180,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.jackrabbit.vault</groupId>
       <artifactId>org.apache.jackrabbit.vault</artifactId>
-      <version>3.6.8</version>
+      <version>3.8.4</version>
     </dependency>
     <dependency>
         <groupId>org.apache.jackrabbit.vault</groupId>
