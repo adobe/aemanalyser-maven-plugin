@@ -227,6 +227,11 @@ governing permissions and limitations under the License.
       <artifactId>org.apache.sling.feature.analyser</artifactId>
       <version>2.0.12</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.sling</groupId>
+      <artifactId>org.apache.sling.feature.extension.apiregions</artifactId>
+      <version>2.1.0</version>
+    </dependency>
 
     <!-- Content Package to Feature Model Converter-->
     <dependency>
