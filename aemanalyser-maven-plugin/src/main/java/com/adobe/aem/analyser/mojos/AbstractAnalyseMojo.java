@@ -12,12 +12,10 @@
 package com.adobe.aem.analyser.mojos;
 
 import java.util.List;
-import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.sling.feature.ArtifactId;
 
@@ -36,7 +34,7 @@ public abstract class AbstractAnalyseMojo extends AbstractAemMojo {
      */
     @Parameter(property = "sdkArtifactId")
     String sdkArtifactId;
-    
+
     /**
      * The version of the sdk api. Can be used to specify the exact version to be used. Otherwise the
      * plugin detects the version to use.
@@ -147,10 +145,10 @@ public abstract class AbstractAnalyseMojo extends AbstractAemMojo {
                     "One or more feature analyser(s) detected feature error(s), please read the plugin log for more details");
             }
             getLog().warn("Errors found during analyser run, but this plugin is configured to ignore errors and continue the build!");
-        }            
+        }
     }
 
-    protected abstract AemAnalyserResult doExecute(final ArtifactId sdkId, 
-        final List<ArtifactId> addons) 
+    protected abstract AemAnalyserResult doExecute(final ArtifactId sdkId,
+        final List<ArtifactId> addons)
         throws MojoExecutionException, MojoFailureException;
 }
