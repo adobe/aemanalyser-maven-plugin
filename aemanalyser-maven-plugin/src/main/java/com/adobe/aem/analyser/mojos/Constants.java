@@ -18,7 +18,7 @@ public abstract class Constants extends com.adobe.aem.analyser.Constants {
 
     /** Packaging of the analyse project */
     public static final String PACKAGING_AEM_ANALYSE = "aem-analyse";
-    
+
     /** Packaging zip (for content packages) */
     public static final String PACKAGING_ZIP = "zip";
 
@@ -33,7 +33,4 @@ public abstract class Constants extends com.adobe.aem.analyser.Constants {
 
     /** The directory for the feature model */
     public static final String FM_DIRECTORY = "fm.out";
-
-    /** The packaging of the application */
-    public static final String PACKAGING_AEMAPP = "aemapp";
 }
