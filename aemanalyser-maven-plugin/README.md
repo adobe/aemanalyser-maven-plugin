@@ -30,7 +30,7 @@ Example:
     <plugin>
         <groupId>com.adobe.aem</groupId>
         <artifactId>aemanalyser-maven-plugin</artifactId>
-        <version>1.6.16</version> <!-- Make sure to use the latest release -->
+        <version>1.6.18</version> <!-- Make sure to use the latest release -->
         <extensions>true</extensions>
     </plugin>
 
@@ -48,7 +48,7 @@ Enable the plugin by listing it in the `build->plugins` section of the module.
             <plugin>
                 <groupId>com.adobe.aem</groupId>
                 <artifactId>aemanalyser-maven-plugin</artifactId>
-                <version>1.6.16</version> <!-- Make sure to use the latest release -->
+                <version>1.6.18</version> <!-- Make sure to use the latest release -->
                 <extensions>true</extensions>
                 <executions>
                     <execution>
@@ -90,7 +90,7 @@ With that, your project `pom.xml` needs to look somewhat like this:
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>1.6.16</version> <!-- Make sure to use the latest release -->
+                    <version>1.6.18</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
@@ -127,7 +127,7 @@ All that is needed is a new `pom.xml` in a subfolder, for example named `analyse
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>1.6.16</version> <!-- Make sure to use the latest release -->
+                    <version>1.6.18</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
@@ -178,7 +178,7 @@ Alternatively you may run analysis on each container individually giving its dep
                 <plugin>
                     <groupId>com.adobe.aem</groupId>
                     <artifactId>aemanalyser-maven-plugin</artifactId>
-                    <version>1.6.16</version> <!-- Make sure to use the latest release -->
+                    <version>1.6.18</version> <!-- Make sure to use the latest release -->
                     <extensions>true</extensions>
                     <executions>
                         <execution>
