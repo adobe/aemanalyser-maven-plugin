@@ -230,7 +230,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>org.apache.sling.feature.extension.apiregions</artifactId>
-      <version>2.1.2</version>
+      <version>2.2.0</version>
     </dependency>
 
     <!-- Content Package to Feature Model Converter-->
