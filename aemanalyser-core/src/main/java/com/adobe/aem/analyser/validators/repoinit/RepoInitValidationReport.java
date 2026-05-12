@@ -48,13 +48,7 @@ public class RepoInitValidationReport {
 
                 logMessage.append("Found ")
                         .append(featureConflicts.size())
-                        .append(" sets of conflicting repoinit statements:\n");
-
-                for (CreatePath[] conflict : featureConflicts) {
-                    logMessage.append(conflict[0].asRepoInitString().stripTrailing()).append("\n");
-                    logMessage.append(conflict[1].asRepoInitString().stripTrailing()).append("\n");
-                    logMessage.append("\n");
-                }
+                        .append(" sets of conflicting repoinit statements\n");
             }
         }
 

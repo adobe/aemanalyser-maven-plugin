@@ -55,7 +55,6 @@ public class RepoInitValidatorTest {
         assertTrue(report.hasConflicts());
         assertTrue(result.contains("Incorrect repoinit for feature"));
         assertTrue(result.contains("Found 1 sets of conflicting repoinit statements"));
-        assertTrue(result.contains("/apps/a/b"));
     }
 
     @Test
