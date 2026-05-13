@@ -48,7 +48,7 @@ public class AemAnalyserAnnotation {
             return true;
         if (!(obj instanceof AemAnalyserAnnotation))
             return false;
-            AemAnalyserAnnotation other = (AemAnalyserAnnotation) obj;
+        AemAnalyserAnnotation other = (AemAnalyserAnnotation) obj;
         return Objects.equals(message, other.message);
     }
 }
