@@ -11,7 +11,6 @@
 */
 package com.adobe.aem.analyser.result;
 
-import java.io.File;
 import java.util.Objects;
 
 public class AemAnalyserAnnotation {
@@ -21,48 +20,10 @@ public class AemAnalyserAnnotation {
         warning
     };
 
-    private final File source;
-        
-    private final long lineNumber;
-
-    private final long columnNumber;
-
     private final String message;
 
     public AemAnalyserAnnotation(final String message) {
-        this(null, message);
-    }
-
-    public AemAnalyserAnnotation(final File source, final String message) {
-        this(source, message, -1, -1);
-    }
-
-    public AemAnalyserAnnotation(final File source, final String message, final long lnr, final long cnr) {
-        this.source = source;
         this.message = message;
-        this.lineNumber = lnr;
-        this.columnNumber = cnr;
-    }
-
-    /**
-     * @return the source
-     */
-    public File getSource() {
-        return source;
-    }
-
-    /**
-     * @return the lineNumber
-     */
-    public long getLineNumber() {
-        return lineNumber;
-    }
-
-    /**
-     * @return the columnNumber
-     */
-    public long getColumnNumber() {
-        return columnNumber;
     }
 
     /**
@@ -73,59 +34,12 @@ public class AemAnalyserAnnotation {
     }
 
     public String toString() {
-        if ( this.getSource() == null ) {
-            return this.getMessage();
-        }
-        String location = null;
-        if ( this.getLineNumber() != -1 ) {
-            if ( this.getColumnNumber() != -1 ) {
-                location = "[".concat(String.valueOf(this.getLineNumber())).concat(":").concat(String.valueOf(this.getColumnNumber())).concat("]");
-            } else {
-                location = "[".concat(String.valueOf(this.getLineNumber())).concat("]");
-            }
-        }
-        return this.getSource().getAbsolutePath().concat(location == null ? "" : location).concat(": ").concat(this.getMessage());
-    }
-
-    public String toString(final File rootDirectory) {
-        if ( this.getSource() == null ) {
-            return this.getMessage();
-        }
-        String location = "";
-        if ( this.getLineNumber() != -1 ) {
-            if ( this.getColumnNumber() != -1 ) {
-                location = " [".concat(String.valueOf(this.getLineNumber())).concat(":").concat(String.valueOf(this.getColumnNumber())).concat("]");
-            } else {
-                location = " [".concat(String.valueOf(this.getLineNumber())).concat("]");
-            }
-        }
-        final String file = this.getSource().getAbsolutePath().substring(rootDirectory.getAbsolutePath().length() + 1);
-        return file.concat(location).concat(": ").concat(this.getMessage());
-    }
-
-    public String toMessage(final Level level, final File rootDirectory) {
-        final String prefix = "::".concat(level.name()).concat(" ");
-        final String postfix = "::".concat(this.getMessage());
-        if ( this.getSource() == null ) {
-            return prefix.concat(postfix);
-        }
-        final String location;
-        if ( this.getLineNumber() != - 1) {
-            if ( this.getColumnNumber() != -1 ) {
-                location = ",line=".concat(String.valueOf(this.getLineNumber())).concat(",col=").concat(String.valueOf(this.getColumnNumber()));
-            } else {
-                location = ",line=".concat(String.valueOf(this.getLineNumber()));
-            }
-        } else {
-            location = "";
-        }
-        final String file = this.getSource().getAbsolutePath().substring(rootDirectory.getAbsolutePath().length() + 1);
-        return prefix.concat("file=").concat(file).concat(location).concat(postfix);
+        return this.getMessage();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(source, lineNumber, columnNumber, message);
+        return Objects.hash(message);
     }
 
     @Override
@@ -134,8 +48,7 @@ public class AemAnalyserAnnotation {
             return true;
         if (!(obj instanceof AemAnalyserAnnotation))
             return false;
-            AemAnalyserAnnotation other = (AemAnalyserAnnotation) obj;
-        return Objects.equals(source, other.source) && lineNumber == other.lineNumber
-                && columnNumber == other.columnNumber && Objects.equals(message, other.message);
+        AemAnalyserAnnotation other = (AemAnalyserAnnotation) obj;
+        return Objects.equals(message, other.message);
     }
 }

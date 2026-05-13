@@ -25,7 +25,6 @@ import java.util.List;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
-import org.apache.maven.artifact.handler.ArtifactHandler;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.model.Build;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -113,7 +112,7 @@ public class AemAnalyseMojoTest {
     public void testGetAnalyserTasks() {
         MavenProject prj = Mockito.mock(MavenProject.class);
         AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
-        
+
         mojo.analyserTasks = ImmutableList.of("task1","task2","task3","task4");
         mojo.analyserUserTasks = ImmutableList.of("utask1","utask2","utask3");
 
@@ -125,7 +124,7 @@ public class AemAnalyseMojoTest {
     public void testGetAnalyserTasksWithSkip() {
         MavenProject prj = Mockito.mock(MavenProject.class);
         AemAnalyseMojo mojo = new TestAnalyseMojo(prj);
-        
+
         mojo.analyserTasks = ImmutableList.of("task1","task2","task3","task4");
         mojo.skipAnalyserTasks = ImmutableList.of("task3","task2");
         mojo.analyserUserTasks = ImmutableList.of("utask1","utask2","utask3");

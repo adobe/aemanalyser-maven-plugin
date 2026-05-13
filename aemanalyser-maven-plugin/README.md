@@ -54,7 +54,7 @@ Enable the plugin by listing it in the `build->plugins` section of the module.
                     <execution>
                         <id>aem-analyser</id>
                         <goals>
-                            <goal>project-analyse</goal>                           
+                            <goal>project-analyse</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -62,7 +62,7 @@ Enable the plugin by listing it in the `build->plugins` section of the module.
         </plugins>
     </build>
 
-The analyser plugin will run the default set of analysers on the content packages configured while picking up the AEM SDK version from the `<parent>`. 
+The analyser plugin will run the default set of analysers on the content packages configured while picking up the AEM SDK version from the `<parent>`.
 
 ### Use Analyser in a Separate Maven Module
 
@@ -79,7 +79,7 @@ With that, your project `pom.xml` needs to look somewhat like this:
             <version>!!insert.parent.version!!</version>
             <relativePath>../pom.xml</relativePath>
         </parent>
-    
+
         <groupId>!!insert.groupId!!</groupId>
         <artifactId>!!insert.artifactId!!</artifactId>
         <version>!!insert.version!!</version>
@@ -160,7 +160,7 @@ And then you need to add this module to the parent project by adding this line t
 
 Make sure to add it as the last module.
 
-Alternatively you may run analysis on each container individually giving its dependencies via parameter 
+Alternatively you may run analysis on each container individually giving its dependencies via parameter
 `additionalContentPackageArtifacts` like this:
 
     <project>
@@ -282,12 +282,13 @@ The plugin provides a global configuration to enabled `strict` checking. With th
 When running the AEM Analyser Maven Plugin locally, it's important to note that the program add-ons are not included by default. This add-ons are automatically injected by Cloud Manager during pipeline execution, but when executing the analyser locally, you must manually include them to ensure the analysis runs successfully.
 
 If no add-ons are explicitly defined in your configuration, the following add-ons are included by default:
+
 * com.adobe.aem:aem-forms-sdk-api
 * com.adobe.cq:aem-cif-sdk-api
 
 To override the default behavior and include a custom set of add-ons in your local analyser configuration, you can explicitly define the desired add-ons like this:
 
-E.g Adding the AEM Guides Add-on 
+For example, adding the AEM Guides Add-on:
 
     <configuration>
         <addons>
@@ -300,7 +301,7 @@ E.g Adding the AEM Guides Add-on
     </configuration>
 
 This will ensure that the AEM Guides add-on is used during local analysis.
-    
+
 ## Deprecated Maven Goals
 
 Both, the `aggregate` as well as the `convert` Maven mojo have been deprecated. It is recommended to remove them from your project. Their implementation has been changed to do no work. All work has been moved into the remaining `analyse` mojo.
