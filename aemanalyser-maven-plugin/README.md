@@ -288,7 +288,7 @@ If no add-ons are explicitly defined in your configuration, the following add-on
 
 To override the default behavior and include a custom set of add-ons in your local analyser configuration, you can explicitly define the desired add-ons like this:
 
-E.g Adding the AEM Guides Add-on
+For example, adding the AEM Guides Add-on:
 
     <configuration>
         <addons>
