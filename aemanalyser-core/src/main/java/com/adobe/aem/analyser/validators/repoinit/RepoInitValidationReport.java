@@ -14,6 +14,7 @@ package com.adobe.aem.analyser.validators.repoinit;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.repoinit.parser.operations.CreatePath;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,26 +33,29 @@ public class RepoInitValidationReport {
         return !conflicts.isEmpty();
     }
 
-    public String generate() {
-        StringBuilder logMessage = new StringBuilder("Repoinit validation results:\n");
+    public List<String> generate() {
+        List<String> messages = new ArrayList<>();
+        messages.add("Repoinit validation results:");
 
         if (!hasConflicts()) {
-            logMessage.append("No issues found\n");
+            messages.add("No issues found");
         } else {
             for (Map.Entry<Feature, List<CreatePath[]>> entry : conflicts.entrySet()) {
                 Feature feature = entry.getKey();
                 List<CreatePath[]> featureConflicts = entry.getValue();
 
-                logMessage.append("Incorrect repoinit for feature ")
-                        .append(feature)
-                        .append("\n");
+                messages.add("Incorrect repoinit for feature " + feature);
+                messages.add("Found " + featureConflicts.size() + " sets of conflicting repoinit statements");
 
-                logMessage.append("Found ")
-                        .append(featureConflicts.size())
-                        .append(" sets of conflicting repoinit statements\n");
+                for (CreatePath[] conflict : featureConflicts) {
+                    messages.add("Conflicting statement :\n  "
+                            + conflict[0].asRepoInitString().stripTrailing()
+                            + "\n"
+                            + conflict[1].asRepoInitString().stripTrailing());
+                }
             }
         }
 
-        return logMessage.toString();
+        return messages;
     }
 }

@@ -5,6 +5,8 @@ import org.apache.sling.feature.ExtensionType;
 import org.apache.sling.feature.Feature;
 import org.junit.Test;
 
+import java.util.List;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -50,11 +52,12 @@ public class RepoInitValidatorTest {
         Feature feature = featureWithExtension(extension);
 
         RepoInitValidationReport report = RepoInitValidator.validateRepoinit(feature);
-        String result = report.generate();
-
         assertTrue(report.hasConflicts());
-        assertTrue(result.contains("Incorrect repoinit for feature"));
-        assertTrue(result.contains("Found 1 sets of conflicting repoinit statements"));
+
+        List<String> result = report.generate();
+        assertTrue(result.get(1).contains("Incorrect repoinit for feature"));
+        assertTrue(result.get(2).contains("Found 1 sets of conflicting repoinit statements"));
+        assertTrue(result.get(3).contains("/apps/a/b"));
     }
 
     @Test
@@ -69,10 +72,10 @@ public class RepoInitValidatorTest {
         Feature feature = featureWithExtension(extension);
 
         RepoInitValidationReport report = RepoInitValidator.validateRepoinit(feature);
-        String result = report.generate();
-
         assertTrue(report.hasConflicts());
-        assertTrue(result.contains("Found 2 sets of conflicting repoinit statements"));
+
+        List<String> result = report.generate();
+        assertTrue(result.get(2).contains("Found 2 sets of conflicting repoinit statements"));
     }
 
     @Test

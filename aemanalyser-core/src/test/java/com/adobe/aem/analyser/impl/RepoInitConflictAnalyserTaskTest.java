@@ -71,8 +71,8 @@ public class RepoInitConflictAnalyserTaskTest {
         task.execute(ctx);
 
         Mockito.verify(ctx).getFeature();
-        Mockito.verify(ctx, Mockito.times(1)).reportWarning(Mockito.contains("conflicting repoinit"));
-        Mockito.verifyNoMoreInteractions(ctx);
+        Mockito.verify(ctx).reportWarning(Mockito.contains("conflicting repoinit"));
+        Mockito.verify(ctx).reportWarning(Mockito.contains("Conflicting statement"));
     }
 
     @Test

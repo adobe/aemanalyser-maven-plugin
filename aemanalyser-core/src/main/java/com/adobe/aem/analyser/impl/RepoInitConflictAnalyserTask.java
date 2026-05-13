@@ -17,6 +17,8 @@ import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.analyser.task.AnalyserTask;
 import org.apache.sling.feature.analyser.task.AnalyserTaskContext;
 
+import java.util.List;
+
 /**
  * Analyser task that validates Repoinit definitions for conflicts within a feature.
  * <p>
@@ -55,6 +57,7 @@ public class RepoInitConflictAnalyserTask implements AnalyserTask {
             return;
         }
 
-        context.reportWarning(report.generate());
+        List<String> messages = report.generate();
+        messages.forEach(context::reportWarning);
     }
 }
