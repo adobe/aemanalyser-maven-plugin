@@ -44,6 +44,65 @@ governing permissions and limitations under the License.
 
   <build>
     <plugins>
+      <!-- validate that all necessary dependencies are part of the Maven plugin classpath -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.sling</groupId>
+            <artifactId>maven-enforcer-rules</artifactId>
+            <version>1.1.0</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>enforce-complete-plugin-classpath</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireProvidedDependenciesInRuntimeClasspath
+                  implementation="org.apache.sling.maven.enforcer.RequireProvidedDependenciesInRuntimeClasspath">
+                  <excludes>
+                    <exclude>javax.servlet:javax.servlet-api</exclude><!-- not used in the CLI context -->
+                    <exclude>*:txw2</exclude><!-- embedded in vault-core -->
+                    <exclude>*:woodstox-core</exclude><!-- embedded in vault-core -->
+                    <exclude>*:stax2-api</exclude><!-- embedded in vault-core -->
+                    <exclude>*:maven-artifact</exclude><!-- embedded in vault-core -->
+                    <exclude>*:h2</exclude><!-- embedded in vault-core -->
+                    <exclude>org.apache.jackrabbit:jackrabbit-spi2dav</exclude><!-- not used in this context -->
+                    <exclude>biz.aQute.bnd:biz.aQute.bndlib</exclude><!-- unused transitive dependency of feature.launcher -->
+                    <exclude>org.apache.sling:org.apache.sling.feature.launcher</exclude><!-- unused transitive dependency of feature.extension.apiregions -->
+                    <exclude>org.slf4j:slf4j-api</exclude> <!-- always provided by Maven distribution -->
+                    <exclude>org.slf4j:slf4j-simple</exclude>
+                    <exclude>org.osgi:org.osgi.core</exclude><!-- relevant individual chapter dependencies provided -->
+                    <exclude>org.osgi:osgi.core</exclude>
+                    <exclude>org.osgi:osgi.cmpn</exclude>
+                    <exclude>org.apache.felix:org.apache.felix.converter</exclude><!-- relocated to org.osgi.util.converter -->
+                    <exclude>org.apache.geronimo.specs:geronimo-json_1.0_spec</exclude><!-- relocated in newer versions to geronimo-json_1.1_spec -->
+                    <exclude>org.mockito:mockito-core</exclude><!-- incorrect scope in commons.osgi -->
+                    <exclude>org.osgi:org.osgi.service.event</exclude><!-- transitive dependency of commons.osgi, not used -->
+                    <exclude>org.osgi:org.osgi.service.cm</exclude><!-- transitive dependency of org.apache.felix.configadmin.plugin.interpolation, not used -->
+                    <exclude>org.osgi:org.osgi.service.configurator</exclude><!-- transitive dependency of org.apache.felix.cm.json, not used -->
+                    <exclude>org.apache.sling:org.apache.sling.jcr.contentloader</exclude><!-- lots of transitive dependencies which are not relevant in this context -->
+                    <exclude>org.apache.felix:org.apache.felix.configadmin</exclude><!-- lots of transitive dependencies which are not relevant in this context -->
+                    <!-- no annotations are evaluated at run time -->
+                    <exclude>org.jetbrains:annotations</exclude>
+                    <exclude>org.eclipse.jdt:org.eclipse.jdt.annotation</exclude>
+                    <exclude>org.osgi:osgi.annotation</exclude>
+                    <exclude>org.osgi:org.osgi.annotation</exclude>
+                    <exclude>org.osgi:org.osgi.annotation.versioning</exclude>
+                    <exclude>org.osgi:org.osgi.service.metatype.annotations</exclude>
+                    <exclude>org.osgi:org.osgi.service.component.annotations</exclude>
+                  </excludes>
+                </requireProvidedDependenciesInRuntimeClasspath>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-plugin-plugin</artifactId>
@@ -206,6 +265,11 @@ governing permissions and limitations under the License.
       <groupId>commons-collections</groupId>
       <artifactId>commons-collections</artifactId>
       <version>3.2.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.6</version>
     </dependency>
     <dependency>
       <groupId>org.apache.jackrabbit</groupId>
