@@ -35,6 +35,8 @@ import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Extension;
 import org.apache.sling.feature.ExtensionType;
 import org.apache.sling.feature.Feature;
+import org.apache.sling.feature.analyser.task.impl.repoinitconflicts.RepoInitConflictsValidator;
+import org.apache.sling.feature.analyser.task.impl.repoinitconflicts.ValidationReport;
 import org.apache.sling.feature.builder.ArtifactProvider;
 import org.apache.sling.feature.builder.BuilderContext;
 import org.apache.sling.feature.builder.FeatureBuilder;
@@ -90,6 +92,8 @@ public class AemAggregator {
 
     private boolean enableDuplicateBundleHandling = false;
 
+    private boolean enableFixingIncorrectPathsInRepoinit = false;
+
     /**
      * Is the special handling for duplicate bundles enabled?
      * @return {@code true} if enabled
@@ -104,6 +108,14 @@ public class AemAggregator {
      */
     public void setEnableDuplicateBundleHandling(boolean enableDuplicateBundleHandling) {
         this.enableDuplicateBundleHandling = enableDuplicateBundleHandling;
+    }
+
+    public boolean isEnableFixingIncorrectPathsInRepoinit() {
+        return enableFixingIncorrectPathsInRepoinit;
+    }
+
+    public void setEnableFixingIncorrectPathsInRepoinit(boolean enableFixingIncorrectPathsInRepoinit) {
+        this.enableFixingIncorrectPathsInRepoinit = enableFixingIncorrectPathsInRepoinit;
     }
 
     /**
@@ -470,6 +482,13 @@ public class AemAggregator {
             }
 
             postProcessProductFeature(feature);
+
+            if (enableFixingIncorrectPathsInRepoinit) {
+                ValidationReport repoInitValidationReport = RepoInitConflictsValidator.validate(feature);
+                if (repoInitValidationReport.hasConflicts()) {
+                    RepoinitUtil.removeConflicts(feature.getExtensions().getByName("repoinit"));
+                }
+            }
 
             final File featureFile = new File(this.getFeatureOutputDirectory(), aggregate.getKey().concat(".json"));
             try ( final Writer writer = new FileWriter(featureFile)) {
