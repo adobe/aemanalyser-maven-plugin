@@ -21,6 +21,7 @@ import org.junit.Test;
 import javax.jcr.Repository;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -33,6 +34,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.jar.JarEntry;
@@ -87,34 +89,29 @@ public class RepoinitValidator {
     }
 
     private void registerNodeTypes(Session session) throws Exception {
-
-                
         Enumeration<URL> resources = getClass().getClassLoader().getResources("SLING-INF/nodetypes/");
         List<URL> cdnFiles = EnumerationUtils.toList(resources);
+        LinkedList<InputStream> nodeTypeInputStreams = new LinkedList<>();
+
         for (URL url : cdnFiles) {
-            
-            String foo = url.toURI().getSchemeSpecificPart();
-            URI fileURI = new URI(StringUtils.substringBefore(foo, "!/"));
+            String jarLocation = url.toURI().getSchemeSpecificPart();
+            URI fileURI = new URI(StringUtils.substringBefore(jarLocation, "!/"));
             Path jarFilePath = Path.of(fileURI);
             try (InputStream inputStream = Files.newInputStream(jarFilePath);
-                 JarInputStream jarInputStream = new JarInputStream(inputStream)
-            ) {
-                JarEntry nextJarEntry = null;
-                while (( nextJarEntry = jarInputStream.getNextJarEntry()) != null) {
-                    if(nextJarEntry.getName().startsWith("SLING-INF/nodetypes") &&
-                       nextJarEntry.getName().endsWith(".cnd")){
-                        
-                        registerNodeTypes(session, jarInputStream);
-                        
+                 JarInputStream jarInputStream = new JarInputStream(inputStream)) {
+                JarEntry nextJarEntry;
+                while ((nextJarEntry = jarInputStream.getNextJarEntry()) != null) {
+                    if (nextJarEntry.getName().startsWith("SLING-INF/nodetypes")
+                            && nextJarEntry.getName().endsWith(".cnd")) {
+                        nodeTypeInputStreams.add(new ByteArrayInputStream(jarInputStream.readAllBytes()));
                     }
                     jarInputStream.closeEntry();
                 }
-                
-                
-              
-            };
+            }
+        }
 
-                    
+        for (InputStream inputStream : nodeTypeInputStreams) {
+            registerNodeTypes(session, inputStream);
         }
     }
 
