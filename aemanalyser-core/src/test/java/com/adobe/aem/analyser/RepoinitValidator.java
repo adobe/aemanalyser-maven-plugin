@@ -34,6 +34,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -88,10 +89,24 @@ public class RepoinitValidator {
         }
     }
 
+    private static class NamedByteArrayInputStream extends ByteArrayInputStream {
+
+        public String getName() {
+            return name;
+        }
+
+        private final String name;
+
+        public NamedByteArrayInputStream(byte[] buf, String name) {
+            super(buf);
+            this.name = name;
+        }
+    }
+    
     private void registerNodeTypes(Session session) throws Exception {
         Enumeration<URL> resources = getClass().getClassLoader().getResources("SLING-INF/nodetypes/");
         List<URL> cdnFiles = EnumerationUtils.toList(resources);
-        LinkedList<InputStream> nodeTypeInputStreams = new LinkedList<>();
+        LinkedList<NamedByteArrayInputStream> nodeTypeInputStreams = new LinkedList<>();
 
         for (URL url : cdnFiles) {
             String jarLocation = url.toURI().getSchemeSpecificPart();
@@ -101,18 +116,39 @@ public class RepoinitValidator {
                  JarInputStream jarInputStream = new JarInputStream(inputStream)) {
                 JarEntry nextJarEntry;
                 while ((nextJarEntry = jarInputStream.getNextJarEntry()) != null) {
-                    if (nextJarEntry.getName().startsWith("SLING-INF/nodetypes")
-                            && nextJarEntry.getName().endsWith(".cnd")) {
-                        nodeTypeInputStreams.add(new ByteArrayInputStream(jarInputStream.readAllBytes()));
+                    String name = nextJarEntry.getName();
+                    if (name.startsWith("SLING-INF/nodetypes") && name.endsWith(".cnd")) {
+                        nodeTypeInputStreams.add(new NamedByteArrayInputStream(jarInputStream.readAllBytes(), name));
                     }
                     jarInputStream.closeEntry();
                 }
             }
         }
 
-        for (InputStream inputStream : nodeTypeInputStreams) {
-            registerNodeTypes(session, inputStream);
+        int maxSize = nodeTypeInputStreams.size() * 4;
+        int counter = 0;
+        
+        Map<String,Throwable> exceptions = new HashMap<>();
+        
+        while(counter < maxSize && !nodeTypeInputStreams.isEmpty()){
+            
+            counter++;
+            NamedByteArrayInputStream stream = nodeTypeInputStreams.pop();
+            try{
+                registerNodeTypes(session, stream);
+                exceptions.remove(stream.name);
+            }catch(Exception ex){
+                nodeTypeInputStreams.addLast(stream);
+                exceptions.put(stream.name, ex);
+            }
         }
+        
+        if(!nodeTypeInputStreams.isEmpty()){
+            IllegalStateException illegalStateException = new IllegalStateException("Exception installing nodetype definitions");
+            exceptions.forEach( (key, value) -> illegalStateException.addSuppressed(new Exception("Exception installing nodetype definition file " + key, value)));
+            throw illegalStateException;
+        }
+        
     }
 
     private void registerNodeTypes(Session session, InputStream nodetypesUrl) throws Exception {
