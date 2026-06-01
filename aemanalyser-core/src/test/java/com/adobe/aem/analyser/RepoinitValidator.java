@@ -48,12 +48,6 @@ public class RepoinitValidator {
 
     private static final String NODETYPES_RESOURCE = "/nodetypes";
 
-    /** Base Sling types that other CND files in nodetypes/ depend on. */
-    private static final List<String> NODETYPE_LOAD_ORDER = Arrays.asList(
-            "org.apache.sling.jcr.resource-3.3.6.jar-resource.cnd",
-            "org.apache.sling.jcr.resource-3.3.6.jar-folder.cnd"
-    );
-
     @Test
     public void validate() throws Exception {
 
