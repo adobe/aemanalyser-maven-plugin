@@ -34,14 +34,6 @@ import org.apache.jackrabbit.commons.cnd.CndImporter;
 import org.apache.jackrabbit.oak.Oak;
 import org.apache.jackrabbit.oak.jcr.Jcr;
 import org.apache.jackrabbit.oak.plugins.memory.MemoryNodeStore;
-import org.apache.jackrabbit.oak.security.authentication.AuthenticationConfigurationImpl;
-import org.apache.jackrabbit.oak.security.authentication.token.TokenConfigurationImpl;
-import org.apache.jackrabbit.oak.security.authorization.AuthorizationConfigurationImpl;
-import org.apache.jackrabbit.oak.security.internal.SecurityProviderBuilder;
-import org.apache.jackrabbit.oak.security.principal.PrincipalConfigurationImpl;
-import org.apache.jackrabbit.oak.security.privilege.PrivilegeConfigurationImpl;
-import org.apache.jackrabbit.oak.security.user.UserConfigurationImpl;
-import org.apache.jackrabbit.oak.spi.security.ConfigurationParameters;
 import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.Extension;
 import org.apache.sling.feature.Feature;
@@ -73,22 +65,8 @@ public class RepoInitValidator {
             throw new IllegalStateException("ArtifactProvider must be set before validating repoinit");
         }
 
-        final ConfigurationParameters params = ConfigurationParameters.of(Map.of(
-                "groupsPath", "/home/groups",
-                "usersPath", "/home/users"
-        ));
-
         final Repository repository = new Jcr(new Oak(new MemoryNodeStore()))
-                .with(SecurityProviderBuilder.newBuilder()
-                        .with(
-                                new AuthenticationConfigurationImpl(), ConfigurationParameters.EMPTY,
-                                new PrivilegeConfigurationImpl(), ConfigurationParameters.EMPTY,
-                                new UserConfigurationImpl(), params,
-                                new AuthorizationConfigurationImpl(), ConfigurationParameters.EMPTY,
-                                new PrincipalConfigurationImpl(), ConfigurationParameters.EMPTY,
-                                new TokenConfigurationImpl(), ConfigurationParameters.EMPTY
-                        )
-                        .build())
+                .with(new RepoinitSecurityProvider())
                 .createRepository();
         final Session session = repository.login(new SimpleCredentials("admin", "admin".toCharArray()));
         try {
