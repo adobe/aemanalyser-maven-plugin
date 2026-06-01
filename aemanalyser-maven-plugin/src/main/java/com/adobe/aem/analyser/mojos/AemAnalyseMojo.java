@@ -101,9 +101,9 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
 
     /**
      * Analyzes the given list of content package files.
-     * If this is configured, only these files are validated (and potentially {@link #additionalContentPackageArtifacts}), 
+     * If this is configured, only these files are validated (and potentially {@link #additionalContentPackageArtifacts}),
      * but not the main project artifact or dependencies.
-     * The files must be located inside the Maven project directory (e.g. src or target folder). 
+     * The files must be located inside the Maven project directory (e.g. src or target folder).
      */
     @Parameter
     List<File> contentPackageFiles;
@@ -137,12 +137,12 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
      * Execute the plugin
      */
     @Override
-    public AemAnalyserResult doExecute(final ArtifactId sdkId, 
-        final List<ArtifactId> addons) 
+    public AemAnalyserResult doExecute(final ArtifactId sdkId,
+        final List<ArtifactId> addons)
     throws MojoExecutionException, MojoFailureException {
         final List<String> additionalWarnings = new ArrayList<>();
         final List<String> additionalErrors = new ArrayList<>();
-        
+
         // 1. Phase : convert content packages
         this.convertContentPackages(additionalWarnings, additionalErrors);
 
@@ -169,7 +169,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
         final AemPackageConverter converter = new AemPackageConverter();
         converter.setConverterOutputDirectory(getConversionOutputDir());
         converter.setFeatureOutputDirectory(getGeneratedFeaturesDir());
-    
+
         final Map<String, File> packages = new LinkedHashMap<>();
         for(final Artifact contentPackage: getContentPackages()) {
             final File source = contentPackage.getFile();
@@ -224,9 +224,9 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
                         throw new MojoExecutionException("Project artifact file not found. Build the project first. Looking for: " + target.getName());
                     }
                     final DefaultArtifact targetArtifact = new DefaultArtifact(project.getGroupId(),
-                        project.getArtifactId(), 
-                        project.getVersion(), 
-                        null, 
+                        project.getArtifactId(),
+                        project.getVersion(),
+                        null,
                         project.getPackaging(),
                         null,
                         project.getArtifact().getArtifactHandler());
@@ -242,7 +242,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
                     final Artifact artifact = getOrResolveArtifact(new ArtifactId(d.getGroupId(), d.getArtifactId(), d.getVersion(), d.getClassifier(), d.getType()));
                     result.add(artifact);
                 }
-            }    
+            }
             if (result.isEmpty()) {
                 throw new MojoExecutionException("No content packages found for project.");
             }
@@ -255,7 +255,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
                 .map(this::getOrResolveArtifact)
                 .forEach(a -> {
                         getLog().info("Considering additional content package: " + a);
-                        result.add(a); 
+                        result.add(a);
                     });
         }
         return result;
@@ -283,7 +283,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
     }
 
     /**
-     * Creates a "virtual" maven artifact out of the given custom content package file. 
+     * Creates a "virtual" maven artifact out of the given custom content package file.
      * @param file Content package file
      * @return Maven artifact
      */
@@ -318,7 +318,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
             a.setEnableDuplicateBundleHandling(true);
 
             return a.aggregate();
-        
+
         } catch (final IOException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
@@ -326,13 +326,13 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
 
     /**
      * Analyse the features
-     * 
+     *
      * @param features The features
      * @param artifactProvider The artifact provider
      * @throws MojoFailureException If the analysis fails
      * @throws MojoExecutionException If something goes wrong
      */
-    AemAnalyserResult analyseFeatures(final List<Feature> features, 
+    AemAnalyserResult analyseFeatures(final List<Feature> features,
             final ArtifactProvider artifactProvider) throws MojoFailureException, MojoExecutionException {
         try {
             final AemAnalyser analyser = new AemAnalyser();
@@ -341,9 +341,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
             analyser.setIncludedUserTasks(this.getAnalyserUserTasks());
             analyser.setTaskConfigurations(this.getAnalyserTaskConfigurations());
 
-            analyser.setFeatureParticipantResolver(this.getProject());
             analyser.setRepoinitExecutionValidationEnabled(this.repoinitExecutionValidation);
-
             return analyser.analyse(features);            
         } catch ( final Exception e) {
             throw new MojoExecutionException("A fatal error occurred while analysing the features, see error cause:",
