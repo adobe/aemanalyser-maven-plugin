@@ -41,12 +41,17 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import org.apache.jackrabbit.oak.security.user.UserConfigurationImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RepoinitValidator {
 
 
     public static final String SLING_INF_NODE_TYPES = "SLING-INF/nodetypes";
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(RepoinitValidator.class)   ;
+    
+    
     @Test
     public void validate() throws Exception {
 
@@ -83,17 +88,14 @@ public class RepoinitValidator {
     }
 
     private static class NamedByteArrayInputStream extends ByteArrayInputStream {
-
-        public String getName() {
-            return name;
-        }
-
+        
         private final String name;
 
         public NamedByteArrayInputStream(byte[] buf, String name) {
             super(buf);
             this.name = name;
         }
+        
     }
     
     private void registerNodeTypes(Session session) throws Exception {
@@ -130,7 +132,9 @@ public class RepoinitValidator {
             try{
                 registerNodeTypes(session, stream);
                 exceptions.remove(stream.name);
+             
             }catch(Exception ex){
+                stream.reset();
                 nodeTypeInputStreams.addLast(stream);
                 exceptions.put(stream.name, ex);
             }
@@ -141,11 +145,13 @@ public class RepoinitValidator {
             exceptions.forEach( (key, value) -> illegalStateException.addSuppressed(new Exception("Exception installing nodetype definition file " + key, value)));
             throw illegalStateException;
         }
+
+        session.save();
         
     }
 
-    private void registerNodeTypes(Session session, InputStream nodetypesUrl) throws Exception {
-        try(Reader reader = new InputStreamReader(nodetypesUrl, StandardCharsets.UTF_8)) {
+    private void registerNodeTypes(Session session, NamedByteArrayInputStream nodeTypeDefinition) throws Exception {
+        try(Reader reader = new InputStreamReader(nodeTypeDefinition, StandardCharsets.UTF_8)) {
             CndImporter.registerNodeTypes(reader, session, true);
         }
     }
