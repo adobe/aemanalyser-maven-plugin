@@ -1,10 +1,18 @@
 package com.adobe.aem.analyser;
 
+import org.apache.commons.collections4.EnumerationUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jackrabbit.commons.cnd.CndImporter;
 import org.apache.jackrabbit.oak.Oak;
 import org.apache.jackrabbit.oak.jcr.Jcr;
 import org.apache.jackrabbit.oak.plugins.memory.MemoryNodeStore;
+import org.apache.jackrabbit.oak.security.authentication.AuthenticationConfigurationImpl;
+import org.apache.jackrabbit.oak.security.authentication.token.TokenConfigurationImpl;
+import org.apache.jackrabbit.oak.security.authorization.AuthorizationConfigurationImpl;
 import org.apache.jackrabbit.oak.security.internal.SecurityProviderBuilder;
+import org.apache.jackrabbit.oak.security.principal.PrincipalConfigurationImpl;
+import org.apache.jackrabbit.oak.security.privilege.PrivilegeConfigurationImpl;
+import org.apache.jackrabbit.oak.spi.security.ConfigurationParameters;
 import org.apache.sling.jcr.repoinit.impl.JcrRepoInitOpsProcessorImpl;
 import org.apache.sling.repoinit.parser.impl.RepoInitParserImpl;
 import org.apache.sling.repoinit.parser.operations.Operation;
@@ -14,22 +22,54 @@ import javax.jcr.Repository;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.jackrabbit.oak.security.user.UserConfigurationImpl;
 
 public class RepoinitValidator {
 
     private static final String NODETYPES_RESOURCE = "/nodetypes";
 
+    /** Base Sling types that other CND files in nodetypes/ depend on. */
+    private static final List<String> NODETYPE_LOAD_ORDER = Arrays.asList(
+            "org.apache.sling.jcr.resource-3.3.6.jar-resource.cnd",
+            "org.apache.sling.jcr.resource-3.3.6.jar-folder.cnd"
+    );
+
     @Test
     public void validate() throws Exception {
+
+        ConfigurationParameters params = ConfigurationParameters.of(Map.of(
+                "groupsPath", "/home/groups",
+                "usersPath", "/home/users"
+        ));
+        
         Repository repository = new Jcr(new Oak(new MemoryNodeStore()))
-                .with(SecurityProviderBuilder.newBuilder().build())
+                .with(SecurityProviderBuilder.newBuilder()
+                        .with(
+                                new AuthenticationConfigurationImpl(), ConfigurationParameters.EMPTY,
+                                new PrivilegeConfigurationImpl(), ConfigurationParameters.EMPTY,
+                                new UserConfigurationImpl(), params,
+                                new AuthorizationConfigurationImpl(), ConfigurationParameters.EMPTY,
+                                new PrincipalConfigurationImpl(), ConfigurationParameters.EMPTY,
+                                new TokenConfigurationImpl(), ConfigurationParameters.EMPTY
+                        )
+                        .build())
                 .createRepository();
         Session session = repository.login(new SimpleCredentials("admin", "admin".toCharArray()));
         try {
@@ -47,19 +87,40 @@ public class RepoinitValidator {
     }
 
     private void registerNodeTypes(Session session) throws Exception {
-        URL nodetypesUrl = getClass().getResource(NODETYPES_RESOURCE);
-        if (nodetypesUrl == null) {
-            throw new IllegalStateException("Resource directory not found: " + NODETYPES_RESOURCE);
-        }
-        Path nodetypesDir = Paths.get(nodetypesUrl.toURI());
-        try (Stream<Path> cndFiles = Files.list(nodetypesDir)
-                .filter(path -> path.getFileName().toString().endsWith(".cnd"))
-                .sorted()) {
-            for (Path cndFile : cndFiles.collect(Collectors.toList())) {
-                try (InputStream in = Files.newInputStream(cndFile)) {
-                    CndImporter.registerNodeTypes(in, session, true);
+
+                
+        Enumeration<URL> resources = getClass().getClassLoader().getResources("SLING-INF/nodetypes/");
+        List<URL> cdnFiles = EnumerationUtils.toList(resources);
+        for (URL url : cdnFiles) {
+            
+            String foo = url.toURI().getSchemeSpecificPart();
+            URI fileURI = new URI(StringUtils.substringBefore(foo, "!/"));
+            Path jarFilePath = Path.of(fileURI);
+            try (InputStream inputStream = Files.newInputStream(jarFilePath);
+                 JarInputStream jarInputStream = new JarInputStream(inputStream)
+            ) {
+                JarEntry nextJarEntry = null;
+                while (( nextJarEntry = jarInputStream.getNextJarEntry()) != null) {
+                    if(nextJarEntry.getName().startsWith("SLING-INF/nodetypes") &&
+                       nextJarEntry.getName().endsWith(".cnd")){
+                        
+                        registerNodeTypes(session, jarInputStream);
+                        
+                    }
+                    jarInputStream.closeEntry();
                 }
-            }
+                
+                
+              
+            };
+
+                    
+        }
+    }
+
+    private void registerNodeTypes(Session session, InputStream nodetypesUrl) throws Exception {
+        try(Reader reader = new InputStreamReader(nodetypesUrl, StandardCharsets.UTF_8)) {
+            CndImporter.registerNodeTypes(reader, session, true);
         }
     }
 
