@@ -1,6 +1,6 @@
 create path (sling:Folder) /var/discovery/somefolder
 create group "Test Group"
 
-set ACL on /var/discovery/somefolder
+set ACL on /content/non-existing-path
     allow jcr:read for "Test Group"
 end
