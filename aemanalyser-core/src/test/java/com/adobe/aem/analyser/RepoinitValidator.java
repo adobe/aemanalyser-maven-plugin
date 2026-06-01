@@ -40,13 +40,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.jackrabbit.oak.security.user.UserConfigurationImpl;
 
 public class RepoinitValidator {
 
-    private static final String NODETYPES_RESOURCE = "/nodetypes";
+
+    public static final String SLING_INF_NODE_TYPES = "SLING-INF/nodetypes";
 
     @Test
     public void validate() throws Exception {
@@ -98,7 +97,7 @@ public class RepoinitValidator {
     }
     
     private void registerNodeTypes(Session session) throws Exception {
-        Enumeration<URL> resources = getClass().getClassLoader().getResources("SLING-INF/nodetypes/");
+        Enumeration<URL> resources = getClass().getClassLoader().getResources(SLING_INF_NODE_TYPES + "/");
         List<URL> cdnFiles = EnumerationUtils.toList(resources);
         LinkedList<NamedByteArrayInputStream> nodeTypeInputStreams = new LinkedList<>();
 
@@ -111,7 +110,7 @@ public class RepoinitValidator {
                 JarEntry nextJarEntry;
                 while ((nextJarEntry = jarInputStream.getNextJarEntry()) != null) {
                     String name = nextJarEntry.getName();
-                    if (name.startsWith("SLING-INF/nodetypes") && name.endsWith(".cnd")) {
+                    if (name.startsWith(SLING_INF_NODE_TYPES) && name.endsWith(".cnd")) {
                         nodeTypeInputStreams.add(new NamedByteArrayInputStream(jarInputStream.readAllBytes(), name));
                     }
                     jarInputStream.closeEntry();
