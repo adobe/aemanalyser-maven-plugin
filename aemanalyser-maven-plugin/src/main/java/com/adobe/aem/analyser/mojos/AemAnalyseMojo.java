@@ -97,7 +97,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
      * {@code <aem.analyser.repoinit.execution.validate>true</aem.analyser.repoinit.execution.validate>}
      */
     @Parameter(defaultValue = "false", property = "aem.analyser.repoinit.execution.validate")
-    boolean repoinitExecutionValidation;
+    boolean repoInitExecutionValidation;
 
     /**
      * Analyzes the given list of content package files.
@@ -341,7 +341,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
             analyser.setIncludedUserTasks(this.getAnalyserUserTasks());
             analyser.setTaskConfigurations(this.getAnalyserTaskConfigurations());
 
-            analyser.setRepoinitExecutionValidationEnabled(this.repoinitExecutionValidation);
+            analyser.setRepoInitExecutionValidationEnabled(this.repoInitExecutionValidation);
             return analyser.analyse(features);            
         } catch ( final Exception e) {
             throw new MojoExecutionException("A fatal error occurred while analysing the features, see error cause:",

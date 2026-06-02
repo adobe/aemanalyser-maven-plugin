@@ -134,7 +134,7 @@ public class AemAnalyser {
     /**
      * @return whether repoinit execution validation is enabled
      */
-    public boolean isRepoinitExecutionValidationEnabled() {
+    public boolean isRepoInitExecutionValidationEnabled() {
         return repoinitExecutionValidationEnabled;
     }
 
@@ -144,7 +144,7 @@ public class AemAnalyser {
      *
      * @param repoinitExecutionValidationEnabled whether to enable repoinit execution validation
      */
-    public void setRepoinitExecutionValidationEnabled(final boolean repoinitExecutionValidationEnabled) {
+    public void setRepoInitExecutionValidationEnabled(final boolean repoinitExecutionValidationEnabled) {
         this.repoinitExecutionValidationEnabled = repoinitExecutionValidationEnabled;
     }
 
