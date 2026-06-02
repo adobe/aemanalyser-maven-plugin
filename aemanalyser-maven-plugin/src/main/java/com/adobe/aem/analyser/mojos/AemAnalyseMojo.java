@@ -96,7 +96,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
      * to an in-memory Oak repository. This can be activated via a Maven profile, for example:
      * {@code <aem.analyser.repoinit.execution.validate>true</aem.analyser.repoinit.execution.validate>}
      */
-    @Parameter(defaultValue = "false", property = "aem.analyser.repoinit.execution.validate")
+    @Parameter(defaultValue = "true", property = "aem.analyser.repoinit.execution.validate")
     boolean repoInitExecutionValidation;
 
     /**
