@@ -49,6 +49,8 @@ import org.apache.sling.feature.builder.ArtifactProvider;
 import org.apache.sling.jcr.repoinit.impl.JcrRepoInitOpsProcessorImpl;
 import org.apache.sling.repoinit.parser.impl.RepoInitParserImpl;
 import org.apache.sling.repoinit.parser.operations.Operation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RepoInitValidator {
 
@@ -56,6 +58,7 @@ public class RepoInitValidator {
 
     private ArtifactProvider artifactProvider;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(RepoInitValidator.class);
     public void setArtifactProvider(final ArtifactProvider artifactProvider) {
         this.artifactProvider = artifactProvider;
     }
@@ -150,21 +153,26 @@ public class RepoInitValidator {
 
     private void collectNodeTypeStreams(final Artifact artifact, final LinkedList<NamedByteArrayInputStream> nodeTypeInputStreams)
             throws IOException {
-        final URL url = this.artifactProvider.provide(artifact.getId());
-        if (url == null) {
-            return;
-        }
-        try (InputStream inputStream = url.openStream();
-             JarInputStream jarInputStream = new JarInputStream(inputStream)) {
-            JarEntry nextJarEntry;
-            while ((nextJarEntry = jarInputStream.getNextJarEntry()) != null) {
-                final String name = nextJarEntry.getName();
-                if (name.startsWith(SLING_INF_NODE_TYPES) && name.endsWith(".cnd")) {
-                    nodeTypeInputStreams.add(new NamedByteArrayInputStream(jarInputStream.readAllBytes(), name));
-                }
-                jarInputStream.closeEntry();
+        try{
+            final URL url = this.artifactProvider.provide(artifact.getId());
+            if (url == null) {
+                return;
             }
+            try (InputStream inputStream = url.openStream();
+                 JarInputStream jarInputStream = new JarInputStream(inputStream)) {
+                JarEntry nextJarEntry;
+                while ((nextJarEntry = jarInputStream.getNextJarEntry()) != null) {
+                    final String name = nextJarEntry.getName();
+                    if (name.startsWith(SLING_INF_NODE_TYPES) && name.endsWith(".cnd")) {
+                        nodeTypeInputStreams.add(new NamedByteArrayInputStream(jarInputStream.readAllBytes(), name));
+                    }
+                    jarInputStream.closeEntry();
+                }
+            }
+        } catch (RuntimeException ex){
+            LOGGER.error("Error loading artifact: {}", ex.getMessage());
         }
+     
     }
 
     private void registerNodeTypes(final Session session, final NamedByteArrayInputStream nodeTypeDefinition) throws Exception {

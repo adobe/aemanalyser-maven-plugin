@@ -33,7 +33,7 @@ governing permissions and limitations under the License.
     <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/aemanalyser-core</url>
   </scm>
   <properties>
-    <oak.version>1.90.0</oak.version>
+    <oak.version>2.0.0</oak.version>
   </properties>
   
   <dependencies>
@@ -44,6 +44,11 @@ governing permissions and limitations under the License.
       <version>1.7.36</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.jackrabbit</groupId>
+      <artifactId>oak-api</artifactId>
+      <version>${oak.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.jackrabbit</groupId>
       <artifactId>oak-jcr</artifactId>
