@@ -71,8 +71,7 @@ public class RepoInitValidatorTest {
         feature.getExtensions().add(repoinitExtension);
         feature.getBundles().add(new Artifact(NODETYPES_BUNDLE_ID));
 
-        final RepoInitValidator validator = new RepoInitValidator();
-        validator.setArtifactProvider(id -> {
+        final RepoInitValidator validator = new RepoInitValidator(id -> {
             if (!NODETYPES_BUNDLE_ID.equals(id)) {
                 return null;
             }
@@ -82,7 +81,7 @@ public class RepoInitValidatorTest {
                 throw new RuntimeException(e);
             }
         });
-
+        
         validator.validate(feature);
     }
 

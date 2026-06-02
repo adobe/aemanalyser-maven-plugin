@@ -55,38 +55,35 @@ import org.slf4j.LoggerFactory;
 public class RepoInitValidator {
 
     public static final String SLING_INF_NODE_TYPES = "SLING-INF/nodetypes";
-
-    private ArtifactProvider artifactProvider;
-
+    
+    private static final ConfigurationParameters CONFIGURATION_PARAMETERS = ConfigurationParameters.of(Map.of(
+            "groupsPath", "/home/groups",
+            "usersPath", "/home/users"
+    ));
     private static final Logger LOGGER = LoggerFactory.getLogger(RepoInitValidator.class);
-    public void setArtifactProvider(final ArtifactProvider artifactProvider) {
-        this.artifactProvider = artifactProvider;
-    }
 
-    public void validate(final Feature feature) throws Exception {
-        final Extension repoinit = feature.getExtensions().getByName(Extension.EXTENSION_NAME_REPOINIT);
-        if (repoinit == null) {
-            return;
-        }
-        final String repoinitText = repoinit.getText();
-        if (repoinitText == null || repoinitText.isBlank()) {
-            return;
-        }
+    private final ArtifactProvider artifactProvider;
+
+    public RepoInitValidator(ArtifactProvider artifactProvider ) {
+        this.artifactProvider = artifactProvider;
+      
         if (this.artifactProvider == null) {
             throw new IllegalStateException("ArtifactProvider must be set before validating repoinit");
         }
+    }
 
-        final ConfigurationParameters params = ConfigurationParameters.of(Map.of(
-                "groupsPath", "/home/groups",
-                "usersPath", "/home/users"
-        ));
+    public void validate(final Feature feature) throws Exception {
+        final String repoinitText = getRepoInitText(feature);
+        if (repoinitText == null || repoinitText.isBlank()) {
+            return;
+        }
 
         final Repository repository = new Jcr(new Oak(new MemoryNodeStore()))
                 .with(SecurityProviderBuilder.newBuilder()
                         .with(
                                 new AuthenticationConfigurationImpl(), ConfigurationParameters.EMPTY,
                                 new PrivilegeConfigurationImpl(), ConfigurationParameters.EMPTY,
-                                new UserConfigurationImpl(), params,
+                                new UserConfigurationImpl(), CONFIGURATION_PARAMETERS,
                                 new AuthorizationConfigurationImpl(), ConfigurationParameters.EMPTY,
                                 new PrincipalConfigurationImpl(), ConfigurationParameters.EMPTY,
                                 new TokenConfigurationImpl(), ConfigurationParameters.EMPTY
@@ -104,6 +101,15 @@ public class RepoInitValidator {
         } finally {
             session.logout();
         }
+    }
+
+    private static String getRepoInitText(Feature feature) {
+        final Extension repoinit = feature.getExtensions().getByName(Extension.EXTENSION_NAME_REPOINIT);
+        if (repoinit == null) {
+            return null;
+        }
+        final String repoinitText = repoinit.getText();
+        return repoinitText;
     }
 
     private static class NamedByteArrayInputStream extends ByteArrayInputStream {

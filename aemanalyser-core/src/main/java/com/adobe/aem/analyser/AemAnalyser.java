@@ -304,9 +304,8 @@ public class AemAnalyser {
 
     private void validateRepoinitExecution(final Collection<Feature> features,
             final Map<String, List<AemAnalyserAnnotation>> featureErrors) {
-        final RepoInitValidator validator = new RepoInitValidator();
-        validator.setArtifactProvider(this.getArtifactProvider());
-
+        final RepoInitValidator validator = new RepoInitValidator(this.getArtifactProvider());
+      
         for (final Feature feature : features) {
             final String classifier = feature.getId().getClassifier();
             if (!this.checkFinalClassifier(classifier)) {
