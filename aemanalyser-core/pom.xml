@@ -16,7 +16,7 @@ governing permissions and limitations under the License.
   <parent>
     <groupId>com.adobe.aem</groupId>
     <artifactId>parent-oss</artifactId>
-    <version>10</version>
+    <version>11-SNAPSHOT</version>
     <relativePath>../parent-oss/pom.xml</relativePath>
   </parent>
 
@@ -32,9 +32,6 @@ governing permissions and limitations under the License.
     <developerConnection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</developerConnection>
     <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/aemanalyser-core</url>
   </scm>
-  <properties>
-    <oak.version>2.0.0</oak.version>
-  </properties>
   
   <dependencies>
     <!-- Logging -->

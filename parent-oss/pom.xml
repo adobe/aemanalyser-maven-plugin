@@ -53,13 +53,13 @@ governing permissions and limitations under the License.
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- this is used for both enforcing the minimum java version and as compile target -->
-    <project.java.version>17</project.java.version>
+    <project.java.version>11</project.java.version>
     <maven.plugin.tools.version>3.15.1</maven.plugin.tools.version>
     <maven.min.version>3.8.1</maven.min.version>
     <surefire.version>3.5.3</surefire.version>
     <maven.compiler.source>${project.java.version}</maven.compiler.source> <!-- affects m-compiler-p and m-javadoc-p -->
     <maven.compiler.target>${project.java.version}</maven.compiler.target>
-    <oak.version>2.0.0</oak.version>
+    <oak.version>1.90.0</oak.version>
   </properties>
 
   <dependencyManagement>
