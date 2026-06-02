@@ -94,10 +94,10 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
     /**
      * If enabled, repoinit statements from aggregated features are validated by applying them
      * to an in-memory Oak repository. This can be activated via a Maven profile, for example:
-     * {@code <aem.analyser.repoinit.execution.validate>true</aem.analyser.repoinit.execution.validate>}
+     * {@code <aem.analyser.repoinit.validate>true</aem.analyser.repoinit.execution.validate>}
      */
-    @Parameter(defaultValue = "true", property = "aem.analyser.repoinit.execution.validate")
-    boolean repoInitExecutionValidation;
+    @Parameter(defaultValue = "false", property = "aem.analyser.repoinit.validate")
+    boolean repoInitValidation;
 
     /**
      * Analyzes the given list of content package files.
@@ -341,7 +341,7 @@ public class AemAnalyseMojo extends AbstractAnalyseMojo {
             analyser.setIncludedUserTasks(this.getAnalyserUserTasks());
             analyser.setTaskConfigurations(this.getAnalyserTaskConfigurations());
 
-            analyser.setRepoInitExecutionValidationEnabled(this.repoInitExecutionValidation);
+            analyser.setRepoInitExecutionValidationEnabled(this.repoInitValidation);
             return analyser.analyse(features);            
         } catch ( final Exception e) {
             throw new MojoExecutionException("A fatal error occurred while analysing the features, see error cause:",
