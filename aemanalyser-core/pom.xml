@@ -32,9 +32,6 @@ governing permissions and limitations under the License.
     <developerConnection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</developerConnection>
     <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/aemanalyser-core</url>
   </scm>
-  <properties>
-    <oak.version>2.0.0</oak.version>
-  </properties>
   
   <dependencies>
     <!-- Logging -->
