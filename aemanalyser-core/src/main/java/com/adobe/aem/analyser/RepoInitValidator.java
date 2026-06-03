@@ -178,7 +178,7 @@ public class RepoInitValidator {
                 }
             }
         } catch (RuntimeException ex){
-            LOGGER.error("Error loading artifact: {}", ex.getMessage());
+            LOGGER.error("Error loading artifact {} : {}", artifact.getId().toString(), ex.getMessage());
         }
      
     }
