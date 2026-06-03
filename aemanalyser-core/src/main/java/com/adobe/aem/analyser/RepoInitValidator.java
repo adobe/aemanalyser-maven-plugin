@@ -187,7 +187,7 @@ public class RepoInitValidator {
                 return;
             }
             try (InputStream inputStream = url.openStream();
-                 JarInputStream jarInputStream = new JarInputStream(inputStream)) {
+                JarInputStream jarInputStream = new JarInputStream(inputStream)) {
                 JarEntry nextJarEntry;
                 while ((nextJarEntry = jarInputStream.getNextJarEntry()) != null) {
                     final String name = nextJarEntry.getName();
