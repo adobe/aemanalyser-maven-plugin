@@ -19,14 +19,15 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
-import javax.jcr.Repository;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 
@@ -56,12 +57,13 @@ import org.slf4j.LoggerFactory;
 public class RepoInitValidator {
 
     public static final String SLING_INF_NODE_TYPES = "SLING-INF/nodetypes";
-    
+
     private static final ConfigurationParameters CONFIGURATION_PARAMETERS = ConfigurationParameters.of(Map.of(
             "groupsPath", "/home/groups",
             "usersPath", "/home/users"
     ));
     private static final Logger LOGGER = LoggerFactory.getLogger(RepoInitValidator.class);
+    private static final int RETRY_UPPER_LIMIT_MULTIPLICATION_FACTOR = 4;
 
     private final ArtifactProvider artifactProvider;
 
@@ -126,40 +128,45 @@ public class RepoInitValidator {
     }
 
     private void registerNodeTypes(final Session session, final Feature feature) throws Exception {
-        final LinkedList<NamedByteArrayInputStream> nodeTypeInputStreams = new LinkedList<>();
-        for (final Artifact artifact : feature.getBundles()) {
-            collectNodeTypeStreams(artifact, nodeTypeInputStreams);
-        }
+        final Deque<NamedByteArrayInputStream> nodeTypeInputStreamsDequeue = collectRegisterNodeTypeDequeue(feature);
 
-        final int maxSize = nodeTypeInputStreams.size() * 4;
+        final int retryCountUpperLimit = nodeTypeInputStreamsDequeue.size() * RETRY_UPPER_LIMIT_MULTIPLICATION_FACTOR;
         int counter = 0;
 
         final Map<String, Throwable> exceptions = new HashMap<>();
 
-        while (counter < maxSize && !nodeTypeInputStreams.isEmpty()) {
+        while (counter < retryCountUpperLimit && !nodeTypeInputStreamsDequeue.isEmpty()) {
             counter++;
-            final NamedByteArrayInputStream stream = nodeTypeInputStreams.pop();
+            final NamedByteArrayInputStream stream = nodeTypeInputStreamsDequeue.pop();
             try {
                 registerNodeTypes(session, stream);
                 exceptions.remove(stream.name);
             } catch (final Exception ex) {
                 stream.reset();
-                nodeTypeInputStreams.addLast(stream);
+                nodeTypeInputStreamsDequeue.addLast(stream);
                 exceptions.put(stream.name, ex);
             }
         }
 
-        if (!nodeTypeInputStreams.isEmpty()) {
-            final IllegalStateException illegalStateException = new IllegalStateException("Exception installing nodetype definitions");
+        if (!nodeTypeInputStreamsDequeue.isEmpty()) {
+            final IllegalStateException illegalStateException = new IllegalStateException("Exception installing Node Type definitions");
             exceptions.forEach((key, value) -> illegalStateException.addSuppressed(
-                    new Exception("Exception installing nodetype definition file " + key, value)));
+                    new Exception("Exception installing Node Type definition file " + key, value)));
             throw illegalStateException;
         }
 
         session.save();
     }
+    
+    private Deque<NamedByteArrayInputStream> collectRegisterNodeTypeDequeue(Feature feature) throws IOException {
+        final Deque<NamedByteArrayInputStream> nodeTypeInputStreamsDequeue = new LinkedList<>();
+        for (final Artifact artifact : feature.getBundles()) {
+            collectRegisterNodeTypeStreams(artifact, nodeTypeInputStreamsDequeue::add);
+        }
+        return nodeTypeInputStreamsDequeue;
+    }
 
-    private void collectNodeTypeStreams(final Artifact artifact, final LinkedList<NamedByteArrayInputStream> nodeTypeInputStreams)
+    private void collectRegisterNodeTypeStreams(final Artifact artifact, Consumer<NamedByteArrayInputStream> addRegisterNodeTypeInputStream)
             throws IOException {
         try{
             final URL url = this.artifactProvider.provide(artifact.getId());
@@ -172,7 +179,7 @@ public class RepoInitValidator {
                 while ((nextJarEntry = jarInputStream.getNextJarEntry()) != null) {
                     final String name = nextJarEntry.getName();
                     if (name.startsWith(SLING_INF_NODE_TYPES) && name.endsWith(".cnd")) {
-                        nodeTypeInputStreams.add(new NamedByteArrayInputStream(jarInputStream.readAllBytes(), name));
+                        addRegisterNodeTypeInputStream.accept(new NamedByteArrayInputStream(jarInputStream.readAllBytes(), name));
                     }
                     jarInputStream.closeEntry();
                 }
