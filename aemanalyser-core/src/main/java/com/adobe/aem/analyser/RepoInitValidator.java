@@ -30,6 +30,7 @@ import javax.jcr.Repository;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 
+import org.apache.jackrabbit.api.JackrabbitRepository;
 import org.apache.jackrabbit.commons.cnd.CndImporter;
 import org.apache.jackrabbit.oak.Oak;
 import org.apache.jackrabbit.oak.jcr.Jcr;
@@ -78,7 +79,7 @@ public class RepoInitValidator {
             return;
         }
 
-        final Repository repository = new Jcr(new Oak(new MemoryNodeStore()))
+        final JackrabbitRepository repository = (JackrabbitRepository) new Jcr(new Oak(new MemoryNodeStore()))
                 .with(SecurityProviderBuilder.newBuilder()
                         .with(
                                 new AuthenticationConfigurationImpl(), ConfigurationParameters.EMPTY,
@@ -100,6 +101,7 @@ public class RepoInitValidator {
             session.save();
         } finally {
             session.logout();
+            repository.shutdown();
         }
     }
 
