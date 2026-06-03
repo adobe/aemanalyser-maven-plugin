@@ -41,7 +41,7 @@ governing permissions and limitations under the License.
   <scm>
     <connection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</developerConnection>
-    <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/parent</url>
+    <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/parent-oss</url>
     <tag>parent-oss-10</tag>
   </scm>
 
