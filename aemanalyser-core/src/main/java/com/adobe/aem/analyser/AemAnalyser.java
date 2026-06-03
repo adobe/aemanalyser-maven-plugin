@@ -87,7 +87,9 @@ public class AemAnalyser {
     private Set<String> includedUserTasks;
 
     private Map<String, Map<String, String>> taskConfigurations;
-
+    
+    private boolean repoinitExecutionValidationEnabled;
+    
     public AemAnalyser() {
         this.setIncludedTasks(new LinkedHashSet<>(Arrays.asList(DEFAULT_TASKS.split(","))));
         this.setIncludedUserTasks(new LinkedHashSet<>(Arrays.asList(DEFAULT_USER_TASKS.split(","))));
@@ -127,6 +129,23 @@ public class AemAnalyser {
      */
     public Map<String, Map<String, String>> getTaskConfigurations() {
         return taskConfigurations;
+    }
+
+    /**
+     * @return whether repoinit execution validation is enabled
+     */
+    public boolean isRepoInitExecutionValidationEnabled() {
+        return repoinitExecutionValidationEnabled;
+    }
+
+    /**
+     * If enabled, repoinit statements from aggregated features are validated by applying them
+     * to an in-memory Oak repository.
+     *
+     * @param repoinitExecutionValidationEnabled whether to enable repoinit execution validation
+     */
+    public void setRepoInitExecutionValidationEnabled(final boolean repoinitExecutionValidationEnabled) {
+        this.repoinitExecutionValidationEnabled = repoinitExecutionValidationEnabled;
     }
 
     /**
@@ -273,10 +292,47 @@ public class AemAnalyser {
             }
         }
 
+        if (this.repoinitExecutionValidationEnabled) {
+            this.validateRepoinitExecution(features, featureErrors);
+        }
+
         logOutput(result.getErrors(), featureErrors, "errors");
         logOutput(result.getWarnings(), featureWarnings, "warnings");
 
         return result;
+    }
+
+    private void validateRepoinitExecution(final Collection<Feature> features,
+            final Map<String, List<AemAnalyserAnnotation>> featureErrors) {
+        final RepoInitValidator validator = new RepoInitValidator(this.getArtifactProvider());
+      
+        for (final Feature feature : features) {
+            final String classifier = feature.getId().getClassifier();
+            if (!this.checkFinalClassifier(classifier)) {
+                continue;
+            }
+            try {
+                this.logger.info("Validating repoinit execution for feature {}", feature.getId());
+                validator.validate(feature);
+            } catch (final Exception e) {
+                this.logger.error("Repoinit execution validation failed for feature {}", feature.getId(), e);
+                this.logSuppressedExceptionMessages(e);
+                featureErrors.computeIfAbsent(classifier, key -> new ArrayList<>())
+                        .add(new AemAnalyserAnnotation("Repoinit execution validation failed: ".concat(e.getMessage())));
+            }
+        }
+    }
+
+    private void logSuppressedExceptionMessages(final Throwable throwable) {
+        for (final Throwable suppressed : throwable.getSuppressed()) {
+            if (suppressed.getMessage() != null) {
+                this.logger.error(suppressed.getMessage());
+            }
+            final Throwable cause = suppressed.getCause();
+            if (cause != null && cause.getMessage() != null) {
+                this.logger.error("Caused by: {}", cause.getMessage());
+            }
+        }
     }
 
     private AemAnalyserAnnotation getExtensionAnnotation(final Feature f, final ExtensionReport report) {
