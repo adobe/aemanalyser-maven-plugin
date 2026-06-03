@@ -54,6 +54,10 @@ import org.apache.sling.repoinit.parser.operations.Operation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Validates Repository Initialization statements from a feature.
+ * The analysis happens in a in memory repository.
+ */
 public class RepoInitValidator {
 
     public static final String SLING_INF_NODE_TYPES = "SLING-INF/nodetypes";
@@ -67,6 +71,10 @@ public class RepoInitValidator {
 
     private final ArtifactProvider artifactProvider;
 
+    /**
+     * Constructor
+     * @param artifactProvider provides the maven artifacts
+     */
     public RepoInitValidator(ArtifactProvider artifactProvider ) {
         this.artifactProvider = artifactProvider;
       
@@ -75,6 +83,12 @@ public class RepoInitValidator {
         }
     }
 
+    /**
+     * Validates the feature's repoinit extension in a in-memory JCR repository
+     * The feature's repoinit statement must work standalone and pass by itself.
+     * @param feature The feature to analyse the repoinit statements from
+     * @throws Exception When the repository statement fails to run (such as PathNotFoundException if you forgot the CreatePath before using SetProperties)
+     */
     public void validate(final Feature feature) throws Exception {
         final String repoinitText = getRepoInitText(feature);
         if (repoinitText == null || repoinitText.isBlank()) {
@@ -112,8 +126,7 @@ public class RepoInitValidator {
         if (repoinit == null) {
             return null;
         }
-        final String repoinitText = repoinit.getText();
-        return repoinitText;
+        return repoinit.getText();
     }
 
     private static class NamedByteArrayInputStream extends ByteArrayInputStream {
@@ -128,7 +141,7 @@ public class RepoInitValidator {
     }
 
     private void registerNodeTypes(final Session session, final Feature feature) throws Exception {
-        final Deque<NamedByteArrayInputStream> nodeTypeInputStreamsDequeue = collectRegisterNodeTypeDequeue(feature);
+        final Deque<NamedByteArrayInputStream> nodeTypeInputStreamsDequeue = collectRegisterNodeTypesDequeue(feature);
 
         final int retryCountUpperLimit = nodeTypeInputStreamsDequeue.size() * RETRY_UPPER_LIMIT_MULTIPLICATION_FACTOR;
         int counter = 0;
@@ -158,15 +171,15 @@ public class RepoInitValidator {
         session.save();
     }
     
-    private Deque<NamedByteArrayInputStream> collectRegisterNodeTypeDequeue(Feature feature) throws IOException {
+    private Deque<NamedByteArrayInputStream> collectRegisterNodeTypesDequeue(Feature feature) throws IOException {
         final Deque<NamedByteArrayInputStream> nodeTypeInputStreamsDequeue = new LinkedList<>();
         for (final Artifact artifact : feature.getBundles()) {
-            collectRegisterNodeTypeStreams(artifact, nodeTypeInputStreamsDequeue::add);
+            collectRegisterNodeTypeStreamsFromBundle(artifact, nodeTypeInputStreamsDequeue::add);
         }
         return nodeTypeInputStreamsDequeue;
     }
 
-    private void collectRegisterNodeTypeStreams(final Artifact artifact, Consumer<NamedByteArrayInputStream> addRegisterNodeTypeInputStream)
+    private void collectRegisterNodeTypeStreamsFromBundle(final Artifact artifact, Consumer<NamedByteArrayInputStream> addRegisterNodeTypeInputStream)
             throws IOException {
         try{
             final URL url = this.artifactProvider.provide(artifact.getId());
