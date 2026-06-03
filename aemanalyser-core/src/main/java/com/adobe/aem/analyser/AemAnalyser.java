@@ -316,8 +316,21 @@ public class AemAnalyser {
                 validator.validate(feature);
             } catch (final Exception e) {
                 this.logger.error("Repoinit execution validation failed for feature {}", feature.getId(), e);
+                this.logSuppressedExceptionMessages(e);
                 featureErrors.computeIfAbsent(classifier, key -> new ArrayList<>())
                         .add(new AemAnalyserAnnotation("Repoinit execution validation failed: ".concat(e.getMessage())));
+            }
+        }
+    }
+
+    private void logSuppressedExceptionMessages(final Throwable throwable) {
+        for (final Throwable suppressed : throwable.getSuppressed()) {
+            if (suppressed.getMessage() != null) {
+                this.logger.error(suppressed.getMessage());
+            }
+            final Throwable cause = suppressed.getCause();
+            if (cause != null && cause.getMessage() != null) {
+                this.logger.error("Caused by: {}", cause.getMessage());
             }
         }
     }
