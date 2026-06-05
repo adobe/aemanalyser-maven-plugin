@@ -16,12 +16,12 @@ governing permissions and limitations under the License.
   <parent>
     <groupId>com.adobe.aem</groupId>
     <artifactId>parent-oss</artifactId>
-    <version>10</version>
+    <version>12</version>
     <relativePath>../parent-oss/pom.xml</relativePath>
   </parent>
 
   <artifactId>aemanalyser-core</artifactId>
-  <version>1.5.11-SNAPSHOT</version>
+  <version>1.5.13-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>AEM Analyser Core</name>
@@ -31,6 +31,7 @@ governing permissions and limitations under the License.
     <connection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</developerConnection>
     <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/aemanalyser-core</url>
+    <tag>HEAD</tag>
   </scm>
   
   <dependencies>
@@ -41,6 +42,32 @@ governing permissions and limitations under the License.
       <version>1.7.36</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.jackrabbit</groupId>
+      <artifactId>oak-api</artifactId>
+      <version>${oak.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jackrabbit</groupId>
+      <artifactId>oak-jcr</artifactId>
+      <version>${oak.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jackrabbit</groupId>
+      <artifactId>oak-security-spi</artifactId>
+      <version>${oak.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sling</groupId>
+      <artifactId>org.apache.sling.jcr.repoinit</artifactId>
+      <version>1.1.54</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sling</groupId>
+      <artifactId>org.apache.sling.repoinit.parser</artifactId>
+      <version>1.9.2</version>
+    </dependency>
+   
     <!-- Feature Model -->
     <dependency>
       <groupId>org.apache.sling</groupId>

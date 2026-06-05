@@ -16,7 +16,7 @@ governing permissions and limitations under the License.
 
   <groupId>com.adobe.aem</groupId>
   <artifactId>parent-oss</artifactId>
-  <version>11-SNAPSHOT</version>
+  <version>13-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>AEM Parent Plugin Open Source</name>
@@ -41,7 +41,7 @@ governing permissions and limitations under the License.
   <scm>
     <connection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</developerConnection>
-    <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/parent</url>
+    <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/parent-oss</url>
     <tag>parent-oss-10</tag>
   </scm>
 
@@ -59,6 +59,7 @@ governing permissions and limitations under the License.
     <surefire.version>3.5.3</surefire.version>
     <maven.compiler.source>${project.java.version}</maven.compiler.source> <!-- affects m-compiler-p and m-javadoc-p -->
     <maven.compiler.target>${project.java.version}</maven.compiler.target>
+    <oak.version>1.90.0</oak.version>
   </properties>
 
   <dependencyManagement>
