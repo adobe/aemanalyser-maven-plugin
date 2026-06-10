@@ -16,7 +16,7 @@ governing permissions and limitations under the License.
 
   <groupId>com.adobe.aem</groupId>
   <artifactId>parent-oss</artifactId>
-  <version>11-SNAPSHOT</version>
+  <version>13-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>AEM Parent Plugin Open Source</name>
@@ -41,7 +41,7 @@ governing permissions and limitations under the License.
   <scm>
     <connection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</developerConnection>
-    <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/parent</url>
+    <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main/parent-oss</url>
     <tag>parent-oss-10</tag>
   </scm>
 
@@ -54,11 +54,12 @@ governing permissions and limitations under the License.
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- this is used for both enforcing the minimum java version and as compile target -->
     <project.java.version>11</project.java.version>
-    <maven.plugin.tools.version>3.15.1</maven.plugin.tools.version>
+    <maven.plugin.tools.version>3.15.2</maven.plugin.tools.version>
     <maven.min.version>3.8.1</maven.min.version>
     <surefire.version>3.5.3</surefire.version>
     <maven.compiler.source>${project.java.version}</maven.compiler.source> <!-- affects m-compiler-p and m-javadoc-p -->
     <maven.compiler.target>${project.java.version}</maven.compiler.target>
+    <oak.version>1.90.0</oak.version>
   </properties>
 
   <dependencyManagement>
@@ -161,7 +162,7 @@ governing permissions and limitations under the License.
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.6.0</version>
+          <version>3.6.3</version>
         </plugin>
         <plugin>
           <artifactId>maven-release-plugin</artifactId>
