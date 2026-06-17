@@ -123,6 +123,29 @@ governing permissions and limitations under the License.
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-library-jar</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <classifier>library</classifier>
+              <includes>
+                <include>com/adobe/aem/analyser/**</include>
+                <include>com/adobe/aem/project/**</include>
+                <include>META-INF/services/**</include>
+              </includes>
+              <excludes>
+                <exclude>com/adobe/aem/analyser/mojos/**</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-invoker-plugin</artifactId>
         <version>3.10.1</version>
         <configuration>
@@ -501,6 +524,23 @@ governing permissions and limitations under the License.
                 <goals>
                   <goal>jar-no-fork</goal>
                 </goals>
+              </execution>
+              <execution>
+                <id>attach-library-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+                <configuration>
+                  <classifier>library-sources</classifier>
+                  <includes>
+                    <include>com/adobe/aem/analyser/**</include>
+                    <include>com/adobe/aem/project/**</include>
+                    <include>META-INF/services/**</include>
+                  </includes>
+                  <excludes>
+                    <exclude>com/adobe/aem/analyser/mojos/**</exclude>
+                  </excludes>
+                </configuration>
               </execution>
             </executions>
           </plugin>
