@@ -12,6 +12,7 @@
 package com.adobe.aem.analyser;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -20,13 +21,17 @@ import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
@@ -258,6 +263,74 @@ public class AemAggregatorTest {
             Path targetPath = tempDir.getRoot().toPath().resolve(file);
             Files.createDirectories(targetPath.getParent());
             Files.copy(is, targetPath);
+        }
+    }
+
+    @Test
+    public void shouldRemoveIncorrectPathsDuringAggregation() throws Exception {
+        final AemAggregator agg = new AemAggregator();
+        agg.setEnableFixingIncorrectPathsInRepoinit(true);
+        agg.setFeatureOutputDirectory(tempDir.newFolder("target", "cp-conversion", "fm.out"));
+        agg.setProjectId(ArtifactId.parse("gp:ap:5"));
+        agg.setSdkId(ArtifactId.parse("com.adobe.aem:aem-sdk-api:2026.3.24893.20260312T165332Z-260200"));
+        agg.setFeatureProvider(Feature::new);
+
+        copyTestResource("mappingfiles/runmode_4.mapping",
+                "target/cp-conversion/fm.out/runmode.mapping");
+
+        copyTestResourceDir("features/",
+                "target/cp-conversion/fm.out/");
+
+        agg.aggregate() ;
+
+        Path outputDir = tempDir.getRoot().toPath().resolve("target/cp-conversion/fm.out");
+        Path aggregatedAuthorFile = outputDir.resolve("aggregated-author.json");
+        Path aggregatedPublishFile = outputDir.resolve("aggregated-publish.json");
+
+        List<String> forbiddenStrings = List.of(
+                "\"create path (sling:Folder) /apps/namics/genericmultifield/clientlibs/css\"",
+                "\"create path (sling:Folder) /apps/namics/genericmultifield/clientlibs/js\""
+        );
+
+        assertLineCount(aggregatedAuthorFile, 241);
+        assertLineCount(aggregatedPublishFile, 241);
+
+        assertFileDoesNotContain(aggregatedAuthorFile, forbiddenStrings);
+        assertFileDoesNotContain(aggregatedPublishFile, forbiddenStrings);
+    }
+
+    private void assertFileDoesNotContain(Path file, List<String> forbiddenStrings) throws IOException {
+        String content = Files.readString(file);
+        for (String forbidden : forbiddenStrings) {
+            assertFalse("File " + file + " contains forbidden string: " + forbidden, content.contains(forbidden));
+        }
+    }
+
+    public static void assertLineCount(Path path, int expected) throws IOException {
+        try (Stream<String> lines = Files.lines(path)) {
+            assertEquals(expected, lines.count());
+        }
+    }
+
+    private void copyTestResourceDir(String resourceDir, String targetDir) throws Exception {
+        URL url = getClass().getResource("/" + resourceDir);
+
+        if (url == null) {
+            throw new IllegalArgumentException("Resource not found: " + resourceDir);
+        }
+
+        Path sourcePath = Paths.get(url.toURI());
+        Path targetPath = tempDir.getRoot().toPath().resolve(targetDir);
+
+        Files.createDirectories(targetPath);
+
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(sourcePath)) {
+            for (Path sourceFile : stream) {
+                if (Files.isRegularFile(sourceFile)) {
+                    Path targetFile = targetPath.resolve(sourceFile.getFileName());
+                    Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
         }
     }
 
