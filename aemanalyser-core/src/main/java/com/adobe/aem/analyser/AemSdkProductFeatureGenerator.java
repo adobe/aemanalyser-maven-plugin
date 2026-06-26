@@ -22,10 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
-import org.apache.sling.feature.Configuration;
-import org.apache.sling.feature.Extension;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.FeatureProvider;
 import org.slf4j.Logger;
@@ -39,13 +36,12 @@ import com.adobe.aem.project.ServiceType;
 public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AemSdkProductFeatureGenerator.class);
-    private static final String API_REGIONS_EXTENSION_NAME = "api-regions";
-
     private final FeatureProvider featureProvider;
     private final ArtifactId sdkId;
     private final ArtifactId prereleaseSdkId;
     private final List<ArtifactId> addOnIds;
     private final List<ArtifactId> prereleaseAddOnIds;
+    private final FeatureConflictResolver conflictResolver;
 
     public AemSdkProductFeatureGenerator(
             FeatureProvider featureProvider,
@@ -53,11 +49,23 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
             ArtifactId prereleaseSdkId,
             List<ArtifactId> addOnIds,
             List<ArtifactId> prereleaseAddOnIds) {
+        this(featureProvider, sdkId, prereleaseSdkId, addOnIds, prereleaseAddOnIds,
+                new PrereleasePreferredFeatureConflictResolver());
+    }
+
+    public AemSdkProductFeatureGenerator(
+            FeatureProvider featureProvider,
+            ArtifactId sdkId,
+            ArtifactId prereleaseSdkId,
+            List<ArtifactId> addOnIds,
+            List<ArtifactId> prereleaseAddOnIds,
+            FeatureConflictResolver conflictResolver) {
         this.featureProvider = featureProvider;
         this.sdkId = sdkId;
         this.prereleaseSdkId = prereleaseSdkId;
         this.addOnIds = addOnIds == null ? Collections.emptyList() : addOnIds;
         this.prereleaseAddOnIds = prereleaseAddOnIds == null ? Collections.emptyList() : prereleaseAddOnIds;
+        this.conflictResolver = conflictResolver;
     }
 
     @Override
@@ -87,146 +95,76 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
     }
 
     private Feature getSdkFeature(final SdkProductVariation variation) throws IOException {
-        final Feature stableFeature = resolveSdkFeature(sdkId, variation, "SDK");
+        final Feature stableFeature = resolveSdkFeature(sdkId, variation);
         if (prereleaseSdkId == null) {
-            LOGGER.info("Using stable SDK feature for {} because prerelease SDK is not configured.", variation);
+            LOGGER.info("Using SDK feature {} for {} because prerelease SDK is not configured.",
+                    stableFeature.getId().toMvnId(), variation);
             return stableFeature;
         }
 
-        final Feature prereleaseFeature = resolveSdkFeature(prereleaseSdkId, variation, "prerelease SDK");
-
-        final boolean stableEmpty = isEffectivelyEmpty(stableFeature);
-        final boolean prereleaseEmpty = isEffectivelyEmpty(prereleaseFeature);
-
-        if (stableEmpty && prereleaseEmpty) {
-            LOGGER.info("Both stable and prerelease SDK features are effectively empty for {}. Using stable SDK feature.", variation);
-            return stableFeature;
-        }
-        if (stableEmpty) {
-            LOGGER.info("Stable SDK feature is effectively empty for {}. Using prerelease SDK feature.", variation);
-            return prereleaseFeature;
-        }
-        if (prereleaseEmpty) {
-            LOGGER.info("Prerelease SDK feature is effectively empty for {}. Using stable SDK feature.", variation);
-            return stableFeature;
-        }
-
-        LOGGER.info("Merging stable and prerelease SDK features for {} with stable precedence on conflicts.", variation);
-        return mergeFeatures(stableFeature, prereleaseFeature, variation, "SDK");
+        final Feature prereleaseFeature = resolveSdkFeature(prereleaseSdkId, variation);
+        return selectFeatureByVersion(stableFeature, prereleaseFeature, variation);
     }
 
     private Feature getAddOnFeature(final ArtifactId stableAddOnId,
             final ArtifactId prereleaseAddOnId,
             final SdkProductVariation variation) throws IOException {
-        final Feature stableFeature = resolveAddOnFeature(stableAddOnId, "stable add-on");
+        final Feature stableFeature = resolveAddOnFeature(stableAddOnId);
         if (prereleaseAddOnId == null) {
-            LOGGER.info("Using stable add-on feature {} for {} because prerelease add-on is not configured.",
-                    stableAddOnId.toMvnId(), variation);
+            LOGGER.info("Using add-on feature {} for {} because prerelease add-on is not configured.",
+                    stableFeature.getId().toMvnId(), variation);
             return stableFeature;
         }
 
-        final Feature prereleaseFeature = resolveAddOnFeature(prereleaseAddOnId, "prerelease add-on");
-
-        final boolean stableEmpty = isEffectivelyEmpty(stableFeature);
-        final boolean prereleaseEmpty = isEffectivelyEmpty(prereleaseFeature);
-
-        if (stableEmpty && prereleaseEmpty) {
-            LOGGER.info("Both stable and prerelease add-on features are effectively empty for {} in {}. Using stable add-on.",
-                    stableAddOnId.toMvnId(), variation);
-            return stableFeature;
-        }
-        if (stableEmpty) {
-            LOGGER.info("Stable add-on feature is effectively empty for {} in {}. Using prerelease add-on.",
-                    stableAddOnId.toMvnId(), variation);
-            return prereleaseFeature;
-        }
-        if (prereleaseEmpty) {
-            LOGGER.info("Prerelease add-on feature is effectively empty for {} in {}. Using stable add-on.",
-                    stableAddOnId.toMvnId(), variation);
-            return stableFeature;
-        }
-
-        LOGGER.info("Merging stable and prerelease add-on features for {} in {} with stable precedence on conflicts.",
-                stableAddOnId.toMvnId(), variation);
-        return mergeFeatures(stableFeature, prereleaseFeature, variation, "add-on");
+        final Feature prereleaseFeature = resolveAddOnFeature(prereleaseAddOnId);
+        return selectFeatureByVersion(stableFeature, prereleaseFeature, variation);
     }
 
-    private Feature resolveSdkFeature(final ArtifactId sourceSdkId, final SdkProductVariation variation, final String label) throws IOException {
+    private Feature resolveSdkFeature(final ArtifactId sourceSdkId, final SdkProductVariation variation) throws IOException {
         final ArtifactId featureId = sourceSdkId
                 .changeClassifier(getProductClassifier(variation))
                 .changeType(AemAggregator.FEATUREMODEL_TYPE);
         final Feature feature = featureProvider.provide(featureId);
         if (feature == null) {
-            throw new IOException("Unable to find " + label + " feature for " + sourceSdkId.toMvnId());
+            throw new IOException("Unable to find feature for " + sourceSdkId.toMvnId());
         }
         return feature;
     }
 
-    private Feature resolveAddOnFeature(final ArtifactId sourceAddOnId, final String label) throws IOException {
+    private Feature resolveAddOnFeature(final ArtifactId sourceAddOnId) throws IOException {
         final ArtifactId featureId = sourceAddOnId.changeType(AemAggregator.FEATUREMODEL_TYPE);
         final Feature feature = featureProvider.provide(featureId);
         if (feature == null) {
-            throw new IOException("Unable to find " + label + " feature for " + sourceAddOnId.toMvnId());
+            throw new IOException("Unable to find feature for " + sourceAddOnId.toMvnId());
         }
         return feature;
     }
 
-    private boolean isEffectivelyEmpty(final Feature feature) {
-        if (!feature.getBundles().isEmpty() || !feature.getConfigurations().isEmpty()) {
-            return false;
-        }
-        for (final Extension extension : feature.getExtensions()) {
-            if (!API_REGIONS_EXTENSION_NAME.equals(extension.getName())) {
-                return false;
-            }
-        }
-        return true;
+    private int compareFeatureVersions(final ArtifactId stable, final ArtifactId prerelease) {
+        return stable.getVersion().compareTo(prerelease.getVersion());
     }
 
-    private Feature mergeFeatures(final Feature stable,
-            final Feature prerelease,
-            final SdkProductVariation variation,
-            final String featureLabel) {
-        final Feature merged = new Feature(stable.getId());
+    private Feature selectFeatureByVersion(final Feature stableFeature,
+            final Feature prereleaseFeature,
+            final SdkProductVariation variation) {
+        final int comparison = compareFeatureVersions(stableFeature.getId(), prereleaseFeature.getId());
+        final String stableId = stableFeature.getId().toMvnId();
+        final String prereleaseId = prereleaseFeature.getId().toMvnId();
 
-        for (final Artifact bundle : stable.getBundles()) {
-            merged.getBundles().add(bundle);
+        if (comparison > 0) {
+            LOGGER.info("Using stable feature {} for {} because it has newer version than {}.",
+                    stableId, variation, prereleaseId);
+            return stableFeature;
         }
-        for (final Artifact bundle : prerelease.getBundles()) {
-            if (merged.getBundles().getExact(bundle.getId()) == null) {
-                merged.getBundles().add(bundle);
-            } else {
-                LOGGER.info("Keeping stable bundle {} for {} {} and dropping duplicate from prerelease {}.",
-                        bundle.getId().toMvnId(), featureLabel, variation, featureLabel);
-            }
-        }
-
-        for (final Configuration cfg : stable.getConfigurations()) {
-            merged.getConfigurations().add(cfg);
+        if (comparison < 0) {
+            LOGGER.info("Using prerelease feature {} for {} because it has newer version than {}.",
+                    prereleaseId, variation, stableId);
+            return prereleaseFeature;
         }
 
-        for (final Configuration cfg : prerelease.getConfigurations()) {
-            if (!merged.getConfigurations().contains(cfg)) {
-                merged.getConfigurations().add(cfg);
-            } else {
-                LOGGER.info("Keeping stable configuration {} for {} {} and dropping duplicate from prerelease {}.",
-                        cfg.getPid(), featureLabel, variation, featureLabel);
-            }
-        }
-
-        for (final Extension extension : stable.getExtensions()) {
-            merged.getExtensions().add(extension);
-        }
-        for (final Extension extension : prerelease.getExtensions()) {
-            if (merged.getExtensions().getByName(extension.getName()) == null) {
-                merged.getExtensions().add(extension);
-            } else {
-                LOGGER.info("Keeping stable extension {} for {} {} and dropping duplicate from prerelease {}.",
-                        extension.getName(), featureLabel, variation, featureLabel);
-            }
-        }
-
-        return merged;
+        LOGGER.info("Features {} and {} have the same version for {}. Using conflict resolver.",
+                stableId, prereleaseId, variation);
+        return conflictResolver.resolveVersionConflict(stableFeature, prereleaseFeature, variation);
     }
 
     protected String getProductClassifier(SdkProductVariation variation) {
