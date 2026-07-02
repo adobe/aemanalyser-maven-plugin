@@ -84,7 +84,11 @@ public class AemAggregator {
 
     private ArtifactId sdkId;
 
+    private ArtifactId prereleaseSdkId;
+
     private List<ArtifactId> addOnIds;
+
+    private List<ArtifactId> prereleaseAddOnIds;
 
     private EnumSet<ServiceType> serviceTypes = EnumSet.allOf(ServiceType.class);
 
@@ -164,7 +168,12 @@ public class AemAggregator {
 
     public ProductFeatureGenerator getProductFeatureGenerator() {
         if ( productFeatureGenerator == null )
-            return new AemSdkProductFeatureGenerator(getFeatureProvider(), getSdkId(), getAddOnIds());
+            return new AemSdkProductFeatureGenerator(
+                    getFeatureProvider(),
+                    getSdkId(),
+                    getPrereleaseSdkId(),
+                    getAddOnIds(),
+                    getPrereleaseAddOnIds());
         return productFeatureGenerator;
     }
 
@@ -249,6 +258,20 @@ public class AemAggregator {
     }
 
     /**
+     * @return the prereleaseSdkId
+     */
+    public ArtifactId getPrereleaseSdkId() {
+        return prereleaseSdkId;
+    }
+
+    /**
+     * @param prereleaseSdkId the prereleaseSdkId to set
+     */
+    public void setPrereleaseSdkId(final ArtifactId prereleaseSdkId) {
+        this.prereleaseSdkId = prereleaseSdkId;
+    }
+
+    /**
      * @return the addOnIds
      */
     public List<ArtifactId> getAddOnIds() {
@@ -260,6 +283,20 @@ public class AemAggregator {
      */
     public void setAddOnIds(final List<ArtifactId> addOnIds) {
         this.addOnIds = addOnIds;
+    }
+
+    /**
+     * @return the prereleaseAddOnIds
+     */
+    public List<ArtifactId> getPrereleaseAddOnIds() {
+        return prereleaseAddOnIds;
+    }
+
+    /**
+     * @param prereleaseAddOnIds the prereleaseAddOnIds to set
+     */
+    public void setPrereleaseAddOnIds(final List<ArtifactId> prereleaseAddOnIds) {
+        this.prereleaseAddOnIds = prereleaseAddOnIds;
     }
 
     public enum Mode {
