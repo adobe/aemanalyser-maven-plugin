@@ -86,6 +86,20 @@ public class RepoinitUtilTest {
         assertFalse(extension.getText().contains("create path (sling:Folder) /apps/a/b\n"));
     }
 
+    @Test
+    public void shouldKeepRepoinitTextWhenNoConflictsExist() {
+        String original =
+                "create path (sling:Folder) /apps/project/clientlibs/images\n" +
+                        "set ACL on /apps/project\n" +
+                        "  allow jcr:read for everyone";
+
+        Extension extension = textExtension(original);
+
+        RepoinitUtil.removeConflicts(extension);
+
+        assertEquals(original, extension.getText());
+    }
+
     private Extension textExtension(String text) {
         Extension extension = mock(Extension.class);
 

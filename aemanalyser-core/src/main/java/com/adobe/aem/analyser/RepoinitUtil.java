@@ -1,7 +1,10 @@
 package com.adobe.aem.analyser;
 
 import org.apache.sling.feature.Extension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -13,6 +16,7 @@ import java.util.stream.Collectors;
  * from repoinit extensions of Sling features.</p>
  */
 class RepoinitUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RepoinitUtil.class);
 
     private RepoinitUtil() {
     }
@@ -42,10 +46,21 @@ class RepoinitUtil {
      */
     static void removeConflicts(Extension repoinitExtension) {
         String originalText = repoinitExtension.getText();
+        List<String> removedLines = new ArrayList<>();
 
         List<String> fixedLines = originalText.lines()
-                .filter(line -> !PATTERN.matcher(line).matches())
+                .filter(line -> {
+                    boolean isConflicting = PATTERN.matcher(line).matches();
+                    if (isConflicting) {
+                        removedLines.add(line);
+                    }
+                    return !isConflicting;
+                })
                 .collect(Collectors.toList());
+
+        if (!removedLines.isEmpty()) {
+            LOGGER.debug("Removed {} repoinit conflict line(s): {}", removedLines.size(), removedLines);
+        }
 
         String fixedText = String.join("\n", fixedLines);
         repoinitExtension.setText(fixedText);
