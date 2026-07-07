@@ -11,7 +11,17 @@
 */
 package com.adobe.aem.analyser;
 
-import com.adobe.aem.project.ServiceType;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
@@ -24,16 +34,7 @@ import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.FeatureProvider;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import com.adobe.aem.project.ServiceType;
 
 public class AemSdkProductFeatureGeneratorTest {
 
