@@ -97,8 +97,6 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
     private Feature getSdkFeature(final SdkProductVariation variation) throws IOException {
         final Feature stableFeature = resolveSdkFeature(sdkId, variation);
         if (prereleaseSdkId == null) {
-            LOGGER.info("Using SDK feature {} for {} because prerelease SDK is not configured.",
-                    stableFeature.getId().toMvnId(), variation);
             return stableFeature;
         }
 
@@ -111,8 +109,6 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
             final SdkProductVariation variation) throws IOException {
         final Feature stableFeature = resolveAddOnFeature(stableAddOnId);
         if (prereleaseAddOnId == null) {
-            LOGGER.info("Using add-on feature {} for {} because prerelease add-on is not configured.",
-                    stableFeature.getId().toMvnId(), variation);
             return stableFeature;
         }
 
@@ -152,8 +148,8 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
         final String prereleaseId = prereleaseFeature.getId().toMvnId();
 
         if (comparison > 0) {
-            LOGGER.info("Using stable feature {} for {} because it has newer version than {}.",
-                    stableId, variation, prereleaseId);
+            LOGGER.info("Found prerelease feature {} for {} but not using because it is has a different version than release {}",
+                    prereleaseId, variation, stableId);
             return stableFeature;
         }
         if (comparison < 0) {
@@ -162,7 +158,7 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
             return prereleaseFeature;
         }
 
-        LOGGER.info("Features {} and {} have the same version for {}. Using conflict resolver.",
+        LOGGER.info("Features {} and {} have the same version for {}. Using result of merging both",
                 stableId, prereleaseId, variation);
         return conflictResolver.resolveVersionConflict(stableFeature, prereleaseFeature, variation);
     }

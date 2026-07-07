@@ -122,8 +122,6 @@ class AssemblyBasedFeatureConflictResolver implements FeatureConflictResolver {
                         targetEx.getArtifacts().clear();
                         sourceEx.getArtifacts().forEach(a -> targetEx.getArtifacts().add(a.copy(a.getId())));
                         break;
-                    default:
-                        break;
                 }
             }
         }
