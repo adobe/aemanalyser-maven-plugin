@@ -201,6 +201,11 @@ public class AemSdkProductFeatureGeneratorTest {
                 final Extension other = new Extension(ExtensionType.TEXT, "other-ext", ExtensionState.OPTIONAL);
                 other.setText("stable-other-ext-content");
                 stable.getExtensions().add(other);
+
+                stable.getVariables().put("var.only.stable", "stable.value");
+                stable.getVariables().put("var.common", "stable.value");
+                stable.getFrameworkProperties().put("fw.only.stable", "stable.fw.value");
+                stable.getFrameworkProperties().put("fw.common", "stable.fw.value");
                 return stable;
             }
             if ("aem-prerelease-sdk-api".equals(id.getArtifactId())) {
@@ -219,6 +224,11 @@ public class AemSdkProductFeatureGeneratorTest {
                 final Extension other = new Extension(ExtensionType.TEXT, "other-ext", ExtensionState.OPTIONAL);
                 other.setText("prerelease-other-ext-content");
                 stable.getExtensions().add(other);
+
+                stable.getVariables().put("var.only.prerelease", "prerelease.value");
+                stable.getVariables().put("var.common", "prerelease.value");
+                stable.getFrameworkProperties().put("fw.only.prerelease", "prerelease.fw.value");
+                stable.getFrameworkProperties().put("fw.common", "prerelease.fw.value");
                 return stable;
             }
 
@@ -258,6 +268,16 @@ public class AemSdkProductFeatureGeneratorTest {
         assertNotNull(otherExt);
         assertEquals(ExtensionType.TEXT, otherExt.getType());
         assertEquals("prerelease-other-ext-content", otherExt.getText());
+
+        assertEquals(3, sdkFeature.getVariables().size());
+        assertEquals("stable.value", sdkFeature.getVariables().get("var.only.stable"));
+        assertEquals("prerelease.value", sdkFeature.getVariables().get("var.common"));
+        assertEquals("prerelease.value", sdkFeature.getVariables().get("var.only.prerelease"));
+
+        assertEquals(3, sdkFeature.getFrameworkProperties().size());
+        assertEquals("stable.fw.value", sdkFeature.getFrameworkProperties().get("fw.only.stable"));
+        assertEquals("prerelease.fw.value", sdkFeature.getFrameworkProperties().get("fw.common"));
+        assertEquals("prerelease.fw.value", sdkFeature.getFrameworkProperties().get("fw.only.prerelease"));
     }
 
     /**
@@ -388,6 +408,11 @@ public class AemSdkProductFeatureGeneratorTest {
                 final Extension other = new Extension(ExtensionType.TEXT, "other-ext", ExtensionState.OPTIONAL);
                 other.setText("stable-other-ext-content");
                 stable.getExtensions().add(other);
+
+                stable.getVariables().put("addon.var.only.stable", "stable.addon.value");
+                stable.getVariables().put("addon.var.common", "stable.addon.value");
+                stable.getFrameworkProperties().put("addon.fw.only.stable", "stable.addon.fw.value");
+                stable.getFrameworkProperties().put("addon.fw.common", "stable.addon.fw.value");
                 return stable;
             }
             if ("aem-addon-prerelease".equals(id.getArtifactId())) {
@@ -406,6 +431,11 @@ public class AemSdkProductFeatureGeneratorTest {
                 final Extension other = new Extension(ExtensionType.TEXT, "other-ext", ExtensionState.OPTIONAL);
                 other.setText("prerelease-other-ext-content");
                 prerelease.getExtensions().add(other);
+
+                prerelease.getVariables().put("addon.var.only.prerelease", "prerelease.addon.value");
+                prerelease.getVariables().put("addon.var.common", "prerelease.addon.value");
+                prerelease.getFrameworkProperties().put("addon.fw.only.prerelease", "prerelease.addon.fw.value");
+                prerelease.getFrameworkProperties().put("addon.fw.common", "prerelease.addon.fw.value");
                 return prerelease;
             }
             return new Feature(id);
@@ -447,5 +477,15 @@ public class AemSdkProductFeatureGeneratorTest {
         assertNotNull(otherExt);
         assertEquals(ExtensionType.TEXT, otherExt.getType());
         assertEquals("prerelease-other-ext-content", otherExt.getText());
+
+        assertEquals(3, addon.getVariables().size());
+        assertEquals("stable.addon.value", addon.getVariables().get("addon.var.only.stable"));
+        assertEquals("prerelease.addon.value", addon.getVariables().get("addon.var.common"));
+        assertEquals("prerelease.addon.value", addon.getVariables().get("addon.var.only.prerelease"));
+
+        assertEquals(3, addon.getFrameworkProperties().size());
+        assertEquals("stable.addon.fw.value", addon.getFrameworkProperties().get("addon.fw.only.stable"));
+        assertEquals("prerelease.addon.fw.value", addon.getFrameworkProperties().get("addon.fw.common"));
+        assertEquals("prerelease.addon.fw.value", addon.getFrameworkProperties().get("addon.fw.only.prerelease"));
     }
 }

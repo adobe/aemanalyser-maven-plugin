@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -74,12 +75,15 @@ class AssemblyBasedFeatureConflictResolver implements FeatureConflictResolver {
         // Configurations: last assembled (prerelease) wins on property conflicts.
         builderContext.addConfigsOverrides(Collections.singletonMap("*", "MERGE_LATEST"));
 
-        // Variables: use prerelease values as explicit overrides to avoid IllegalStateException
-        // on duplicate keys with different values.
-        builderContext.addVariablesOverrides(new HashMap<>(prerelease.getVariables()));
+        // Variables: merge stable and prerelease, with prerelease overriding on conflicts.
+        Map<String, String> variablesOverrides = new HashMap<>(stable.getVariables());
+        variablesOverrides.putAll(prerelease.getVariables());
+        builderContext.addVariablesOverrides(variablesOverrides);
 
         // Framework properties: same treatment as variables.
-        builderContext.addFrameworkPropertiesOverrides(new HashMap<>(prerelease.getFrameworkProperties()));
+        Map<String, String> frameworkPropertiesOverrides = new HashMap<>(stable.getFrameworkProperties());
+        frameworkPropertiesOverrides.putAll(prerelease.getFrameworkProperties());
+        builderContext.addFrameworkPropertiesOverrides(frameworkPropertiesOverrides);
 
         // stable first → prerelease last: consistent with all override rules above.
         return FeatureBuilder.assemble(prerelease.getId(), builderContext, stable, prerelease);
