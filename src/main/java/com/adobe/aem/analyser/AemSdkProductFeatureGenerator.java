@@ -147,20 +147,16 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
         final String stableId = stableFeature.getId().toMvnId();
         final String prereleaseId = prereleaseFeature.getId().toMvnId();
 
-        if (comparison > 0) {
-            LOGGER.info("Found prerelease feature {} for {} but not using because it is has a different version than release {}",
-                    prereleaseId, variation, stableId);
-            return stableFeature;
-        }
-        if (comparison < 0) {
-            LOGGER.info("Using prerelease feature {} for {} because it has newer version than {}.",
-                    prereleaseId, variation, stableId);
-            return prereleaseFeature;
+        if (comparison == 0) {
+            LOGGER.info("Features {} and {} have the same version for {}. Using result of merging both",
+                    stableId, prereleaseId, variation);
+
+            return conflictResolver.resolveVersionConflict(stableFeature, prereleaseFeature, variation);
         }
 
-        LOGGER.info("Features {} and {} have the same version for {}. Using result of merging both",
-                stableId, prereleaseId, variation);
-        return conflictResolver.resolveVersionConflict(stableFeature, prereleaseFeature, variation);
+        LOGGER.info("Found prerelease feature {} for {} but not using because it is has a different version than release {}",
+                prereleaseId, variation, stableId);
+        return stableFeature;
     }
 
     protected String getProductClassifier(SdkProductVariation variation) {

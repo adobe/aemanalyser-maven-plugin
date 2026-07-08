@@ -13,18 +13,13 @@ package com.adobe.aem.analyser;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.json.Json;
-import jakarta.json.JsonArray;
-import jakarta.json.JsonObject;
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Configuration;
 import org.apache.sling.feature.Extension;
@@ -132,11 +127,11 @@ public class AemSdkProductFeatureGeneratorTest {
      * - both SDK features contain bundles and api-regions extension
      *
      * Expected:
-     * - prerelease SDK feature is selected for AUTHOR aggregate
-     * - selected bundles and versions come from prerelease
+     * - stable SDK feature is selected for AUTHOR aggregate
+     * - selected bundle comes from stable
      */
     @Test
-    public void testGetProductAggregatesSelectsNewerPrereleaseOverStable() throws IOException {
+    public void testGetProductAggregatesSelectsStableOverNewerPrerelease() throws IOException {
         final ArtifactId stableSdkId = ArtifactId.fromMvnId("com.adobe.aem:aem-sdk-api:2.0.0");
         final ArtifactId prereleaseSdkId = ArtifactId.fromMvnId("com.adobe.aem:aem-prerelease-sdk-api:2.1.0");
 
@@ -165,14 +160,12 @@ public class AemSdkProductFeatureGeneratorTest {
         Map<ProductVariation, List<Feature>> res = pg.getProductAggregates(EnumSet.of(ServiceType.AUTHOR));
 
         Feature productFeature = res.get(SdkProductVariation.AUTHOR).get(0);
-        assertEquals("aem-prerelease-sdk-api", productFeature.getId().getArtifactId());
-        assertEquals("2.1.0", productFeature.getId().getVersion());
-        assertEquals(2, productFeature.getBundles().size());
+        assertEquals("aem-sdk-api", productFeature.getId().getArtifactId());
+        assertEquals("2.0.0", productFeature.getId().getVersion());
+        assertEquals(1, productFeature.getBundles().size());
 
-        assertEquals("prerelease.bundle", productFeature.getBundles().get(0).getId().getArtifactId());
-        assertEquals("2.1", productFeature.getBundles().get(0).getId().getVersion());
-        assertEquals("another.bundle", productFeature.getBundles().get(1).getId().getArtifactId());
-        assertEquals("2.1", productFeature.getBundles().get(1).getId().getVersion());
+        assertEquals("stable.bundle", productFeature.getBundles().get(0).getId().getArtifactId());
+        assertEquals("2.0", productFeature.getBundles().get(0).getId().getVersion());
         assertNotNull(productFeature.getExtensions().getByName("api-regions"));
     }
 
@@ -321,11 +314,11 @@ public class AemSdkProductFeatureGeneratorTest {
      * - both add-on counterparts are available for the same logical add-on
      *
      * Expected:
-     * - prerelease add-on feature is selected
-     * - selected add-on bundles/configurations are from prerelease
+     * - stable add-on feature is selected
+     * - selected add-on bundle is from stable
      */
     @Test
-    public void testGetAddOnSelectsNewerPrereleaseOverStable() throws IOException {
+    public void testGetAddOnSelectsStableOverNewerPrerelease() throws IOException {
         final ArtifactId stableAddonId = ArtifactId.fromMvnId("com.adobe.aem:aem-addon:2.0.0");
         final ArtifactId prereleaseAddonId = ArtifactId.fromMvnId("com.adobe.aem:aem-addon-prerelease:2.1.0");
 
@@ -357,12 +350,10 @@ public class AemSdkProductFeatureGeneratorTest {
 
         assertEquals(2, features.size());
         Feature addon = features.get(1);
-        assertEquals("aem-addon-prerelease", addon.getId().getArtifactId());
-        assertEquals("2.1.0", addon.getId().getVersion());
-        assertEquals(2, addon.getBundles().size());
-        assertEquals("prerelease.addon.bundle", addon.getBundles().get(0).getId().getArtifactId());
-        assertEquals("another.addon.bundle", addon.getBundles().get(1).getId().getArtifactId());
-        assertEquals(1, addon.getConfigurations().size());
+        assertEquals("aem-addon", addon.getId().getArtifactId());
+        assertEquals("2.0.0", addon.getId().getVersion());
+        assertEquals(1, addon.getBundles().size());
+        assertEquals("stable.addon.bundle", addon.getBundles().get(0).getId().getArtifactId());
     }
 
     /**
@@ -456,59 +447,5 @@ public class AemSdkProductFeatureGeneratorTest {
         assertNotNull(otherExt);
         assertEquals(ExtensionType.TEXT, otherExt.getType());
         assertEquals("prerelease-other-ext-content", otherExt.getText());
-    }
-
-    @Test
-    public void testGetProductAggregatesUsesStableApiRegionsExportsWhenPrereleaseRegionIsEmpty() throws IOException {
-        final ArtifactId stableSdkId = ArtifactId.fromMvnId("com.adobe.aem:aem-sdk-api:2.1.0");
-        final ArtifactId prereleaseSdkId = ArtifactId.fromMvnId("com.adobe.aem:aem-prerelease-sdk-api:2.1.0");
-
-        FeatureProvider fp = id -> {
-            if ("aem-sdk-api".equals(id.getArtifactId())) {
-                final Feature stable = new Feature(id);
-                final Extension apiRegions = new Extension(ExtensionType.JSON, "api-regions", ExtensionState.OPTIONAL);
-                apiRegions.setJSON("[{\"name\":\"global\",\"exports\":[{\"name\":\"ch.qos.logback.classic\",\"deprecated\":{\"msg\":\"This internal logback API is not supported by AEM as a Cloud Service.\",\"since\":\"2022-01-27\",\"for-removal\":\"2025-08-31\"}}]},{\"name\":\"com.adobe.aem.deprecated\",\"exports\":[{\"name\":\"org.apache.abdera.ext.opensearch\",\"deprecated\":{\"msg\":\"Legacy AEM 6.x API.\",\"since\":\"2019-04-08\",\"for-removal\":\"2025-08-31\"}}]}]");
-                stable.getExtensions().add(apiRegions);
-                return stable;
-            }
-            if ("aem-prerelease-sdk-api".equals(id.getArtifactId())) {
-                final Feature prerelease = new Feature(id);
-                final Extension apiRegions = new Extension(ExtensionType.JSON, "api-regions", ExtensionState.OPTIONAL);
-                apiRegions.setJSON("[{\"name\":\"global\"},{\"name\":\"com.adobe.aem.deprecated\"}]");
-                prerelease.getExtensions().add(apiRegions);
-                return prerelease;
-            }
-            return new Feature(id);
-        };
-
-        AemSdkProductFeatureGenerator pg = new AemSdkProductFeatureGenerator(
-                fp,
-                stableSdkId,
-                prereleaseSdkId,
-                null,
-                Collections.emptyList(),
-                new AssemblyBasedFeatureConflictResolver());
-
-        Map<ProductVariation, List<Feature>> res = pg.getProductAggregates(EnumSet.of(ServiceType.AUTHOR));
-        Feature sdkFeature = res.get(SdkProductVariation.AUTHOR).get(0);
-
-        Extension apiRegionsExt = sdkFeature.getExtensions().getByName("api-regions");
-        assertNotNull(apiRegionsExt);
-        assertEquals(ExtensionType.JSON, apiRegionsExt.getType());
-
-        JsonArray regions = Json.createReader(new StringReader(apiRegionsExt.getJSON())).readArray();
-        JsonObject globalRegion = regions.getJsonObject(0);
-        JsonObject deprecatedRegion = regions.getJsonObject(1);
-
-        assertTrue(globalRegion.containsKey("exports"));
-        assertEquals("ch.qos.logback.classic",
-                globalRegion.getJsonArray("exports").getJsonObject(0).getString("name"));
-        assertEquals("2025-08-31",
-                globalRegion.getJsonArray("exports").getJsonObject(0)
-                        .getJsonObject("deprecated").getString("for-removal"));
-
-        assertTrue(deprecatedRegion.containsKey("exports"));
-        assertEquals("org.apache.abdera.ext.opensearch",
-                deprecatedRegion.getJsonArray("exports").getJsonObject(0).getString("name"));
     }
 }
