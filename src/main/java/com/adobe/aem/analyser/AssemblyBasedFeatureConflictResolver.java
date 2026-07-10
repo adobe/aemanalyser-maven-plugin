@@ -11,6 +11,7 @@
 */
 package com.adobe.aem.analyser;
 
+import org.apache.sling.feature.Artifact;
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Extension;
 import org.apache.sling.feature.Feature;
@@ -23,7 +24,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -123,11 +126,25 @@ class AssemblyBasedFeatureConflictResolver implements FeatureConflictResolver {
                         }
                         break;
                     case ARTIFACTS:
+                        final Map<String, Artifact> mergedArtifactsByKey = new LinkedHashMap<>();
+                        targetEx.getArtifacts().forEach(artifact ->
+                                mergedArtifactsByKey.put(toVersionlessKey(artifact.getId()), artifact));
+                        sourceEx.getArtifacts().forEach(artifact ->
+                                mergedArtifactsByKey.put(toVersionlessKey(artifact.getId()), artifact.copy(artifact.getId())));
+
                         targetEx.getArtifacts().clear();
-                        sourceEx.getArtifacts().forEach(a -> targetEx.getArtifacts().add(a.copy(a.getId())));
+                        targetEx.getArtifacts().addAll(mergedArtifactsByKey.values());
                         break;
                 }
             }
+        }
+
+        private static String toVersionlessKey(final ArtifactId artifactId) {
+            return String.join(":",
+                    artifactId.getGroupId(),
+                    artifactId.getArtifactId(),
+                    Objects.toString(artifactId.getType(), ""),
+                    Objects.toString(artifactId.getClassifier(), ""));
         }
     }
 }
