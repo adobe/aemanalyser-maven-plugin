@@ -49,18 +49,17 @@ public class ApiRegionsMergeHandlerTest {
         assertEquals("prerelease-kind", mergedRegion.getString("kind"));
     }
 
-    //?
     @Test
-    public void testMergeKeepsOnlyPrereleaseRegionSet() {
+    public void testMergeAppendsStableOnlyRegionsAfterPrereleaseRegions() {
         final String stableJson = "[{\"name\":\"global\",\"exports\":[\"stable.api\"]},{\"name\":\"internal\",\"exports\":[\"internal.api\"]}]";
         final String prereleaseJson = "[{\"name\":\"global\",\"exports\":[\"prerelease.api\"]}]";
 
-        String merge = ApiRegionsMergeHandler.merge(stableJson, prereleaseJson);
-        try (final JsonReader reader = Json.createReader(new StringReader(merge))) {
+        try (final JsonReader reader = Json.createReader(new StringReader(ApiRegionsMergeHandler.merge(stableJson, prereleaseJson)))) {
             final JsonArray regions = reader.readArray();
 
-            assertEquals(1, regions.size());
+            assertEquals(2, regions.size());
             assertEquals("global", regions.getJsonObject(0).getString("name"));
+            assertEquals("internal", regions.getJsonObject(1).getString("name"));
         }
     }
 
