@@ -57,7 +57,8 @@ public class AemAnalyser {
         + ",api-regions-crossfeature-dups"
         + ",api-regions-exportsimports"
         + ",configuration-api"
-        + ",region-deprecated-api";
+        + ",region-deprecated-api"
+        + ",repoinit-conflicts";
 
     /**
      * These tasks are executed on the user aggregates (before the product is merged in)
