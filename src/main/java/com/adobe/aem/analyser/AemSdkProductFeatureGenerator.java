@@ -16,13 +16,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.sling.feature.ArtifactId;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.FeatureProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.adobe.aem.project.ServiceType;
 
@@ -31,14 +35,37 @@ import com.adobe.aem.project.ServiceType;
  */
 public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AemSdkProductFeatureGenerator.class);
     private final FeatureProvider featureProvider;
     private final ArtifactId sdkId;
+    private final ArtifactId prereleaseSdkId;
     private final List<ArtifactId> addOnIds;
+    private final List<ArtifactId> prereleaseAddOnIds;
+    private final FeatureConflictResolver conflictResolver;
 
-    public AemSdkProductFeatureGenerator(FeatureProvider featureProvider, ArtifactId sdkId, List<ArtifactId> addOnIds) {
+    public AemSdkProductFeatureGenerator(
+            FeatureProvider featureProvider,
+            ArtifactId sdkId,
+            ArtifactId prereleaseSdkId,
+            List<ArtifactId> addOnIds,
+            List<ArtifactId> prereleaseAddOnIds) {
+        this(featureProvider, sdkId, prereleaseSdkId, addOnIds, prereleaseAddOnIds,
+                new AssemblyBasedFeatureConflictResolver());
+    }
+
+    public AemSdkProductFeatureGenerator(
+            FeatureProvider featureProvider,
+            ArtifactId sdkId,
+            ArtifactId prereleaseSdkId,
+            List<ArtifactId> addOnIds,
+            List<ArtifactId> prereleaseAddOnIds,
+            FeatureConflictResolver conflictResolver) {
         this.featureProvider = featureProvider;
         this.sdkId = sdkId;
+        this.prereleaseSdkId = prereleaseSdkId;
         this.addOnIds = addOnIds == null ? Collections.emptyList() : addOnIds;
+        this.prereleaseAddOnIds = prereleaseAddOnIds == null ? Collections.emptyList() : prereleaseAddOnIds;
+        this.conflictResolver = conflictResolver;
     }
 
     @Override
@@ -54,18 +81,12 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
                 continue;
 
             final List<Feature> list = aggregates.computeIfAbsent(variation, n -> new ArrayList<>());
-            final Feature sdkFeature = featureProvider.provide(sdkId
-                    .changeClassifier(getProductClassifier(variation))
-                    .changeType(AemAggregator.FEATUREMODEL_TYPE));
-            if ( sdkFeature == null ) {
-                throw new IOException("Unable to find SDK feature for " + sdkId.toMvnId());
-            }
+            final Feature sdkFeature = getSdkFeature(variation);
             list.add(sdkFeature);
+            final Map<String, ArtifactId> prereleaseByKey = toPrereleaseAddOnMap(prereleaseAddOnIds);
             for(final ArtifactId id : addOnIds) {
-                final Feature feature = featureProvider.provide(id.changeType(AemAggregator.FEATUREMODEL_TYPE));
-                if ( feature == null ) {
-                    throw new IOException("Unable to find addon feature for " + id.toMvnId());
-                }
+                final ArtifactId prereleaseId = prereleaseByKey.get(addOnKey(id));
+                final Feature feature = getAddOnFeature(id, prereleaseId, variation);
                 list.add(feature);
             }
         }
@@ -73,8 +94,85 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
         return aggregates;
     }
 
+    private Feature getSdkFeature(final SdkProductVariation variation) throws IOException {
+        final Feature stableFeature = resolveSdkFeature(sdkId, variation);
+        if (prereleaseSdkId == null) {
+            return stableFeature;
+        }
+
+        final Feature prereleaseFeature = resolveSdkFeature(prereleaseSdkId, variation);
+        return selectFeatureByVersion(stableFeature, prereleaseFeature, variation);
+    }
+
+    private Feature getAddOnFeature(final ArtifactId stableAddOnId,
+            final ArtifactId prereleaseAddOnId,
+            final SdkProductVariation variation) throws IOException {
+        final Feature stableFeature = resolveAddOnFeature(stableAddOnId);
+        if (prereleaseAddOnId == null) {
+            return stableFeature;
+        }
+
+        final Feature prereleaseFeature = resolveAddOnFeature(prereleaseAddOnId);
+        return selectFeatureByVersion(stableFeature, prereleaseFeature, variation);
+    }
+
+    private Feature resolveSdkFeature(final ArtifactId sourceSdkId, final SdkProductVariation variation) throws IOException {
+        final ArtifactId featureId = sourceSdkId
+                .changeClassifier(getProductClassifier(variation))
+                .changeType(AemAggregator.FEATUREMODEL_TYPE);
+        final Feature feature = featureProvider.provide(featureId);
+        if (feature == null) {
+            throw new IOException("Unable to find feature for " + sourceSdkId.toMvnId());
+        }
+        return feature;
+    }
+
+    private Feature resolveAddOnFeature(final ArtifactId sourceAddOnId) throws IOException {
+        final ArtifactId featureId = sourceAddOnId.changeType(AemAggregator.FEATUREMODEL_TYPE);
+        final Feature feature = featureProvider.provide(featureId);
+        if (feature == null) {
+            throw new IOException("Unable to find feature for " + sourceAddOnId.toMvnId());
+        }
+        return feature;
+    }
+
+    private int compareFeatureVersions(final ArtifactId stable, final ArtifactId prerelease) {
+        return stable.getVersion().compareTo(prerelease.getVersion());
+    }
+
+    private Feature selectFeatureByVersion(final Feature stableFeature,
+            final Feature prereleaseFeature,
+            final SdkProductVariation variation) {
+        final int comparison = compareFeatureVersions(stableFeature.getId(), prereleaseFeature.getId());
+        final String stableId = stableFeature.getId().toMvnId();
+        final String prereleaseId = prereleaseFeature.getId().toMvnId();
+
+        if (comparison == 0) {
+            LOGGER.info("Features {} and {} have the same version for {}. Using result of merging both",
+                    stableId, prereleaseId, variation);
+
+            return conflictResolver.resolveVersionConflict(stableFeature, prereleaseFeature, variation);
+        }
+
+        LOGGER.info("Found prerelease feature {} for {} but not using because it is has a different version than release {}",
+                prereleaseId, variation, stableId);
+        return stableFeature;
+    }
+
     protected String getProductClassifier(SdkProductVariation variation) {
         return variation.getSdkClassifier();
+    }
+
+    private Map<String, ArtifactId> toPrereleaseAddOnMap(final List<ArtifactId> addOnIds) {
+        final Map<String, ArtifactId> byKey = new LinkedHashMap<>();
+        for (final ArtifactId id : addOnIds) {
+            byKey.put(addOnKey(id), id);
+        }
+        return byKey;
+    }
+
+    private String addOnKey(final ArtifactId id) {
+        return id.getGroupId() + ":" + Objects.toString(id.getClassifier(), "") + ":" + Objects.toString(id.getType(), "");
     }
 
     @Override
