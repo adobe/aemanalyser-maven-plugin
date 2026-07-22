@@ -102,6 +102,8 @@ class AssemblyBasedFeatureConflictResolver implements FeatureConflictResolver {
      */
     private static class PrereleaseWinsMergeHandler implements MergeHandler {
 
+        private static final Logger LOGGER = LoggerFactory.getLogger(PrereleaseWinsMergeHandler.class);
+
         @Override
         public boolean canMerge(final Extension extension) {
             return true;
@@ -122,6 +124,7 @@ class AssemblyBasedFeatureConflictResolver implements FeatureConflictResolver {
                         if (API_REGIONS_EXTENSION_NAME.equals(sourceEx.getName())) {
                             targetEx.setJSON(ApiRegionsMergeHandler.merge(targetEx.getJSON(), sourceEx.getJSON()));
                         } else {
+                            LOGGER.warn("Unsupported JSON extension {}. Using source JSON as fallback.", sourceEx.getName());
                             targetEx.setJSON(sourceEx.getJSON());
                         }
                         break;
