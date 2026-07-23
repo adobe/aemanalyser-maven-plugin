@@ -363,7 +363,7 @@ governing permissions and limitations under the License.
     <dependency>
         <groupId>org.apache.jackrabbit.vault</groupId>
         <artifactId>vault-validation</artifactId>
-        <version>3.8.4</version>
+        <version>4.2.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.jackrabbit</groupId>
