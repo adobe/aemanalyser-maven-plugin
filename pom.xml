@@ -320,7 +320,6 @@ governing permissions and limitations under the License.
       <groupId>org.apache.johnzon</groupId>
       <artifactId>johnzon-core</artifactId>
       <version>2.1.0</version>
-      <classifier>jakarta</classifier>
       <scope>compile</scope>
     </dependency>
     <dependency>
