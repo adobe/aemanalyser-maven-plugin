@@ -42,7 +42,7 @@ jobs:
       run: mvn -B --show-version verify --file pom.xml
     - name: Archive IT build logs on failure
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: it-build-logs-java${{ matrix.java-version }}
         path: target/it/**/build.log
