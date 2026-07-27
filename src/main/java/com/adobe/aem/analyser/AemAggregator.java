@@ -523,7 +523,7 @@ public class AemAggregator {
             if (enableFixingIncorrectPathsInRepoinit) {
                 ValidationReport repoInitValidationReport = RepoInitConflictsValidator.validate(feature);
                 if (repoInitValidationReport.hasConflicts()) {
-                    RepoinitUtil.removeConflicts(feature.getExtensions().getByName("repoinit"));
+                    RepoinitUtil.removeConflicts(repoInitValidationReport, feature.getExtensions().getByName("repoinit"));
                 }
             }
 
