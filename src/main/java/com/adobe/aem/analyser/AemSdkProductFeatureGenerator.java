@@ -12,6 +12,7 @@
 package com.adobe.aem.analyser;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -95,45 +96,55 @@ public class AemSdkProductFeatureGenerator implements ProductFeatureGenerator {
     }
 
     private Feature getSdkFeature(final SdkProductVariation variation) throws IOException {
-        final Feature stableFeature = resolveSdkFeature(sdkId, variation);
+        final Feature stableFeature = resolveSdkFeature(sdkId, variation, true);
         if (prereleaseSdkId == null) {
             return stableFeature;
         }
 
-        final Feature prereleaseFeature = resolveSdkFeature(prereleaseSdkId, variation);
+        final Feature prereleaseFeature = resolveSdkFeature(prereleaseSdkId, variation, false);
+        if (prereleaseFeature == null) {
+            return stableFeature;
+        }
+
         return selectFeatureByVersion(stableFeature, prereleaseFeature, variation);
     }
 
     private Feature getAddOnFeature(final ArtifactId stableAddOnId,
             final ArtifactId prereleaseAddOnId,
-            final SdkProductVariation variation) throws IOException {
+            final SdkProductVariation variation) {
         final Feature stableFeature = resolveAddOnFeature(stableAddOnId);
         if (prereleaseAddOnId == null) {
             return stableFeature;
         }
 
         final Feature prereleaseFeature = resolveAddOnFeature(prereleaseAddOnId);
+        if (prereleaseFeature == null) {
+            return stableFeature;
+        }
         return selectFeatureByVersion(stableFeature, prereleaseFeature, variation);
     }
 
-    private Feature resolveSdkFeature(final ArtifactId sourceSdkId, final SdkProductVariation variation) throws IOException {
+    private Feature resolveSdkFeature(final ArtifactId sourceSdkId, final SdkProductVariation variation, boolean failOnNotFound) throws IOException {
         final ArtifactId featureId = sourceSdkId
                 .changeClassifier(getProductClassifier(variation))
                 .changeType(AemAggregator.FEATUREMODEL_TYPE);
-        final Feature feature = featureProvider.provide(featureId);
-        if (feature == null) {
-            throw new IOException("Unable to find feature for " + sourceSdkId.toMvnId());
+        try {
+            return featureProvider.provide(featureId);
+        } catch (RuntimeException e) {
+            if (failOnNotFound) {
+                throw new IOException("Unable to find feature for " + sourceSdkId.toMvnId());
+            }
         }
-        return feature;
+        return null;
     }
 
-    private Feature resolveAddOnFeature(final ArtifactId sourceAddOnId) throws IOException {
+    private Feature resolveAddOnFeature(final ArtifactId sourceAddOnId) {
         final ArtifactId featureId = sourceAddOnId.changeType(AemAggregator.FEATUREMODEL_TYPE);
-        final Feature feature = featureProvider.provide(featureId);
-        if (feature == null) {
-            throw new IOException("Unable to find feature for " + sourceAddOnId.toMvnId());
+        try {
+            return featureProvider.provide(featureId);
+        } catch (RuntimeException e) {
+            return null;
         }
-        return feature;
     }
 
     private int compareFeatureVersions(final ArtifactId stable, final ArtifactId prerelease) {
