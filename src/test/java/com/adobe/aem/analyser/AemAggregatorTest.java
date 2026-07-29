@@ -12,6 +12,7 @@
 package com.adobe.aem.analyser;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -19,6 +20,7 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,14 +31,21 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.sling.feature.ArtifactId;
+import org.apache.sling.feature.Extension;
+import org.apache.sling.feature.ExtensionState;
+import org.apache.sling.feature.ExtensionType;
 import org.apache.sling.feature.Feature;
 import org.apache.sling.feature.builder.FeatureProvider;
 import org.apache.sling.feature.extension.apiregions.api.artifacts.ArtifactRules;
 import org.apache.sling.feature.extension.apiregions.api.artifacts.Mode;
 import org.apache.sling.feature.extension.apiregions.api.artifacts.VersionRule;
+import org.apache.sling.feature.scanner.impl.SystemBundleDescriptor;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 
 public class AemAggregatorTest {
     public @Rule TemporaryFolder tempDir = new TemporaryFolder();
@@ -301,5 +310,114 @@ public class AemAggregatorTest {
         assertEquals(ArtifactId.parse("g:b:jar:c:1"), newRules.getArtifactVersionRules().get(1).getArtifactId());
         assertEquals(ArtifactId.parse("g:c:zip:cp2fm-converted:1"), newRules.getArtifactVersionRules().get(2).getArtifactId());
         assertNull(newRules.getArtifactVersionRules().get(3).getArtifactId());
+    }
+
+    private static final String ANALYSER_METADATA = "analyser-metadata";
+
+    private static final String SYSTEM_BUNDLE_KEY = "extra-metadata:system.bundle:0";
+
+    private static final ArtifactId FRAMEWORK_ID =
+            ArtifactId.parse("org.apache.felix:org.apache.felix.framework:7.0.5");
+
+    private static final String SYSTEM_BUNDLE_MANIFEST =
+            "{\"Provide-Capability\":\"osgi.ee; osgi.ee=JavaSE; version:List<Version>=\\\"1.8.0,17.0.0\\\"\","
+                    + "\"Export-Package\":\"org.osgi.framework;version=1.10.0\"}";
+
+    /**
+     * Build a feature that carries an analyser-metadata system bundle entry with the given scanner cache key
+     * and the given framework properties (passed as alternating key/value pairs).
+     */
+    private Feature featureWithSystemBundle(final String scannerCacheKey, final String... frameworkProps) {
+        final Feature feature = new Feature(ArtifactId.parse("g:aggregated:slingosgifeature:aggregated-publish:1"));
+
+        for (int i = 0; i < frameworkProps.length; i += 2) {
+            feature.getFrameworkProperties().put(frameworkProps[i], frameworkProps[i + 1]);
+        }
+
+        final String metadata = "{\"" + SYSTEM_BUNDLE_KEY + "\":{"
+                + "\"manifest\":" + SYSTEM_BUNDLE_MANIFEST + ","
+                + "\"artifactId\":\"" + FRAMEWORK_ID.toMvnId() + "\","
+                + "\"scannerCacheKey\":\"" + scannerCacheKey + "\""
+                + "}}";
+
+        final Extension ext = new Extension(ExtensionType.JSON, ANALYSER_METADATA, ExtensionState.OPTIONAL);
+        ext.setJSON(metadata);
+        feature.getExtensions().add(ext);
+
+        return feature;
+    }
+
+    private JsonObject systemBundle(final Feature feature) {
+        final Extension ext = feature.getExtensions().getByName(ANALYSER_METADATA);
+        return ext.getJSONStructure().asJsonObject().getJsonObject(SYSTEM_BUNDLE_KEY);
+    }
+
+    private static Map<String, String> singletonProps(final String key, final String value) {
+        final Map<String, String> props = new HashMap<>();
+        props.put(key, value);
+        return props;
+    }
+
+    @Test
+    public void testRefreshSystemBundleCacheKeyRefreshesStaleKey() {
+        // The system bundle cache key was pre-computed for a single framework property, but the aggregated
+        // feature has two extra ones (as contributed by an add-on such as forms).
+        final String staleKey = SystemBundleDescriptor.createCacheKey(
+                FRAMEWORK_ID, singletonProps("sling.home", "/opt/sling"));
+
+        final Feature feature = featureWithSystemBundle(
+                staleKey,
+                "sling.home", "/opt/sling",
+                "aem.jre-17", "",
+                "org.osgi.framework.system.capabilities.extra", "osgi.ee");
+
+        final String expectedKey =
+                SystemBundleDescriptor.createCacheKey(FRAMEWORK_ID, feature.getFrameworkProperties());
+        assertNotEquals("test setup: keys must differ", staleKey, expectedKey);
+
+        new AemAggregator().refreshSystemBundleCacheKey(feature);
+
+        final JsonObject systemBundle = systemBundle(feature);
+        assertEquals("scanner cache key must be refreshed to match the aggregate framework properties",
+                expectedKey, systemBundle.getString("scannerCacheKey"));
+
+        // manifest and artifact id must be preserved
+        assertEquals(FRAMEWORK_ID.toMvnId(), systemBundle.getString("artifactId"));
+        assertEquals(
+                Json.createReader(new StringReader(SYSTEM_BUNDLE_MANIFEST)).readObject(),
+                systemBundle.getJsonObject("manifest"));
+    }
+
+    @Test
+    public void testRefreshSystemBundleCacheKeyLeavesMatchingKeyUnchanged() {
+        // The cache key already matches the feature's framework properties - it must be left untouched.
+        final Feature reference = featureWithSystemBundle("placeholder", "sling.home", "/opt/sling");
+        final String correctKey =
+                SystemBundleDescriptor.createCacheKey(FRAMEWORK_ID, reference.getFrameworkProperties());
+
+        final Feature feature = featureWithSystemBundle(correctKey, "sling.home", "/opt/sling");
+
+        new AemAggregator().refreshSystemBundleCacheKey(feature);
+
+        assertEquals(correctKey, systemBundle(feature).getString("scannerCacheKey"));
+    }
+
+    @Test
+    public void testRefreshSystemBundleCacheKeyIgnoresFeatureWithoutSystemBundle() {
+        // A feature without a system bundle entry (or without an analyser-metadata extension) must not fail.
+        final Feature noExtension = new Feature(ArtifactId.parse("g:a:1"));
+        new AemAggregator().refreshSystemBundleCacheKey(noExtension);
+
+        final Feature emptyMetadata = new Feature(ArtifactId.parse("g:a:1"));
+        final Extension ext = new Extension(ExtensionType.JSON, ANALYSER_METADATA, ExtensionState.OPTIONAL);
+        ext.setJSON("{}");
+        emptyMetadata.getExtensions().add(ext);
+        new AemAggregator().refreshSystemBundleCacheKey(emptyMetadata);
+
+        assertNull(emptyMetadata.getExtensions()
+                .getByName(ANALYSER_METADATA)
+                .getJSONStructure()
+                .asJsonObject()
+                .get(SYSTEM_BUNDLE_KEY));
     }
 }
