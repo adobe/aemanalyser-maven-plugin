@@ -15,6 +15,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -487,5 +488,86 @@ public class AemSdkProductFeatureGeneratorTest {
         assertEquals("stable.addon.fw.value", addon.getFrameworkProperties().get("addon.fw.only.stable"));
         assertEquals("prerelease.addon.fw.value", addon.getFrameworkProperties().get("addon.fw.common"));
         assertEquals("prerelease.addon.fw.value", addon.getFrameworkProperties().get("addon.fw.only.prerelease"));
+    }
+
+    /**
+     * Input:
+     * - prerelease SDK feature throws UncheckedIOException (not available)
+     *
+     * Expected:
+     * - stable SDK feature is returned
+     */
+    @Test
+    public void testGetProductAggregatesFallsBackToStableWhenPrereleaseSdkNotFound() throws IOException {
+        final ArtifactId stableSdkId = ArtifactId.fromMvnId("com.adobe.aem:aem-sdk-api:2.0.0");
+        final ArtifactId prereleaseSdkId = ArtifactId.fromMvnId("com.adobe.aem:aem-prerelease-sdk-api:2.0.0");
+
+        FeatureProvider fp = id -> {
+            if ("aem-sdk-api".equals(id.getArtifactId())) {
+                return new Feature(id);
+            }
+            throw new UncheckedIOException(new IOException("prerelease SDK not found"));
+        };
+
+        AemSdkProductFeatureGenerator pg = new AemSdkProductFeatureGenerator(fp, stableSdkId, prereleaseSdkId, null, null);
+        Map<ProductVariation, List<Feature>> res = pg.getProductAggregates(EnumSet.of(ServiceType.AUTHOR));
+
+        Feature productFeature = res.get(SdkProductVariation.AUTHOR).get(0);
+        assertEquals("aem-sdk-api", productFeature.getId().getArtifactId());
+        assertEquals("2.0.0", productFeature.getId().getVersion());
+    }
+
+    /**
+     * Input:
+     * - stable SDK feature throws UncheckedIOException (not available)
+     *
+     * Expected:
+     * - IOException is thrown
+     */
+    @Test(expected = IOException.class)
+    public void testGetProductAggregatesThrowsWhenStableSdkNotFound() throws IOException {
+        final ArtifactId stableSdkId = ArtifactId.fromMvnId("com.adobe.aem:aem-sdk-api:2.0.0");
+
+        FeatureProvider fp = id -> {
+            throw new UncheckedIOException(new IOException("stable SDK not found"));
+        };
+
+        AemSdkProductFeatureGenerator pg = new AemSdkProductFeatureGenerator(fp, stableSdkId, null, null, null);
+        pg.getProductAggregates(EnumSet.of(ServiceType.AUTHOR));
+    }
+
+    /**
+     * Input:
+     * - prerelease add-on feature throws UncheckedIOException (not available)
+     *
+     * Expected:
+     * - stable add-on feature is returned
+     */
+    @Test
+    public void testGetAddOnFallsBackToStableWhenPrereleaseAddonNotFound() throws IOException {
+        final ArtifactId stableAddonId = ArtifactId.fromMvnId("com.adobe.aem:aem-addon:2.0.0");
+        final ArtifactId prereleaseAddonId = ArtifactId.fromMvnId("com.adobe.aem:aem-addon-prerelease:2.0.0");
+
+        FeatureProvider fp = id -> {
+            if ("aem-addon-prerelease".equals(id.getArtifactId())) {
+                throw new UncheckedIOException(new IOException("prerelease addon not found"));
+            }
+            return new Feature(id);
+        };
+
+        AemSdkProductFeatureGenerator pg = new AemSdkProductFeatureGenerator(
+                fp,
+                ArtifactId.fromMvnId("com.adobe.aem:aem-sdk-api:1.0.0"),
+                null,
+                Collections.singletonList(stableAddonId),
+                Collections.singletonList(prereleaseAddonId));
+
+        Map<ProductVariation, List<Feature>> res = pg.getProductAggregates(EnumSet.of(ServiceType.AUTHOR));
+        List<Feature> features = res.get(SdkProductVariation.AUTHOR);
+
+        assertEquals(2, features.size());
+        Feature addon = features.get(1);
+        assertEquals("aem-addon", addon.getId().getArtifactId());
+        assertEquals("2.0.0", addon.getId().getVersion());
     }
 }
