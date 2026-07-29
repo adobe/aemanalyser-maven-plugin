@@ -82,7 +82,7 @@ class RepoinitUtil {
                 .collect(Collectors.toList());
 
         if (!removedLines.isEmpty()) {
-            LOGGER.debug("Removed {} repoinit conflict line(s): {}", removedLines.size(), removedLines);
+            LOGGER.info("Removed {} repoinit conflict line(s): {}", removedLines.size(), removedLines);
         }
 
         String fixedText = String.join("\n", fixedLines);
