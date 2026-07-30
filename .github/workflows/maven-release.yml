@@ -8,7 +8,7 @@
 #   GPG_OWNERTRUST    - base64-encoded `gpg --export-ownertrust`
 #   GPG_PASSPHRASE    - passphrase for the GPG key
 #
-# The release is a two-step process:
+# The release has three steps:
 #   1. Tag: bumps the version, tags it, and pushes the tag/commits (skipped
 #      entirely when dryRun is true - nothing is pushed or published).
 #   2. Publish: checks out the tag and runs `mvn deploy -Prelease`, which
@@ -16,6 +16,10 @@
 #      is not enabled, so a maintainer must review and click "Publish" in
 #      the Central Portal UI (https://central.sonatype.com/publishing) to
 #      finish the release.
+#   3. Github_Release: creates a DRAFT GitHub release. It is left as a draft
+#      because Central publication is a separate manual step (see above) -
+#      a maintainer should only publish this GitHub release once the bundle
+#      has actually been published on Central, not before.
 #
 # Deploys use an isolated local Maven repository (not the cached ~/.m2) so
 # that stray _remote.repositories / maven-metadata-local.xml files from
@@ -65,11 +69,18 @@ jobs:
 
       - name: Tag (dry run)
         if: ${{ inputs.dryRun }}
-        run: mvn -B release:clean release:prepare -DreleaseVersion=${{ inputs.releaseVersion }} -DdryRun=true -Dgpg.skip=true
+        run: >
+          mvn -B release:clean release:prepare
+          -DreleaseVersion=${{ inputs.releaseVersion }}
+          -DdryRun=true
+          -Darguments=-Dgpg.skip=true
 
       - name: Tag
         if: ${{ !inputs.dryRun }}
-        run: mvn -B release:clean release:prepare -DreleaseVersion=${{ inputs.releaseVersion }} -Dgpg.skip=true
+        run: >
+          mvn -B release:clean release:prepare
+          -DreleaseVersion=${{ inputs.releaseVersion }}
+          -Darguments=-Dgpg.skip=true
 
       - name: Store tag
         id: store-version
@@ -128,7 +139,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ needs.Tag.outputs.tag }}
 
-      - name: Create GitHub release
+      - name: Create draft GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create ${{ needs.Tag.outputs.tag }} --title "AEM Maven Analyser Plugin ${{ needs.Tag.outputs.version }}" --generate-notes
+        run: gh release create ${{ needs.Tag.outputs.tag }} --draft --title "AEM Maven Analyser Plugin ${{ needs.Tag.outputs.version }}" --generate-notes
