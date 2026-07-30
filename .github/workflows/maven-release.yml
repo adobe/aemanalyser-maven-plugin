@@ -46,6 +46,7 @@ jobs:
 
     outputs:
       tag: ${{ steps.store-version.outputs.tag }}
+      version: ${{ steps.store-version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v7
@@ -72,7 +73,10 @@ jobs:
 
       - name: Store tag
         id: store-version
-        run: echo "tag=$(grep ^scm.tag= release.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+        run: |
+          tag="$(grep ^scm.tag= release.properties | cut -d= -f2)"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#aemanalyser-maven-plugin-}" >> "$GITHUB_OUTPUT"
 
   Publish:
     needs: Tag
@@ -127,4 +131,4 @@ jobs:
       - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create ${{ needs.Tag.outputs.tag }} --title ${{ needs.Tag.outputs.tag }} --generate-notes
+        run: gh release create ${{ needs.Tag.outputs.tag }} --title "AEM Maven Analyser Plugin ${{ needs.Tag.outputs.version }}" --generate-notes
