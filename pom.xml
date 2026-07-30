@@ -59,7 +59,7 @@ governing permissions and limitations under the License.
     <surefire.version>3.5.6</surefire.version>
     <maven.compiler.source>${project.java.version}</maven.compiler.source> <!-- affects m-compiler-p and m-javadoc-p -->
     <maven.compiler.target>${project.java.version}</maven.compiler.target>
-    <oak.version>1.92.0</oak.version>
+    <oak.version>2.4.0</oak.version>
     <maven.version>${maven.min.version}</maven.version>
   </properties>
 
