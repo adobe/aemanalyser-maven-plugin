@@ -124,16 +124,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ needs.Tag.outputs.tag }}
 
-      - name: Generate release changelog
-        id: changelog
-        uses: mikepenz/release-changelog-builder-action@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          toTag: ${{ needs.Tag.outputs.tag }}
-
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ needs.Tag.outputs.tag }}
-          name: ${{ needs.Tag.outputs.tag }}
-          body: ${{ steps.changelog.outputs.changelog }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create ${{ needs.Tag.outputs.tag }} --title ${{ needs.Tag.outputs.tag }} --generate-notes
