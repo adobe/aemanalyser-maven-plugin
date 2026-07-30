@@ -20,7 +20,7 @@
 # Deploys use an isolated local Maven repository (not the cached ~/.m2) so
 # that stray _remote.repositories / maven-metadata-local.xml files from
 # unrelated local installs can't leak into the staged bundle and fail
-# Central's validation, as happened with the 1.7.0 release.
+# Central's validation.
 
 name: Release to Maven Central
 
