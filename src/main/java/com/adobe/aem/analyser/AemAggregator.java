@@ -48,6 +48,7 @@ import org.apache.sling.feature.extension.apiregions.api.artifacts.VersionRule;
 import org.apache.sling.feature.extension.apiregions.api.config.ConfigurationApi;
 import org.apache.sling.feature.io.json.FeatureJSONReader;
 import org.apache.sling.feature.io.json.FeatureJSONWriter;
+import org.apache.sling.feature.scanner.impl.SystemBundleDescriptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,8 @@ import com.adobe.aem.project.ServiceType;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
+import jakarta.json.JsonString;
+import jakarta.json.JsonValue;
 
 /**
  * Create all the aggregates
@@ -508,6 +511,13 @@ public class AemAggregator {
 
             postProcessProductFeature(feature);
 
+            // The aggregate inherits the pre-computed system bundle scanner cache key from the SDK feature,
+            // but its framework properties are the union of all merged features. Add-ons (e.g. forms) may
+            // contribute extra framework properties, which makes the inherited cache key stale and forces a
+            // framework scan at analysis time. Recompute the cache key against the aggregate's framework
+            // properties so the analyser's scanner cache is hit instead.
+            refreshSystemBundleCacheKey(feature);
+
             final File featureFile = new File(this.getFeatureOutputDirectory(), aggregate.getKey().concat(".json"));
             try ( final Writer writer = new FileWriter(featureFile)) {
                 FeatureJSONWriter.write(writer, feature);
@@ -589,5 +599,78 @@ public class AemAggregator {
                 }
             }
         }
+    }
+
+    /** The analyser-metadata extension name. */
+    private static final String ANALYSER_METADATA_EXTENSION = "analyser-metadata";
+
+    /** The key under which the system bundle metadata is stored in the analyser-metadata extension. */
+    private static final String SYSTEM_BUNDLE_KEY = "extra-metadata:system.bundle:0";
+
+    /** The artifact id field of a system bundle metadata entry. */
+    private static final String ARTIFACT_ID_KEY = "artifactId";
+
+    /** The scanner cache key field of a system bundle metadata entry. */
+    private static final String SCANNER_CACHE_KEY = "scannerCacheKey";
+
+    /**
+     * Recompute the system bundle scanner cache key of the aggregated feature's analyser-metadata so that it
+     * matches the feature's framework properties.
+     *
+     * <p>The scanner cache key is the only part of the system bundle metadata that is derived from the
+     * framework properties (the manifest capabilities/exports describe the framework artifact itself). When
+     * features are aggregated the resulting framework properties are the union of all merged features, so a
+     * cache key that was pre-computed for one of the inputs (typically the SDK feature) no longer matches the
+     * aggregate. If left stale, the scanner cache lookup misses at analysis time and a framework scan is
+     * triggered - which is expensive and, in setups where framework scanning is disabled, fails the build.</p>
+     *
+     * @param feature The aggregated feature
+     */
+    final void refreshSystemBundleCacheKey(final Feature feature) {
+        final Extension ext = feature.getExtensions().getByName(ANALYSER_METADATA_EXTENSION);
+        if ( ext == null || ext.getType() != ExtensionType.JSON ) {
+            return;
+        }
+
+        final JsonObject metadata = ext.getJSONStructure().asJsonObject();
+        final JsonValue systemBundleValue = metadata.get(SYSTEM_BUNDLE_KEY);
+        if ( systemBundleValue == null || systemBundleValue.getValueType() != JsonValue.ValueType.OBJECT ) {
+            return;
+        }
+
+        final JsonObject systemBundle = systemBundleValue.asJsonObject();
+        final JsonValue artifactIdValue = systemBundle.get(ARTIFACT_ID_KEY);
+        if ( artifactIdValue == null || artifactIdValue.getValueType() != JsonValue.ValueType.STRING ) {
+            // no framework artifact id recorded - nothing we can key on
+            return;
+        }
+
+        final ArtifactId frameworkId = ArtifactId.fromMvnId(((JsonString) artifactIdValue).getString());
+        final String cacheKey = SystemBundleDescriptor.createCacheKey(frameworkId, feature.getFrameworkProperties());
+
+        final JsonValue existingKey = systemBundle.get(SCANNER_CACHE_KEY);
+        if ( existingKey != null && existingKey.getValueType() == JsonValue.ValueType.STRING
+                && cacheKey.equals(((JsonString) existingKey).getString()) ) {
+            // already matches the aggregate's framework properties, nothing to do
+            return;
+        }
+
+        logger.debug("Refreshing stale system bundle scanner cache key for feature {}", feature.getId().toMvnId());
+
+        // rebuild the system bundle entry with the refreshed cache key, then rebuild the whole extension
+        final JsonObject newSystemBundle = Json.createObjectBuilder(systemBundle)
+                .add(SCANNER_CACHE_KEY, cacheKey)
+                .build();
+
+        final JsonObjectBuilder newMetadataBuilder = Json.createObjectBuilder();
+        for (final String key : metadata.keySet()) {
+            if ( SYSTEM_BUNDLE_KEY.equals(key) ) {
+                newMetadataBuilder.add(key, newSystemBundle);
+            } else {
+                newMetadataBuilder.add(key, metadata.get(key));
+            }
+        }
+
+        ext.setJSONStructure(newMetadataBuilder.build());
     }
 }
