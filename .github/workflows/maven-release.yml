@@ -2,7 +2,7 @@
 # Central Portal (via central-publishing-maven-plugin, configured in pom.xml).
 #
 # Required repository secrets:
-#   SONATYPE_USERNAME, SONATYPE_PASSWORD - Central Portal user token
+#   SONATYPE_USERNAME_REPO, SONATYPE_PASSWORD_REPO - Central Portal user token
 #     (https://central.sonatype.org/publish/generate-portal-token/)
 #   GPG_SECRET_KEYS   - base64-encoded `gpg --export-secret-keys <key>`
 #   GPG_OWNERTRUST    - base64-encoded `gpg --export-ownertrust`
@@ -123,8 +123,8 @@ jobs:
 
       - name: Deploy to Maven Central
         env:
-          MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          MAVEN_CENTRAL_TOKEN: ${{ secrets.SONATYPE_PASSWORD }}
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME_REPO }}
+          MAVEN_CENTRAL_TOKEN: ${{ secrets.SONATYPE_PASSWORD_REPO }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: mvn -B clean deploy -Prelease -Dmaven.repo.local="${RUNNER_TEMP}/m2-release-repo"
 
