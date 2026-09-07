@@ -249,7 +249,7 @@ public class AemSdkProductFeatureGeneratorTest {
         assertEquals(1, features.size());
 
         Feature sdkFeature = features.get(0);
-        assertEquals("aem-prerelease-sdk-api", sdkFeature.getId().getArtifactId());
+        assertEquals("aem-sdk-api", sdkFeature.getId().getArtifactId());
 
         assertEquals(3, sdkFeature.getBundles().size());
         assertEquals("stable.bundle", sdkFeature.getBundles().get(0).getId().getArtifactId());
@@ -454,7 +454,7 @@ public class AemSdkProductFeatureGeneratorTest {
 
         assertEquals(2, features.size());
         Feature addon = features.get(1);
-        assertEquals("aem-addon-prerelease", addon.getId().getArtifactId());
+        assertEquals("aem-addon", addon.getId().getArtifactId());
         assertEquals("1.5.0", addon.getId().getVersion());
 
         assertEquals(3, addon.getBundles().size());
