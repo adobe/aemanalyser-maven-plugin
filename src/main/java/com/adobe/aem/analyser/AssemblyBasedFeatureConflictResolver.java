@@ -89,7 +89,7 @@ class AssemblyBasedFeatureConflictResolver implements FeatureConflictResolver {
         builderContext.addFrameworkPropertiesOverrides(frameworkPropertiesOverrides);
 
         // stable first → prerelease last: consistent with all override rules above.
-        return FeatureBuilder.assemble(prerelease.getId(), builderContext, stable, prerelease);
+        return FeatureBuilder.assemble(stable.getId(), builderContext, stable, prerelease);
     }
 
     /**

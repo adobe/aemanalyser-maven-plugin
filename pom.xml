@@ -16,7 +16,7 @@ governing permissions and limitations under the License.
 
   <groupId>com.adobe.aem</groupId>
   <artifactId>aemanalyser-maven-plugin</artifactId>
-  <version>1.7.1-SNAPSHOT</version>
+  <version>1.7.7-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
   <name>AEM Analyser Maven Plugin</name>
@@ -39,8 +39,8 @@ governing permissions and limitations under the License.
   </developers>
 
   <scm>
-    <connection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:adobe/aemanalyser-maven-plugin.git</developerConnection>
+    <connection>scm:git:https://github.com/adobe/aemanalyser-maven-plugin.git</connection>
+    <developerConnection>scm:git:https://github.com/adobe/aemanalyser-maven-plugin.git</developerConnection>
     <url>https://github.com/adobe/aemanalyser-maven-plugin/tree/main</url>
     <tag>HEAD</tag>
   </scm>
@@ -422,7 +422,7 @@ governing permissions and limitations under the License.
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>org.apache.sling.feature.analyser</artifactId>
-      <version>2.0.18</version> <!-- TODO: sii12877 -->
+      <version>2.0.20</version>
     </dependency>
     <dependency>
       <groupId>org.apache.sling</groupId>
