@@ -1,0 +1,47 @@
+{
+  "id":"com.program.mfl:mfl-program2-aem.all:slingosgifeature:1.0.0-SNAPSHOT",
+  "bundles":[
+    {
+      "id":"com.namics.oss.aem:genericmultifield:3.1.0-cp2fm-converted",
+      "Bundle-SymbolicName":"com.namics.oss.aem.genericmultifield",
+      "Bundle-Version":"3.1.0",
+      "content-package-origins":"com.program.mfl:mfl-program2-aem.all:1.0.0-SNAPSHOT",
+      "start-order":"20"
+    }
+  ],
+  "configurations":  {
+    "org.apache.sling.serviceusermapping.impl.ServiceUserMapperImpl.amended~ncActoolSystemUser":    {
+      "user.mapping":[
+        "biz.netcentric.cq.tools.accesscontroltool.bundle=[actool-service]",
+        "biz.netcentric.cq.tools.accesscontroltool.startuphook.bundle=[actool-service]"
+      ],
+      ":configurator:content-package-origins":"com.program.mfl:mfl-program2-aem.all:1.0.0-SNAPSHOT|Netcentric:accesscontroltool-package:3.5.0"
+    }
+  },
+  "content-packages:ARTIFACTS|true":[
+    "com.namics.oss.aem:genericmultifield-apps:zip:cp2fm-converted:3.1.0"
+  ],
+  "repoinit:TEXT|true":[
+    "# origin=com.program.mfl:mfl-program2-aem.all:1.0.0-SNAPSHOT|Netcentric:accesscontroltool-package:3.5.0 source=org.apache.sling.jcr.repoinit.RepositoryInitializer~actool",
+    "create service user actool-service with forced path system/cq:services/actool",
+    "set principal ACL for actool-service",
+    "    allow jcr:all on /",
+    "    allow jcr:all on :repository ",
+    "end",
+    "# origin=com.program.mfl:mfl-program2-aem.all:1.0.0-SNAPSHOT source=content-package",
+    "create path (sling:Folder) /apps/namics/genericmultifield(sling:Folder)/readonly",
+    "create path (sling:Folder) /apps/namics/genericmultifield(sling:Folder)/clientlibs/css(sling:OrderedFolder)",
+    "create path (sling:Folder) /apps/namics/genericmultifield(sling:Folder)/clientlibs/js(sling:OrderedFolder)"
+  ],
+  "api-regions:JSON|false":[
+    {
+      "name":"global",
+      "exports":[
+        "com.adobe.acs.commons.genericlists"
+      ]
+    },
+    {
+      "name":"com.adobe.aem.deprecated"
+    }
+  ]
+}
