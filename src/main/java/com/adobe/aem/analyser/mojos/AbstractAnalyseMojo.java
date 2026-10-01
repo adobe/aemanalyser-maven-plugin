@@ -139,6 +139,8 @@ public abstract class AbstractAnalyseMojo extends AbstractAemMojo {
 
         this.printResult(result);
 
+        this.writeReport(result);
+
         if (hasErrors) {
             if ( failOnAnalyserErrors ) {
                 throw new MojoFailureException(

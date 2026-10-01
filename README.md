@@ -225,6 +225,36 @@ The plugin can be configured with the following configuration properties:
 * **classifier**  : If this property is set the content package to analyze is retrieved from the attached project artifact with the given classifier. The value for this property can also be specified via the command line by setting `aem.analyser.classifier`.
 * **contentPackageFiles**: Analyzes the given list of content package files. If this is configured, only these files are validated, and not the main project artifact or dependencies. The files must be located inside the Maven project directory (e.g. src or target folder).
 * **repoInitValidation**: If this is set to `true`, the plugin will execute the repoinit statements in an in-memory JCR repository. In case of failures such as missing CreatePath statements, the build will fail.
+* **reportFile**: If set, the analyser result (all errors and warnings) is written to this file as JSON in addition to being logged. This provides a stable, machine readable report that third party tools can consume instead of scraping the build log. Deprecated API findings are additionally decomposed into a structured `deprecation` object. The value can also be specified from the command line via `aem.analyser.report.file`. See [Report File](#report-file) for the document format.
+
+## Report File
+
+When the **reportFile** property is set, the plugin writes the analyser result as a JSON document. Enabling the report never changes the outcome of the build; if the report cannot be written a warning is logged and the build continues.
+
+The document has the following shape:
+
+    {
+      "schemaVersion": "1.0",
+      "generatedAt": "2026-07-28T10:15:30Z",
+      "errors": 1,
+      "warnings": 2,
+      "findings": [
+        {
+          "level": "error",
+          "tier": "author",
+          "message": "Usage of deprecated package found : com.foo : Use com.bar instead Deprecated since 2023.1 For removal : 2025-01-01",
+          "deprecation": {
+            "kind": "package",
+            "packages": [ "com.foo" ],
+            "hint": "Use com.bar instead",
+            "since": "2023.1",
+            "forRemoval": "2025-01-01"
+          }
+        }
+      ]
+    }
+
+The `message` field is always the verbatim analyser message, so consumers are never forced to rely on the parsed fields. The `deprecation` object is a best effort structured view emitted only for findings from the `region-deprecated-api` analyser task. For findings that stem from a deprecated *library* the object also carries a `library` name and lists every affected package; when the finding could be attributed to a content package, an `origin` field is included. The `hint` typically describes the suggested replacement (the "fix").
 
 ## Advanced Configurations
 
