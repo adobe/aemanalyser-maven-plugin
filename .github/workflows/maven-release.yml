@@ -89,6 +89,7 @@ jobs:
   Publish:
     needs: Tag
     runs-on: ubuntu-latest
+    timeout-minutes: 75
     if: ${{ !inputs.dryRun }}
 
     steps:
@@ -125,7 +126,7 @@ jobs:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: >
           mvn --show-version -B clean deploy -Prelease
-          -DautoPublish=true -DwaitUntil=published
+          -DautoPublish=true -DwaitUntil=published -DwaitMaxTime=3600
           -Dmaven.repo.local="${RUNNER_TEMP}/m2-release-repo"
 
   Github_Release:
