@@ -12,14 +12,11 @@
 #   1. Tag: bumps the version, tags it, and pushes the tag/commits (skipped
 #      entirely when dryRun is true - nothing is pushed or published).
 #   2. Publish: checks out the tag and runs `mvn deploy -Prelease`, which
-#      uploads a signed, validated bundle to the Central Portal. autoPublish
-#      is not enabled, so a maintainer must review and click "Publish" in
-#      the Central Portal UI (https://central.sonatype.com/publishing) to
-#      finish the release.
-#   3. Github_Release: creates a DRAFT GitHub release. It is left as a draft
-#      because Central publication is a separate manual step (see above) -
-#      a maintainer should only publish this GitHub release once the bundle
-#      has actually been published on Central, not before.
+#      automatically publishes the signed bundle to the Central Portal and
+#      waits until publication completes. Validation or publication failures
+#      fail the job.
+#   3. Github_Release: creates a DRAFT GitHub release after Central publication
+#      succeeds, leaving the GitHub announcement for a maintainer to review.
 #
 # Deploys use an isolated local Maven repository (not the cached ~/.m2) so
 # that stray _remote.repositories / maven-metadata-local.xml files from
@@ -126,7 +123,10 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME_REPO }}
           MAVEN_CENTRAL_TOKEN: ${{ secrets.SONATYPE_PASSWORD_REPO }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: mvn --show-version -B clean deploy -Prelease -Dmaven.repo.local="${RUNNER_TEMP}/m2-release-repo"
+        run: >
+          mvn --show-version -B clean deploy -Prelease
+          -DautoPublish=true -DwaitUntil=published
+          -Dmaven.repo.local="${RUNNER_TEMP}/m2-release-repo"
 
   Github_Release:
     needs: [Tag, Publish]
