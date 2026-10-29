@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * <p>Provides methods to detect and remove conflicting {@code create path} statements
  * from repoinit extensions of Sling features.</p>
  */
-class RepoinitUtil {
+public class RepoinitUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(RepoinitUtil.class);
 
     private RepoinitUtil() {
@@ -54,7 +54,7 @@ class RepoinitUtil {
      * @param repoinitExtension the repoinit {@link Extension} whose text content should be cleaned up;
      *                          must not be {@code null} and must have a non-null text value
      */
-    static void removeConflicts(ValidationReport repoInitValidationReport, Extension repoinitExtension) {
+    public static void removeConflicts(ValidationReport repoInitValidationReport, Extension repoinitExtension) {
         if (repoInitValidationReport == null || repoinitExtension == null || repoinitExtension.getText() == null) {
             return;
         }
