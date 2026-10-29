@@ -2,5 +2,17 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["maven"],
+      "matchPackageNames": ["org.apache.jackrabbit:jackrabbit-*"],
+      "groupName": "Jackrabbit"
+    },
+    {
+      "matchManagers": ["maven"],
+      "matchPackageNames": ["org.apache.jackrabbit.vault:*"],
+      "groupName": "Jackrabbit FileVault"
+    }
   ]
 }
