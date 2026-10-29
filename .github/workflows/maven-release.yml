@@ -70,7 +70,7 @@ jobs:
       - name: Tag (dry run)
         if: ${{ inputs.dryRun }}
         run: >
-          mvn -B release:clean release:prepare
+          mvn --show-version -B release:clean release:prepare
           -DreleaseVersion=${{ inputs.releaseVersion }}
           -DdryRun=true
           -Darguments=-Dgpg.skip=true
@@ -78,7 +78,7 @@ jobs:
       - name: Tag
         if: ${{ !inputs.dryRun }}
         run: >
-          mvn -B release:clean release:prepare
+          mvn --show-version -B release:clean release:prepare
           -DreleaseVersion=${{ inputs.releaseVersion }}
           -Darguments=-Dgpg.skip=true
 
@@ -126,7 +126,7 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME_REPO }}
           MAVEN_CENTRAL_TOKEN: ${{ secrets.SONATYPE_PASSWORD_REPO }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: mvn -B clean deploy -Prelease -Dmaven.repo.local="${RUNNER_TEMP}/m2-release-repo"
+        run: mvn --show-version -B clean deploy -Prelease -Dmaven.repo.local="${RUNNER_TEMP}/m2-release-repo"
 
   Github_Release:
     needs: [Tag, Publish]
