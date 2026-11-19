@@ -15,6 +15,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,6 +41,7 @@ import org.eclipse.aether.resolution.ArtifactResult;
 
 import com.adobe.aem.analyser.result.AemAnalyserAnnotation;
 import com.adobe.aem.analyser.result.AemAnalyserResult;
+import com.adobe.aem.analyser.result.AemAnalyserResultJsonWriter;
 
 /**
  * Abstract base class for all mojos
@@ -73,6 +77,17 @@ public abstract class AbstractAemMojo extends AbstractMojo {
      */
     @Parameter(defaultValue = "false", property = "aem.analyser.strict")
     protected boolean strictValidation;
+
+    /**
+     * If set, the analyser result (all errors and warnings, including the
+     * deprecated API findings in a structured form) is written to this file as
+     * JSON. This provides a stable, machine readable report that third party
+     * tools can consume instead of scraping the build log. See
+     * {@link AemAnalyserResultJsonWriter} for the document format.
+     * @since 1.6.25
+     */
+    @Parameter(property = "aem.analyser.report.file")
+    protected File reportFile;
 
     /**
      * Find the artifact in the collection
@@ -168,6 +183,31 @@ public abstract class AbstractAemMojo extends AbstractMojo {
         }
         for(final AemAnalyserAnnotation ann : result.getErrors()) {
             getLog().error(ann.toString());
+        }
+    }
+
+    /**
+     * If a {@link #reportFile} is configured, write the analyser result to it as
+     * JSON. Failures to write the report are logged as a warning and never fail
+     * the build, so enabling the report cannot change the outcome of an analyse
+     * run.
+     * @param result the analyser result to serialise
+     */
+    protected void writeReport(final AemAnalyserResult result) {
+        if (this.reportFile == null) {
+            return;
+        }
+        try {
+            final File parent = this.reportFile.getAbsoluteFile().getParentFile();
+            if (parent != null) {
+                Files.createDirectories(parent.toPath());
+            }
+            try (final Writer writer = Files.newBufferedWriter(this.reportFile.toPath(), StandardCharsets.UTF_8)) {
+                AemAnalyserResultJsonWriter.write(result, writer);
+            }
+            getLog().info("Wrote AEM analyser report to " + this.reportFile.getAbsolutePath());
+        } catch (final IOException e) {
+            getLog().warn("Unable to write AEM analyser report to " + this.reportFile.getAbsolutePath(), e);
         }
     }
 }
